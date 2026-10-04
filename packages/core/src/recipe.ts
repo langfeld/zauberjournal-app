@@ -1,6 +1,7 @@
 import { formatIngredientLine, parseIngredientLine } from './ingredient-line.ts';
 import { formatAmount, scaleAmount } from './quantity.ts';
-import { assignSortKeys, compareSortKeys } from './sort-keys.ts';
+import { activeSorted, changedCells, isActive, type CellValue, type RowWrite, type Table } from './rows.ts';
+import { assignSortKeys } from './sort-keys.ts';
 import { unitLabel } from './units.ts';
 
 // ─── Zeilen, wie sie im Store liegen ───
@@ -57,8 +58,6 @@ export type ChoiceOptionRow = {
   deletedAt: number | null;
 };
 
-type Table<R> = Readonly<Record<string, R>>;
-
 export type RecipeTables = {
   recipes: Table<RecipeRow>;
   recipeIngredients: Table<IngredientRow>;
@@ -68,24 +67,6 @@ export type RecipeTables = {
 };
 
 export type RecipeTableName = keyof RecipeTables;
-
-type CellValue = string | number | null;
-
-/** Eine Schreiboperation: nur die geänderten Zellen einer Zeile (für `setPartialRow`). */
-export type RowWrite = { table: RecipeTableName; rowId: string; cells: Record<string, CellValue> };
-
-function isActive(row: { deletedAt: number | null }): boolean {
-  return row.deletedAt === null || row.deletedAt === undefined;
-}
-
-function activeSorted<R extends { sortKey: string; deletedAt: number | null }>(
-  table: Table<R>,
-  belongs: (row: R) => boolean,
-): [string, R][] {
-  return Object.entries(table)
-    .filter(([, row]) => isActive(row) && belongs(row))
-    .sort(([idA, a], [idB, b]) => compareSortKeys(a.sortKey, b.sortKey) || compareSortKeys(idA, idB));
-}
 
 // ─── Ansicht ───
 
@@ -438,14 +419,8 @@ export function planRecipeSave(
   const id = recipeId ?? createId();
   const childWrites: RowWrite[] = [];
 
-  const upsert = (table: RecipeTableName, rowId: string, desired: Record<string, CellValue>): RowWrite | null => {
-    const existing = tables[table][rowId] as Record<string, CellValue> | undefined;
-    const cells: Record<string, CellValue> = {};
-    for (const [cell, value] of Object.entries(desired)) {
-      if (!existing || existing[cell] !== value) cells[cell] = value;
-    }
-    return Object.keys(cells).length > 0 ? { table, rowId, cells } : null;
-  };
+  const upsert = (table: RecipeTableName, rowId: string, desired: Record<string, CellValue>): RowWrite | null =>
+    changedCells(table, rowId, tables[table][rowId], desired);
   const write = (table: RecipeTableName, rowId: string, desired: Record<string, CellValue>) => {
     const change = upsert(table, rowId, desired);
     if (change) childWrites.push(change);
