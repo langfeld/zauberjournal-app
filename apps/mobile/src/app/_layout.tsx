@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { ConnectionProvider } from '@/data/connection';
 import { createAppPersister } from '@/data/persister';
 import { createAppStore, Provider, useCreateMergeableStore, useCreatePersister } from '@/data/store';
 import { colors } from '@/theme';
@@ -30,15 +31,17 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
-          headerTintColor: colors.primary,
-          headerTitleStyle: { color: colors.text },
-          contentStyle: { backgroundColor: colors.background },
-        }}
-      />
+      <ConnectionProvider store={store}>
+        <StatusBar style="dark" />
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.primary,
+            headerTitleStyle: { color: colors.text },
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+      </ConnectionProvider>
     </Provider>
   );
 }

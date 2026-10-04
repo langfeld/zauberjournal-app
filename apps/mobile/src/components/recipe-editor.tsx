@@ -68,7 +68,7 @@ export function RecipeEditor({ recipeId, initialDraft }: RecipeEditorProps) {
     const { recipeId: savedId, writes } = planRecipeSave(tables, recipeId, draft, Date.now(), createId);
     applyWrites(store, writes);
     leaving.current = true;
-    if (recipeId) router.back();
+    if (recipeId && router.canGoBack()) router.back();
     else router.replace(`/recipes/${savedId}`);
   };
 

@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { StatusDot, syncStatusText } from '@/components/sync-status';
 import { Button } from '@/components/ui';
+import { useConnection } from '@/data/connection';
 import { useRecipeTables } from '@/data/recipes';
 import { colors, radius, spacing } from '@/theme';
 
@@ -17,13 +19,28 @@ function describe(recipe: RecipeSummary): string {
 
 export default function RecipeListScreen() {
   const tables = useRecipeTables();
+  const { status } = useConnection();
   const [query, setQuery] = useState('');
   const recipes = useMemo(() => listRecipes(tables, query), [tables, query]);
   const hasRecipes = Object.keys(tables.recipes).length > 0;
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: 'Rezepte' }} />
+      <Stack.Screen
+        options={{
+          title: 'Rezepte',
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Haushalt: ${syncStatusText(status).label}`}
+              onPress={() => router.push('/household')}
+              style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
+              <StatusDot status={status} />
+              <Text style={styles.headerButtonText}>Haushalt</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <View style={styles.search}>
         <TextInput
           accessibilityLabel="Rezepte durchsuchen"
@@ -67,6 +84,8 @@ export default function RecipeListScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  headerButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md },
+  headerButtonText: { fontSize: 16, fontWeight: '600', color: colors.primary },
   search: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   searchInput: {
     minHeight: 44,

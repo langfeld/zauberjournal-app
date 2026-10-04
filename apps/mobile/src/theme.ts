@@ -9,6 +9,7 @@ export const colors = {
   primarySoft: '#E6F2EC',
   danger: '#B3261E',
   dangerSoft: '#FBEAE8',
+  warning: '#C77700',
 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 } as const;

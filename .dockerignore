@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.expo
+apps/server/data
+.git
+.github
+.openchamber
+docs
+deploy

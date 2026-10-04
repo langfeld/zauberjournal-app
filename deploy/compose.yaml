@@ -1,0 +1,17 @@
+# Zauberjournal-Server auf TrueNAS
+# Apps → Discover Apps → ⋮ → „Install via YAML“, dann diesen Inhalt einfügen.
+# Anleitung: docs/BETRIEB.md
+
+services:
+  zauberjournal:
+    image: ghcr.io/langfeld/zauberjournal-server:latest
+    container_name: zauberjournal
+    restart: unless-stopped
+    # Der Container läuft als Benutzer 1000; das Dataset muss für ihn beschreibbar sein.
+    # Alternativ hier den TrueNAS-Apps-Benutzer eintragen, z. B. user: "568:568".
+    ports:
+      - "3000:3000"
+    volumes:
+      - /mnt/POOL/apps/zauberjournal:/data # ← Pfad zum eigenen Dataset anpassen
+    environment:
+      - TZ=Europe/Berlin

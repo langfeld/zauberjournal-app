@@ -4,6 +4,7 @@ node_modules/
 !.env.example
 /data/
 /apps/server/data/
+/apps/server/dist/
 coverage/
 *.log
 .DS_Store

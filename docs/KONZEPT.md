@@ -31,8 +31,8 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 |---|---|---|
 | **M0 Fundament** | Monorepo, Expo-App, Server-Grundgerüst, gemeinsames Paket, Tests | läuft lokal ✅ |
 | **M1 Rezepte** | Datenmodell, Rezeptliste, Detailansicht, Editor inkl. Wahlkomponenten, Portionen skalieren, lokale Speicherung | App auf dem Handy nutzbar (Expo Go) ✅ |
-| **M2 Haushalt & Sync** | Sync-Server als Docker-Container auf TrueNAS, Pairing per QR-Code, Gerätetokens, Fotos als Dateien, Zugang über Pangolin, APK-Build per GitHub Actions | beide Handys synchron, App fest installiert |
-| **M3 Import** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; Zuordnung der Zutaten | Rezepte schnell erfasst |
+| **M2 Haushalt & Sync** | Sync-Server als Docker-Container auf TrueNAS, Pairing per QR-Code, Gerätetokens, Zugang über Pangolin, APK-Build per GitHub Actions | beide Handys synchron, App fest installiert ✅ (umgesetzt; Inbetriebnahme siehe [BETRIEB.md](BETRIEB.md)) |
+| **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; Zuordnung der Zutaten; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst |
 | **M4 Planen & Einkaufen** | Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE |
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt |
 | **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat |
@@ -105,7 +105,7 @@ Alle Daten liegen in einem Volume `/data`. Dafür bekommt der Server ein eigenes
 ### 5.4 Zugriff und Sicherheit
 
 - **Pangolin:** Die API bekommt eine eigene Subdomain, dort **ohne** Pangolin-Login. Dessen Anmeldeseite können weder App noch Userscript bedienen. Abgesichert wird im Dienst selbst: Jedes Gerät hat ein eigenes Token, das sich widerrufen lässt. Pangolin selbst aktuell halten.
-- **Pairing:** Das erste Handy legt den Haushalt an. Weitere Geräte scannen einen QR-Code mit Server-URL und Einladung. Die Einladung gilt nur kurz und nur einmal.
+- **Pairing:** Ein Server gehört genau einem Haushalt. Das erste Handy richtet ihn mit dem Einrichtungscode ein, den der Server beim Start in sein Protokoll schreibt. Weitere Geräte scannen einen QR-Code mit Server-URL und Einladung. Die Einladung gilt 15 Minuten und nur einmal. Für den Notfall erzeugt `cli.mjs invite` im Container einen Code.
 - **Userscript:** Es bekommt ebenfalls ein Gerätetoken. Das Token wird in der App erzeugt und einmal im Script eingegeben. Im Script-Code steht kein Schlüssel.
 
 ## 6. Datenmodell (Store eines Haushalts)
