@@ -87,6 +87,7 @@ const SYSTEM_PROMPT = `Du überträgst Rezepte aus Fotos, Screenshots, Webseiten
 Regeln:
 - Übernimm das Rezept vollständig und so, wie es in der Vorlage steht. Erfinde nichts dazu; nur der vegetarische Vorschlag (siehe unten) ist eigene Arbeit.
 - Schreib alles auf Deutsch. Übersetze fremdsprachige Rezepte und rechne amerikanische Maße (cups, oz, lb, °F) in g, ml und °C um.
+- "title": der Name des Gerichts, ohne Zusätze wie „Rezept“ oder den Namen der Website.
 - Zutaten: eine Zutat pro Eintrag in "text", im Format „Menge Einheit Zutat, Zusatz“, z. B. „200 g Mehl“, „2 EL Olivenöl“, „1 Zwiebel, fein gewürfelt“, „2–3 Zehen Knoblauch“, „1 Prise Salz“, „Pfeffer“. Einheiten: g, kg, ml, l, EL, TL, Prise, Stück, Zehe, Bund, Dose, Becher, Packung, Scheibe, Handvoll. Brüche als ½, ¼ oder ¾, Dezimalzahlen mit Komma.
 - Zwischenüberschriften der Zutatenliste (z. B. „Für das Dressing“) gehören in "section" jeder zugehörigen Zutat; ohne Überschrift bleibt "section" leer.
 - Schritte: ganze Sätze ohne Nummerierung, ein Arbeitsschritt pro Eintrag, in der Reihenfolge der Vorlage. Lange Absätze darfst du in sinnvolle Schritte teilen.
@@ -186,12 +187,20 @@ function indexes(value: unknown): number[] {
   return Array.isArray(value) ? value.filter((item): item is number => Number.isInteger(item) && item >= 0) : [];
 }
 
+/** Manche Modelle verpacken die Antwort in ein weiteres Objekt, z. B. `{ "rezept": { … } }`. */
+function unwrapAnswer(value: unknown): JsonObject {
+  if (!isObject(value)) return {};
+  if ('title' in value || 'ingredients' in value || 'steps' in value) return value;
+  const inner = Object.values(value);
+  return inner.length === 1 && isObject(inner[0]) ? inner[0] : value;
+}
+
 /**
  * Übernimmt die Antwort des Modells vorsichtig: falsche Typen werden zu leeren Werten.
  * Leere Zutaten und Schritte bleiben stehen, damit die Indizes des vegetarischen Vorschlags passen.
  */
 export function toImportedRecipe(value: unknown): ImportedRecipe {
-  const data = isObject(value) ? value : {};
+  const data = unwrapAnswer(value);
   const veg = isObject(data.vegetarian) ? data.vegetarian : {};
   const vegetarian: VegetarianSuggestion | null =
     veg.needed === true
@@ -284,7 +293,7 @@ export function createImporter({
     return readText(response, MAX_PAGE_BYTES);
   };
 
-  const callModel = async (model: string, content: ContentPart[]): Promise<ImportedRecipe> => {
+  const callModel = async (model: string, content: ContentPart[]): Promise<{ recipe: ImportedRecipe; answer: string }> => {
     const response = await fetchImpl(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -305,18 +314,26 @@ export function createImporter({
     const data = (await response.json()) as { choices?: { message?: { content?: unknown } }[] };
     const answer = data.choices?.[0]?.message?.content;
     if (typeof answer !== 'string') throw new Error('Antwort ohne Inhalt');
-    return toImportedRecipe(JSON.parse(stripCodeFence(answer)));
+    return { recipe: toImportedRecipe(JSON.parse(stripCodeFence(answer))), answer };
   };
 
-  /** Fragt die Modelle der Reihe nach; das nächste kommt nur dran, wenn das vorige ausfällt. */
+  /**
+   * Fragt die Modelle der Reihe nach. Das nächste kommt dran, wenn das vorige ausfällt oder
+   * kein Rezept erkennt (das kommt vereinzelt vor). Erkennt keins ein Rezept, bleibt es dabei.
+   */
   const askModels = async (content: ContentPart[]): Promise<ImportedRecipe> => {
+    let empty: ImportedRecipe | null = null;
     for (const model of models) {
       try {
-        return await callModel(model, content);
+        const { recipe, answer } = await callModel(model, content);
+        if (hasContent(recipe)) return recipe;
+        empty = recipe;
+        log(`Import mit ${model}: kein Rezept erkannt. Antwort: ${answer.slice(0, 300)}`);
       } catch (error) {
         log(`Import mit ${model} fehlgeschlagen: ${errorText(error)}`);
       }
     }
+    if (empty) return empty;
     throw new ImportError('Die KI konnte das Rezept gerade nicht lesen. Bitte versuch es später noch einmal.', 502);
   };
 

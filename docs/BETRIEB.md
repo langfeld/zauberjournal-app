@@ -32,7 +32,7 @@ Für den Import per Foto, Text und Links ohne Rezeptdaten braucht der Server ein
 KI-Import mit anthropic/claude-sonnet-5-5, ersatzweise google/gemini-3.6-flash
 ```
 
-Ohne Schlüssel lassen sich nur Links von Rezeptseiten mit schema.org-Daten importieren, etwa von Chefkoch. Ein Import kostet je nach Modell und Zahl der Fotos etwa 1–3 Cent; die Abrechnung zeigt Requesty. Andere Modelle stellt man über `IMPORT_MODEL` und `IMPORT_FALLBACK_MODEL` ein (Modellnamen wie bei Requesty, z. B. `openai/gpt-5.4-mini`). Bei Fehlern schreibt der Server die Antwort von Requesty ins Protokoll.
+Ohne Schlüssel lassen sich nur Links von Rezeptseiten mit schema.org-Daten importieren, etwa von Chefkoch. Gemessen mit Claude Sonnet 5.5 kostet ein Import aus Text etwa 1,5 Cent, aus einem Foto etwa 2,5 Cent. Ein Link mit langen Schritten kostet etwa 5 Cent und dauert 10 bis 35 Sekunden. Gemini 3.6 Flash ist etwa dreimal günstiger und schneller, liest aber weniger genau. Die Abrechnung zeigt Requesty. Andere Modelle stellt man über `IMPORT_MODEL` und `IMPORT_FALLBACK_MODEL` ein (Modellnamen wie bei Requesty, z. B. `openai/gpt-5.4-mini`). Bei Fehlern schreibt der Server die Antwort von Requesty ins Protokoll.
 
 ### Backup
 

@@ -94,6 +94,25 @@ describe('KI-Import', () => {
     expect(log[0]).toContain('modell-a');
   });
 
+  it('fragt das Ersatzmodell, wenn das erste kein Rezept erkennt, und packt verschachtelte Antworten aus', async () => {
+    const { fetchImpl, calls } = fakeFetch((call) =>
+      call.body.model === 'modell-a' ? modelAnswer({ ...curry, ingredients: [], steps: [] }) : modelAnswer({ rezept: curry }),
+    );
+    const log: string[] = [];
+    const importer = createImporter({
+      apiKey: 'schluessel',
+      models: ['modell-a', 'modell-b'],
+      fetch: fetchImpl,
+      log: (message) => log.push(message),
+    });
+
+    const recipe = await importer.importRecipe(request({ text: 'Curry mit Hähnchen …' }));
+
+    expect(recipe.title).toBe('Hähnchen-Curry');
+    expect(calls.map((call) => call.body.model)).toEqual(['modell-a', 'modell-b']);
+    expect(log[0]).toContain('modell-a: kein Rezept erkannt');
+  });
+
   it('meldet einen Fehler, wenn alle Modelle ausfallen oder kein Rezept erkennen', async () => {
     const failing = createImporter({
       apiKey: 'schluessel',
