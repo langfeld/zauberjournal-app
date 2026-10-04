@@ -70,7 +70,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<FoodCategory, 'other'>, readonly string[
     'endivie', 'radieschen', 'rettich', 'bete', 'kürbis', 'pilz', 'champignon', 'pfifferling', 'seitling',
     'shiitake', 'spargel', 'artischocke', 'okra', 'ingwer', 'chili', 'chilischote', 'peperoni', 'jalapeño',
     'jalapeno', 'petersilie', 'schnittlauch', 'basilikum', 'koriander', 'dill', 'minze', 'thymian', 'rosmarin',
-    'salbei', 'estragon', 'kerbel', 'kräuter', 'pastinake', 'rübe', 'topinambur', 'kresse', 'sprossen',
+    'salbei', 'estragon', 'kerbel', 'kräuter', 'kraut', 'pastinake', 'rübe', 'topinambur', 'kresse', 'sprossen',
     'zuckerschote', 'edamame', 'maiskolben', 'bohne', 'erbse', 'zitronengras', 'zitronensaft', 'limettensaft',
   ],
   bakery: [
@@ -79,7 +79,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<FoodCategory, 'other'>, readonly string[
   ],
   dairy: [
     'milch', 'sahne', 'schmand', 'crème fraîche', 'creme fraiche', 'saure sahne', 'joghurt', 'jogurt', 'quark',
-    'butter', 'margarine', 'käse', 'mozzarella', 'burrata', 'parmesan', 'grana padano', 'pecorino', 'feta',
+    'butter', 'schmalz', 'margarine', 'käse', 'mozzarella', 'burrata', 'parmesan', 'grana padano', 'pecorino', 'feta',
     'halloumi', 'ricotta', 'mascarpone', 'gouda', 'emmentaler', 'cheddar', 'gorgonzola', 'camembert', 'brie',
     'skyr', 'kefir', '=ei', 'eigelb', 'eiweiß', 'eiklar', 'tofu', 'tempeh', 'seitan', 'hefe', 'frische hefe',
     'blätterteig', 'pizzateig', 'mürbeteig', 'hefeteig', 'strudelteig', 'filoteig', 'yufkateig', 'gnocchi',
@@ -106,7 +106,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<FoodCategory, 'other'>, readonly string[
     'cashewkern', 'pistazie', 'pinienkern', 'kern', 'sesam', 'leinsamen', 'chiasamen', 'samen', 'rosine',
     'sultanine', 'dattel', 'cranberry', 'cranberries', 'kokosraspel', 'schokolade', 'kuvertüre', 'kakao',
     'paniermehl', 'semmelbrösel', 'brösel', 'panko', 'glasnudel', 'reisnudel', 'mie nudel', 'udon', 'ramen',
-    'soba', 'gelatine', 'agar', 'marzipan', 'oblate',
+    'soba', 'gelatine', 'agar', 'marzipan', 'oblate', 'kakaopulver', 'puddingpulver',
   ],
   canned: [
     'dose', 'tomatenmark', 'passata', 'passierte tomaten', 'gehackte tomaten', 'stückige tomaten',
@@ -156,7 +156,7 @@ const MEAT_WORDS = [
   'fleisch', 'hack', 'hähnchen', 'hühnchen', 'huhn', 'hühner', 'pute', 'puten', 'truthahn', 'ente', 'enten', 'gans',
   'gänse', 'rind', 'kalb', 'schwein', 'lamm', 'reh', 'hirsch', 'speck', 'bacon', 'schinken', 'salami', 'wurst',
   'würstchen', 'chorizo', 'pancetta', 'guanciale', 'prosciutto', 'serrano', 'kassler', 'leber', 'gulasch', 'steak',
-  'schnitzel', 'geschnetzeltes', 'frikadelle', 'mett', 'gelatine', 'schmalz', 'mortadella', 'lyoner',
+  'schnitzel', 'geschnetzeltes', 'frikadelle', 'mett', 'gelatine', 'mortadella', 'lyoner',
 ];
 const FISH_WORDS = [
   'fisch', 'lachs', 'forelle', 'kabeljau', 'seelachs', 'dorsch', 'hering', 'makrele', 'sardelle', 'anchovis',
@@ -164,11 +164,13 @@ const FISH_WORDS = [
   'zander', 'rotbarsch', 'pangasius', 'scholle', 'seezunge', 'heilbutt', 'matjes', 'kaviar', 'surimi', 'worcester',
 ];
 const ANIMAL_PRODUCT_WORDS = [
-  'milch', 'sahne', 'schmand', 'crème', 'joghurt', 'jogurt', 'quark', 'butter', 'käse', 'mozzarella', 'burrata',
-  'parmesan', 'pecorino', 'grana', 'feta', 'halloumi', 'ricotta', 'mascarpone', 'gouda', 'emmentaler', 'cheddar',
-  'gorgonzola', 'camembert', 'brie', 'skyr', 'kefir', 'ghee', 'honig', 'eigelb', 'eiweiß', 'eiklar', 'eier',
-  'mayonnaise', 'mayo', 'pesto', 'brioche', 'croissant',
+  'milch', 'sahne', 'rahm', 'schmand', 'crème', 'creme', 'joghurt', 'jogurt', 'quark', 'butter', 'käse',
+  'mozzarella', 'burrata', 'parmesan', 'pecorino', 'padano', 'feta', 'halloumi', 'ricotta', 'mascarpone', 'gouda',
+  'emmentaler', 'cheddar', 'gorgonzola', 'camembert', 'brie', 'skyr', 'kefir', 'ghee', 'honig', 'eigelb', 'eiweiß',
+  'eiklar', 'eier', 'mayonnaise', 'mayo', 'pesto', 'brioche', 'croissant',
 ];
+/** Eier sind vegetarisch, auch wenn „Hühner“ davorsteht. */
+const EGG = /^(hühner|wachtel)?(ei|eier)$/;
 /** Wer so beginnt, ist pflanzlich: „Kokosmilch“, „Hafersahne“, „Erdnussbutter“. */
 const PLANT_PREFIXES = ['kokos', 'hafer', 'soja', 'mandel', 'reis', 'cashew', 'erbsen', 'dinkel', 'hasel', 'erdnuss', 'kakao', 'shea'];
 /** Steht eins davon im Namen, ist es kein Fleisch: „Sojahack“, „Fleischtomate“, „Blumenkohlsteak“. */
@@ -195,7 +197,7 @@ function wordHas(word: string, keyword: string): boolean {
 }
 
 function animalProductDiet(word: string): FoodDiet | null {
-  if (word === 'ei' || word === 'eier') return 'vegetarian';
+  if (EGG.test(word)) return 'vegetarian';
   for (const keyword of ANIMAL_PRODUCT_WORDS) {
     if (!wordHas(word, keyword)) continue;
     const plantBased = word.endsWith(keyword) && PLANT_PREFIXES.some((prefix) => word.startsWith(prefix));
@@ -211,6 +213,7 @@ function categoryOf(normalized: string): FoodCategory | null {
     if (keyword.text.includes(' ') && normalized.includes(keyword.text)) return keyword.category;
   }
   const last = words.at(-1) ?? '';
+  if (EGG.test(last)) return 'dairy';
   for (const variant of stemVariants(last)) {
     const match = KEYWORDS.find((keyword) =>
       keyword.exact ? variant === keyword.text : !keyword.text.includes(' ') && variant.endsWith(keyword.text),
@@ -227,17 +230,24 @@ function categoryOf(normalized: string): FoodCategory | null {
 export function classifyNormalizedFood(normalized: string): { category: FoodCategory; diet: FoodDiet } {
   const words = normalized.split(' ').filter(Boolean);
   const plant = PLANT_MARKERS.some((marker) => normalized.includes(marker));
+  const hits = (keywords: readonly string[]) =>
+    !plant && words.some((word) => !EGG.test(word) && keywords.some((keyword) => wordHas(word, keyword)));
 
   let diet: FoodDiet = '';
-  if (!plant && words.some((word) => MEAT_WORDS.some((keyword) => wordHas(word, keyword)))) diet = 'meat';
-  else if (!plant && words.some((word) => FISH_WORDS.some((keyword) => wordHas(word, keyword)))) diet = 'fish';
+  // Fisch vor Fleisch: „Thunfischsteak“ ist Fisch.
+  if (hits(FISH_WORDS)) diet = 'fish';
+  else if (hits(MEAT_WORDS)) diet = 'meat';
+  else if (normalized.includes('vegan')) diet = 'vegan';
   else {
     const products = words.map(animalProductDiet).filter((value) => value !== null);
     if (products.includes('vegetarian')) diet = 'vegetarian';
     else if (products.length > 0) diet = 'vegan';
   }
 
-  const category = categoryOf(normalized) ?? (diet === 'meat' ? 'meat' : diet === 'fish' ? 'fish' : 'other');
+  let category = categoryOf(normalized) ?? (diet === 'meat' ? 'meat' : diet === 'fish' ? 'fish' : 'other');
+  // „Lachsrücken“ gehört zum Fisch, „Sojahack“ ins Kühlregal.
+  if (category === 'meat' && diet === 'fish') category = 'fish';
+  if (category === 'meat' && plant) category = 'dairy';
   if (diet === '' && (plant || PLANT_CATEGORIES.includes(category))) diet = 'vegan';
   return { category, diet };
 }

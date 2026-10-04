@@ -2,6 +2,7 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { HouseholdSettings } from '@/components/household-settings';
 import { SyncStatusLine } from '@/components/sync-status';
 import { Button, Card, Hint, SectionTitle } from '@/components/ui';
 import { listDevices, removeDevice, type DeviceInfo } from '@/data/api';
@@ -18,7 +19,7 @@ function lastSeen(device: DeviceInfo): string {
 
 function NotConnected() {
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: 'Haushalt' }} />
       <SyncStatusLine status="off" />
       <Card>
@@ -37,6 +38,7 @@ function NotConnected() {
         <Button variant="secondary" title="Beitreten" onPress={() => router.push('/household/join')} />
       </Card>
       <Hint>Rezepte, die schon auf diesem Gerät liegen, werden beim Verbinden mit dem Haushalt zusammengeführt.</Hint>
+      <HouseholdSettings />
     </ScrollView>
   );
 }
@@ -87,7 +89,7 @@ export default function HouseholdScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: 'Haushalt' }} />
       <Card>
         <SyncStatusLine status={status} />
@@ -99,6 +101,8 @@ export default function HouseholdScreen() {
       ) : (
         <Button title="Gerät hinzufügen" onPress={() => router.push('/household/invite')} />
       )}
+
+      <HouseholdSettings />
 
       <SectionTitle>Geräte</SectionTitle>
       {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -1,4 +1,7 @@
-import type { TablesSchema } from 'tinybase';
+import type { TablesSchema, ValuesSchema } from 'tinybase';
+
+import { FOOD_CATEGORY_IDS, FOOD_DIET_IDS } from './food-catalog.ts';
+import { MEAL_IDS } from './meals.ts';
 
 const optionalNumber = { type: 'number', allowNull: true, default: null } as const;
 
@@ -8,6 +11,10 @@ const optionalNumber = { type: 'number', allowNull: true, default: null } as con
  * Regeln für den Sync: zufällige IDs, Soft-Delete über `deletedAt`, Reihenfolge über `sortKey`,
  * keine verschachtelten Objekte in Zellen. Leere optionale Zahlen sind `null`.
  * Mengen in Zutaten beziehen sich immer auf die Basisportionen des Rezepts.
+ *
+ * Ausnahme bei den IDs: Zeilen, die sich aus anderen Daten ergeben, haben eine feste ID aus ihrem Schlüssel
+ * (Lebensmittel aus Zutatennamen, Esser und Wahlen im Plan, Positionen der Einkaufsliste aus dem Plan).
+ * So entsteht auf zwei Geräten dieselbe Zeile statt eines Duplikats.
  */
 export const tablesSchema = {
   recipes: {
@@ -58,6 +65,79 @@ export const tablesSchema = {
     name: { type: 'string', default: '' },
     deletedAt: optionalNumber,
   },
+  members: {
+    name: { type: 'string', default: '' },
+    diet: { enum: ['omnivore', 'vegetarian', 'vegan'], default: 'omnivore' },
+    sortKey: { type: 'string', default: '' },
+    deletedAt: optionalNumber,
+  },
+  /** Lebensmittel-Katalog; automatisch angelegte Einträge haben die ID `food:<Suchschlüssel>`. */
+  foods: {
+    name: { type: 'string', default: '' },
+    category: { enum: FOOD_CATEGORY_IDS, default: 'other' },
+    diet: { enum: FOOD_DIET_IDS, default: '' },
+    /** Einfacher Vorrat: leer = nicht geführt, `have` = da, `buy` = nachkaufen. */
+    stock: { enum: ['', 'have', 'buy'], default: '' },
+    deletedAt: optionalNumber,
+  },
+  /** Gemerkte Zuordnung eines Zutatennamens; die Zeilen-ID ist der normalisierte Name. */
+  foodAliases: {
+    foodId: { type: 'string', default: '' },
+  },
+  planEntries: {
+    /** Tag als `JJJJ-MM-TT`. */
+    date: { type: 'string', default: '' },
+    meal: { enum: MEAL_IDS, default: 'dinner' },
+    /** Leer = Eintrag ohne Rezept, dann steht der Text in `text`. */
+    recipeId: { type: 'string', default: '' },
+    text: { type: 'string', default: '' },
+    status: { enum: ['planned', 'shopped', 'cooked'], default: 'planned' },
+    shoppingListId: { type: 'string', default: '' },
+    createdAt: { type: 'number', default: 0 },
+    deletedAt: optionalNumber,
+  },
+  /** Wer isst mit; ID `<Eintrag>/<Person>`, Gäste `<Eintrag>/guests`. */
+  planEaters: {
+    entryId: { type: 'string', default: '' },
+    /** Leer = Gäste. */
+    memberId: { type: 'string', default: '' },
+    servings: { type: 'number', default: 1 },
+    deletedAt: optionalNumber,
+  },
+  /** Gewählte Option je Esser und Wahlkomponente; ID `<Esser>/<Wahlkomponente>`. */
+  planChoices: {
+    eaterId: { type: 'string', default: '' },
+    groupId: { type: 'string', default: '' },
+    optionId: { type: 'string', default: '' },
+  },
+  shoppingLists: {
+    name: { type: 'string', default: '' },
+    status: { enum: ['open', 'done'], default: 'open' },
+    createdAt: { type: 'number', default: 0 },
+    deletedAt: optionalNumber,
+  },
+  /** Positionen aus dem Plan und dem Vorrat haben die ID `<Liste>~<Lebensmittel>~<Einheitengruppe>`. */
+  shoppingItems: {
+    listId: { type: 'string', default: '' },
+    foodId: { type: 'string', default: '' },
+    name: { type: 'string', default: '' },
+    amount: optionalNumber,
+    unit: { type: 'string', default: '' },
+    checked: { type: 'boolean', default: false },
+    origin: { enum: ['plan', 'pantry', 'manual'], default: 'manual' },
+    createdAt: { type: 'number', default: 0 },
+    deletedAt: optionalNumber,
+  },
 } as const satisfies TablesSchema;
 
+/** Einstellungen des Haushalts: welche Mahlzeiten der Plan zeigt (Standard: nur Abendessen). */
+export const valuesSchema = {
+  mealBreakfast: { type: 'boolean', default: false },
+  mealLunch: { type: 'boolean', default: false },
+  mealDinner: { type: 'boolean', default: true },
+  mealSnack: { type: 'boolean', default: false },
+} as const satisfies ValuesSchema;
+
 export type AppTablesSchema = typeof tablesSchema;
+export type AppValuesSchema = typeof valuesSchema;
+export type TableName = keyof AppTablesSchema;

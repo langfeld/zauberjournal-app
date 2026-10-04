@@ -17,8 +17,8 @@ import {
   validateRecipeDraft,
   type RecipeDraft,
   type RecipeTables,
-  type RowWrite,
 } from './recipe.ts';
+import type { RowWrite } from './rows.ts';
 import { tablesSchema } from './schema.ts';
 
 /** Echter TinyBase-Store mit Schema, damit die Tests auch Standardwerte und null prüfen. */

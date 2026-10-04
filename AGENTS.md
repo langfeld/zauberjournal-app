@@ -10,7 +10,7 @@ Private Android-Kochbuch-App (Expo) mit NAS-Dienst (Node) für einen Haushalt. V
 
 ## Struktur
 
-- `apps/mobile`: Expo-App. Vorher `apps/mobile/AGENTS.md` lesen: Expo ändert sich mit jeder SDK-Version, deshalb die versionierte Doku prüfen. Abhängigkeiten nur mit `npx expo install` hinzufügen.
+- `apps/mobile`: Expo-App. Vorher `apps/mobile/AGENTS.md` lesen: Expo ändert sich mit jeder SDK-Version, deshalb die versionierte Doku prüfen. Abhängigkeiten nur mit `npx expo install` hinzufügen. Aufbau: Native Tabs im Root-Layout (in SDK 57 noch `expo-router/unstable-native-tabs`), jeder Tab mit eigenem Stack (`(recipes)`, `plan`, `shopping`, `pantry`, `household`).
 - `apps/server`: NAS-Dienst (Node 24, Hono).
 - `packages/core`: gemeinsame Logik ohne Abhängigkeit zu React oder Node-APIs.
 

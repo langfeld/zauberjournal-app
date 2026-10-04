@@ -1,9 +1,10 @@
 import { Image, type ImageStyle } from 'expo-image';
 import { useState, type ReactNode } from 'react';
-import type { StyleProp } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp } from 'react-native';
 
 import { useConnection } from '@/data/connection';
 import { photoSource } from '@/data/photos';
+import { colors, radius } from '@/theme';
 
 type RecipePhotoProps = {
   photoId: string;
@@ -32,3 +33,28 @@ export function RecipePhoto({ photoId, style, fallback = null, alt = 'Rezeptfoto
     />
   );
 }
+
+/** Kleines Vorschaubild für Listen; ohne Foto der Anfangsbuchstabe des Titels. */
+export function RecipeThumbnail({ photoId, title, size = 64 }: { photoId: string; title: string; size?: number }) {
+  const box = { width: size, height: size };
+  return (
+    <RecipePhoto
+      photoId={photoId}
+      style={[styles.thumbnail, box]}
+      alt=""
+      fallback={
+        <View style={[styles.thumbnail, styles.initial, box]}>
+          <Text style={[styles.initialText, { fontSize: size * 0.375 }]}>
+            {title.trim().charAt(0).toLocaleUpperCase('de') || '?'}
+          </Text>
+        </View>
+      }
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  thumbnail: { borderRadius: radius.sm },
+  initial: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft },
+  initialText: { fontWeight: '700', color: colors.primary },
+});

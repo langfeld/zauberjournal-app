@@ -33,7 +33,7 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M1 Rezepte** | Datenmodell, Rezeptliste, Detailansicht, Editor inkl. Wahlkomponenten, Portionen skalieren, lokale Speicherung | App auf dem Handy nutzbar (Expo Go) ✅ |
 | **M2 Haushalt & Sync** | Sync-Server als Docker-Container auf TrueNAS, Pairing per QR-Code, Gerätetokens, Zugang über Pangolin, APK-Build per GitHub Actions | beide Handys synchron, App fest installiert ✅ (umgesetzt; Inbetriebnahme siehe [BETRIEB.md](BETRIEB.md)) |
 | **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; vegetarischer Vorschlag; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst ✅ (umgesetzt; siehe Abschnitt 9) |
-| **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE |
+| **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE ✅ (umgesetzt; siehe Abschnitte 6, 7 und 12) |
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt |
 | **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System |
@@ -83,7 +83,7 @@ Das Repo nutzt npm-Workspaces. Server und `core` brauchen keinen Build-Schritt: 
 - **Server:** Er hält denselben Store pro Haushalt und speichert ihn mit `node:sqlite`. Der Server ist ein normaler Teilnehmer. Er kann also selbst lesen und schreiben, zum Beispiel Ergebnisse des REWE-Abgleichs.
 - **Transport:** WebSocket über Pangolin. Beim Verbindungsaufbau prüft der Server das Gerätetoken und bestimmt den Haushalt selbst. Ein Client kann keinen fremden Haushalt wählen.
 - **Regeln fürs Datenmodell,** damit beim Sync möglichst wenig Konflikte entstehen:
-  - IDs sind zufällige Zeichenketten, keine fortlaufenden Nummern.
+  - IDs sind zufällige Zeichenketten, keine fortlaufenden Nummern. Ausnahme: Zeilen, die sich aus anderen Daten ergeben, bekommen eine feste ID aus ihrem Schlüssel. Das gilt für Lebensmittel aus Zutatennamen (`food:zwiebel`), für Esser und Wahlen im Plan und für die Positionen der Einkaufsliste aus dem Plan. So legen zwei Geräte dieselbe Zeile an statt zwei.
   - Hauptobjekte werden nicht gelöscht, sondern mit `deletedAt` markiert. Sonst kann eine gleichzeitige Bearbeitung „halbe“ Zeilen erzeugen.
   - Vorratsmengen werden als Buchungen (+/−) gespeichert, nicht als absolute Werte.
   - Reihenfolgen laufen über Sortierschlüssel (Bruchindex), nicht über Positionsnummern.
@@ -110,40 +110,46 @@ Alle Daten liegen in einem Volume `/data`. Dafür bekommt der Server ein eigenes
 
 ## 6. Datenmodell (Store eines Haushalts)
 
-Die Feldnamen sind vorläufig.
+Die Feldnamen sind vorläufig. Was schon umgesetzt ist, steht in `packages/core/src/schema.ts`; die Werte dort sind englisch (z. B. `vegetarian` statt `vegetarisch`).
 
-**Personen** (`members`): Name, Ernährungsform (`vegan` | `vegetarisch` | `alles`), streng vegetarisch (schließt auch Lab und Gelatine aus), Abneigungen.
+**Personen** (`members`): Name, Ernährungsform (`vegan` | `vegetarisch` | `alles`). Später: streng vegetarisch (schließt auch Lab und Gelatine aus), Abneigungen.
 
-**Lebensmittel** (`foods`): der zentrale Katalog, auf den alles verweist. Felder:
-- Name, Synonyme, Warengruppe (für die Sortierung der Einkaufsliste)
+**Lebensmittel** (`foods`): der zentrale Katalog, auf den alles verweist. Seit M4: Name, Warengruppe (für die Sortierung der Einkaufsliste), Ernährungsklasse (`vegan` | `vegetarisch` | `fleisch` | `fisch`) und der einfache Vorrat (siehe unten). Später kommen dazu:
 - Basiseinheit (`g` | `ml` | `Stk`), Gramm pro Stück, Gramm pro ml
-- BLS-Code, Ernährungsklasse (`vegan` | `vegetarisch` | `fleisch` | `fisch`), Hinweise (z. B. tierisches Lab)
+- BLS-Code, Hinweise (z. B. tierisches Lab)
 - Erfassungsstufe im Vorrat, REWE-Suchbegriff, REWE-Ausschlusswörter
+
+**Zuordnung der Zutaten** (`foodAliases`): Eine Zutat zeigt nicht selbst auf ein Lebensmittel. Ihr Name wird beim Planen und Einkaufen zugeordnet:
+1. eine gemerkte Zuordnung (Zeilen-ID = normalisierter Name),
+2. sonst ein Lebensmittel mit gleichem Namen in Einzahl oder Mehrzahl („Zwiebeln“ = „Zwiebel“, aber „rote Zwiebel“ ≠ „Zwiebel“),
+3. sonst ein neues Lebensmittel. Warengruppe und Ernährungsklasse kommen dann aus einer Schlüsselwortliste („Hähnchenbrust“ → Fleisch, „Kokosmilch“ → Konserven, vegan).
+
+Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten“ zählen nicht. Werden zwei Lebensmittel zusammengeführt (z. B. „Lauchzwiebeln“ und „Frühlingszwiebeln“), merkt sich der Katalog das als Zuordnung. Das gilt dann für alle Rezepte.
 
 **Rezepte**
 - `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-ID, Tags, Notizen, `deletedAt`
-- `recipeIngredients`: Rezept, Sortierschlüssel, Zeilenart (`ingredient` oder `heading`; Zwischenüberschriften wie „Für das Dressing“ sind eigene Zeilen), Menge und optionale Obergrenze bei Spannen („2–3“) für die Basisportionen, Einheit, Name, Zusatz („fein gehackt“), Option (leer = für alle). Ab M3 kommt das zugeordnete Lebensmittel dazu.
+- `recipeIngredients`: Rezept, Sortierschlüssel, Zeilenart (`ingredient` oder `heading`; Zwischenüberschriften wie „Für das Dressing“ sind eigene Zeilen), Menge und optionale Obergrenze bei Spannen („2–3“) für die Basisportionen, Einheit, Name, Zusatz („fein gehackt“), Option (leer = für alle). Das Lebensmittel ergibt sich aus dem Namen (siehe Zuordnung oben).
 - `recipeSteps`: Rezept, Sortierschlüssel, Text, Option (leer = für alle)
 - `choiceGroups`: Rezept, Name („Protein“)
 - `choiceOptions`: Gruppe, Name („Hähnchen“), Sortierschlüssel. Die Ernährungsklasse wird aus den Zutaten berechnet.
 
 **Planung**
-- `planEntries`: Datum, Mahlzeit, Rezept oder Freitext, Status (`geplant` | `eingekauft` | `gekocht`), Einkaufsliste
-- `planEaters`: Planeintrag, Person (leer = Gast), Portionen
-- `planChoices`: Esser, Gruppe, gewählte Option
+- `planEntries`: Datum (`JJJJ-MM-TT`), Mahlzeit, Rezept oder Freitext, Status (`geplant` | `eingekauft` | `gekocht`), Einkaufsliste
+- `planEaters`: Planeintrag, Person (leer = Gäste), Portionen. Neue Einträge bekommen alle Personen mit je einer Portion.
+- `planChoices`: Esser, Gruppe, gewählte Option. Gespeichert wird nur eine ausdrückliche Wahl; sonst gilt die automatische (6.1).
 
 **Einkauf**
-- `shoppingLists`: Name, Status (`offen` | `rewe` | `erledigt`), erstellt am
-- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `manuell`), REWE-Produkt, REWE-Anzahl, REWE-Status (`offen` | `vorgeschlagen` | `bestaetigt` | `im_warenkorb` | `fehler`), Preis
-- `shoppingItemSources`: Position, Planeintrag, Menge. Daraus wird die Anzeige „für Lasagne, Mi“.
+- `shoppingLists`: Name, Status (`offen` | `erledigt`, ab M5 auch `rewe`), erstellt am
+- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `vorrat` | `manuell`). Ab M5 kommen REWE-Produkt, REWE-Anzahl, REWE-Status (`offen` | `vorgeschlagen` | `bestaetigt` | `im_warenkorb` | `fehler`) und Preis dazu.
+- Die Anzeige „für Lasagne (Mi 7.10.)“ wird aus den Planeinträgen der Liste berechnet; eine eigene Tabelle `shoppingItemSources` braucht es dafür nicht.
 
 **Vorrat**
-- `pantryStock`: Lebensmittel, Lagerort, Füllstand (bei grober Erfassung), Mindesthaltbarkeit, geöffnet am
-- `pantryBookings`: Lebensmittel, Menge (+/−), Grund (`einkauf` | `gekocht` | `korrektur` | `verdorben`), Zeitpunkt, Bezug (Planeintrag oder Liste)
+- Seit M4 der einfache Vorrat: pro Lebensmittel „da“ oder „nachkaufen“ (`foods.stock`), ohne Mengen.
+- Ab M6: `pantryStock` mit Lebensmittel, Lagerort, Füllstand (bei grober Erfassung), Mindesthaltbarkeit und „geöffnet am“, außerdem `pantryBookings` mit Lebensmittel, Menge (+/−), Grund (`einkauf` | `gekocht` | `korrektur` | `verdorben`), Zeitpunkt und Bezug (Planeintrag oder Liste).
 
 **REWE** (`reweProducts`, gelernte Zuordnungen): Lebensmittel, REWE-Produkt-ID, Name, Packungsgröße und Einheit, letzter Preis, bevorzugt, wie oft und wann zuletzt gewählt.
 
-**Einstellungen** (TinyBase-Values): REWE-Markt-ID, PLZ, aktive Mahlzeiten (Standard: nur Abendessen), Standardportionen.
+**Einstellungen** (TinyBase-Values): aktive Mahlzeiten (seit M4, je ein Schalter; Standard: nur Abendessen), später REWE-Markt-ID und PLZ. Standardportionen braucht es nicht: Die Portionen ergeben sich aus den Personen.
 
 **Nur auf dem Server, nicht im Store:** Haushalte, Geräte und Tokens, Einladungen, Zwischenspeicher für REWE-Produkte, KI-Protokoll.
 
@@ -161,6 +167,9 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
 - **Umrechnen:** von der Einheit im Rezept in die Basiseinheit des Lebensmittels, über Stückgewicht, Dichte und eine Tabelle für EL, TL, Prise usw. Ist keine Umrechnung bekannt, bleibt die Position in der Originaleinheit und wird markiert. Lieber markieren als falsch rechnen.
 - **Skalieren:** Menge × (Portionen / Basisportionen), mit sinnvoller Rundung: Stück auf halbe oder ganze, Gramm auf 5 oder 10 g.
 - **Einkaufsliste:** Den Bedarf je Lebensmittel summieren, dann den Vorrat abziehen. Das geht nur bei genauer Erfassung; bei grober Erfassung erscheint stattdessen der Hinweis „prüfen“. Danach kommen die Zusatzartikel dazu, und die Quellen jeder Position werden gemerkt.
+  - Umgesetzt in M4: Summiert wird je Lebensmittel und Einheitengruppe. g/kg, ml/cl/dl/l, TL/EL und Stück werden umgerechnet, alles andere (Dose, Bund, Zehe …) bleibt getrennt. Bei Spannen zählt die Obergrenze. Zutaten ohne Menge („Salz“) erscheinen nur, wenn dasselbe Lebensmittel nicht schon mit Menge gebraucht wird.
+  - Die Liste gleicht sich selbst mit dem Plan ab: Ändern sich Gerichte oder Portionen, passen sich die Positionen an. Abgehakte und von Hand eingetragene bleiben.
+  - Einfacher Vorrat: Was „da“ ist, steht unter „Vorrat prüfen“; was „nachkaufen“ heißt, kommt von selbst auf die Liste. Abhaken setzt es wieder auf „da“. Mengen im Vorrat kommen mit M6.
 - **Nährwerte (M6):** Menge in Gramm × BLS-Wert pro 100 g, für jede Person passend zu ihren Optionen.
 
 ## 8. REWE
@@ -257,6 +266,13 @@ Entschieden bei der Umsetzung von M3:
 - **Fotos** bekommen eine zufällige ID statt des Inhalts-Hashs (5.2).
 - **KI-Modell:** Standard ist Claude Sonnet 5.5 über Requesty, Fallback Gemini 3.6 Flash; beides per Umgebungsvariable änderbar (9).
 - **Zuordnung der Zutaten** zu Lebensmitteln kommt mit dem Katalog in M4.
+
+Entschieden bei der Umsetzung von M4:
+- **App-Aufbau:** fünf Tabs (Rezepte, Plan, Einkauf, Vorrat, Haushalt), jeder mit eigenem Stack.
+- **Zuordnung der Zutaten** über den Namen und gemerkte Zuordnungen, nicht über ein Feld in jeder Zutat (6). So gilt eine Korrektur für alle Rezepte, und beim Bearbeiten eines Rezepts geht nichts verloren.
+- **Feste IDs für abgeleitete Zeilen** (5.2).
+- **Einfacher Vorrat ohne Mengen:** „da“ oder „nachkaufen“ je Lebensmittel; Mengen und Buchungen folgen in M6.
+- **Planeintrag als Kochansicht:** Er zeigt Zutaten und Schritte für die geplanten Portionen und Optionen.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.
