@@ -15,3 +15,8 @@ services:
       - /mnt/POOL/apps/zauberjournal:/data # ← Pfad zum eigenen Dataset anpassen
     environment:
       - TZ=Europe/Berlin
+      # KI-Import per Foto, Text und Links ohne Rezeptdaten; Schlüssel von https://app.requesty.ai
+      - REQUESTY_API_KEY=
+      # Optional: anderes Modell; ein leerer Fallback schaltet ihn ab.
+      # - IMPORT_MODEL=anthropic/claude-sonnet-5-5
+      # - IMPORT_FALLBACK_MODEL=google/gemini-3.6-flash

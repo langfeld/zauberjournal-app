@@ -8,35 +8,56 @@ import { serve } from '@hono/node-server';
 import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
 import { createHousehold } from './household.ts';
+import { createImporter, type ImporterConfig } from './importer.ts';
+import { createPhotoStore } from './photos.ts';
 import { createSyncServer } from './sync.ts';
 
 export type ServerOptions = {
   port: number;
   dataDir: string;
+  /** KI-Import über Requesty; ohne Schlüssel gehen nur Links mit Rezeptdaten. */
+  importer?: Omit<ImporterConfig, 'log'>;
   log?: (message: string) => void;
 };
 
 /** Startet HTTP-API und Sync. Mit `port: 0` wird ein freier Port gewählt (für Tests). */
-export async function startServer({ port, dataDir, log = console.log }: ServerOptions) {
+export async function startServer({
+  port,
+  dataDir,
+  importer: importerConfig = { apiKey: '', models: [] },
+  log = console.log,
+}: ServerOptions) {
   mkdirSync(dataDir, { recursive: true });
   const db = openDatabase(join(dataDir, 'zauberjournal.db'));
   const household = createHousehold(db);
   const sync = createSyncServer(db, household.authenticate);
+  const photos = createPhotoStore(join(dataDir, 'photos'));
+  const importer = createImporter({ ...importerConfig, log });
 
   const announceSetupCode = () => {
     const code = household.ensureSetupCode();
     if (code) log(`Einrichtungscode für das erste Gerät: ${code}`);
   };
 
-  const app = createApp(household, (deviceId) => {
-    sync.disconnectDevice(deviceId);
-    announceSetupCode();
+  const app = createApp({
+    household,
+    photos,
+    importer,
+    onDeviceRevoked: (deviceId) => {
+      sync.disconnectDevice(deviceId);
+      announceSetupCode();
+    },
   });
 
   const server = await new Promise<Server>((resolve) => {
     const listening = serve({ fetch: app.fetch, port }, () => resolve(listening as Server)) as Server;
   });
   server.on('upgrade', sync.handleUpgrade);
+  log(
+    importer.available
+      ? `KI-Import mit ${importer.models.join(', ersatzweise ')}`
+      : 'KI-Import aus, weil REQUESTY_API_KEY fehlt. Links mit Rezeptdaten lassen sich trotzdem importieren.',
+  );
   announceSetupCode();
 
   let closing: Promise<void> | undefined;

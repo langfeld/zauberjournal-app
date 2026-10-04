@@ -18,6 +18,8 @@ export const tablesSchema = {
     cookMinutes: optionalNumber,
     source: { type: 'string', default: '' },
     notes: { type: 'string', default: '' },
+    /** ID des Rezeptfotos; die Datei liegt auf dem Server. Leer = kein Foto. */
+    photo: { type: 'string', default: '' },
     createdAt: { type: 'number', default: 0 },
     updatedAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,

@@ -38,8 +38,16 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Zauberjournal nutzt die Kamera, um QR-Codes zum Verbinden zu scannen.",
+          "cameraPermission": "Zauberjournal nutzt die Kamera für Rezeptfotos und um QR-Codes zum Verbinden zu scannen.",
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Zauberjournal nutzt deine Fotos, um Rezepte daraus zu übernehmen.",
+          "cameraPermission": "Zauberjournal nutzt die Kamera für Rezeptfotos und um QR-Codes zum Verbinden zu scannen.",
+          "microphonePermission": false
         }
       ]
     ],

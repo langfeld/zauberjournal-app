@@ -32,8 +32,8 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M0 Fundament** | Monorepo, Expo-App, Server-Grundgerüst, gemeinsames Paket, Tests | läuft lokal ✅ |
 | **M1 Rezepte** | Datenmodell, Rezeptliste, Detailansicht, Editor inkl. Wahlkomponenten, Portionen skalieren, lokale Speicherung | App auf dem Handy nutzbar (Expo Go) ✅ |
 | **M2 Haushalt & Sync** | Sync-Server als Docker-Container auf TrueNAS, Pairing per QR-Code, Gerätetokens, Zugang über Pangolin, APK-Build per GitHub Actions | beide Handys synchron, App fest installiert ✅ (umgesetzt; Inbetriebnahme siehe [BETRIEB.md](BETRIEB.md)) |
-| **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; Zuordnung der Zutaten; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst |
-| **M4 Planen & Einkaufen** | Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE |
+| **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; vegetarischer Vorschlag; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst ✅ (umgesetzt; siehe Abschnitt 9) |
+| **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE |
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt |
 | **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System |
@@ -55,7 +55,7 @@ Die Reihenfolge von M3 bis M5 lässt sich tauschen. M3 steht vorne, weil alles W
 ┌──────────── NAS-Dienst (Docker) ────────────┐
 │  Hono (HTTP-API) + TinyBase-WsServer        │
 │  node:sqlite: Haushaltsdaten, Geräte        │
-│  Dateien: Fotos (Name = Hash des Inhalts)   │
+│  Dateien: Fotos (Name = zufällige ID)       │
 │  KI-Import (Requesty), REWE-Abgleich,       │
 │  BLS-Nährwerte                              │
 └───────────────────▲─────────────────────────┘
@@ -88,7 +88,7 @@ Das Repo nutzt npm-Workspaces. Server und `core` brauchen keinen Build-Schritt: 
   - Vorratsmengen werden als Buchungen (+/−) gespeichert, nicht als absolute Werte.
   - Reihenfolgen laufen über Sortierschlüssel (Bruchindex), nicht über Positionsnummern.
   - Zellen enthalten keine verschachtelten Objekte. Listen bekommen eigene Tabellen.
-- **Fotos** laufen nicht über den Store, sondern als Dateien: Der Dateiname ist der Hash des Inhalts, Upload und Download gehen über HTTP. Im Store steht nur der Hash.
+- **Fotos** laufen nicht über den Store, sondern als Dateien: Upload und Download gehen über HTTP, im Store steht nur die ID. Die ID ist zufällig wie bei allen Einträgen, damit ein Foto auch offline sofort eine bekommt. Ein Foto ändert sich nie; ein neues Foto bekommt eine neue ID. Die App behält eigene Fotos auf dem Gerät und lädt sie hoch, sobald der Server erreichbar ist. Fotos anderer Geräte lädt sie vom Server und speichert sie zwischen.
 - **Referenzdaten** wie BLS-Nährwerte und Kategorien sind schreibgeschützt. Sie kommen als eigene SQLite-Datei vom Server.
 
 ### 5.3 Aufgaben des Servers
@@ -121,7 +121,7 @@ Die Feldnamen sind vorläufig.
 - Erfassungsstufe im Vorrat, REWE-Suchbegriff, REWE-Ausschlusswörter
 
 **Rezepte**
-- `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-Hash, Tags, Notizen, `deletedAt`
+- `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-ID, Tags, Notizen, `deletedAt`
 - `recipeIngredients`: Rezept, Sortierschlüssel, Zeilenart (`ingredient` oder `heading`; Zwischenüberschriften wie „Für das Dressing“ sind eigene Zeilen), Menge und optionale Obergrenze bei Spannen („2–3“) für die Basisportionen, Einheit, Name, Zusatz („fein gehackt“), Option (leer = für alle). Ab M3 kommt das zugeordnete Lebensmittel dazu.
 - `recipeSteps`: Rezept, Sortierschlüssel, Text, Option (leer = für alle)
 - `choiceGroups`: Rezept, Name („Protein“)
@@ -206,12 +206,14 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
 
 ## 9. KI-Import (M3)
 
-- **Eingabe:** ein oder mehrere Fotos, ein Screenshot, ein Link (wenn die Seite keine schema.org-Daten hat) oder Text.
-- **Verarbeitung:** Der Server ruft Requesty mit einem Modell mit Bilderkennung und einem JSON-Schema auf. Das Modell ist per Konfiguration wählbar, bei einem Ausfall greift eine Fallback-Regel.
-- **Ergebnis:** Titel, Portionen, Zeiten, Zutaten (Menge, Einheit, Name, Zusatz, Zwischenüberschrift), Schritte und unsichere Stellen.
-- **Prüfansicht in der App:** Die Zutaten werden Lebensmitteln zugeordnet. Die App macht Vorschläge, und was einmal bestätigt ist, merkt sie sich.
-- **Fleischrezepte:** Die KI schlägt eine vegetarische Wahlkomponente vor.
-- **Modellwahl:** mit einem Testset aus 10 Fotos aus euren Kochbüchern 2–3 Modelle vergleichen.
+- **Eingabe:** bis zu vier Fotos oder Screenshots, ein Link oder Text, auch kombiniert. Die App verkleinert Fotos vorher auf 2048 Pixel an der längeren Seite.
+- **Links:** Der Server lädt die Seite und liest zuerst die schema.org-Rezeptdaten (JSON-LD), die die meisten Rezeptseiten mitliefern. Die KI bereitet sie dann auf: einheitliches Format, Übersetzung, vegetarischer Vorschlag. Ohne Requesty-Schlüssel oder wenn die KI ausfällt, übernimmt der Server die Rezeptdaten direkt. Seiten ohne Rezeptdaten gehen als Text an die KI. Instagram und Co. liefern Servern meist nur eine Anmeldeseite; dort helfen ein Screenshot oder der kopierte Text.
+- **Verarbeitung:** Der Server ruft Requesty mit einem JSON-Schema auf. Das Modell steht in `IMPORT_MODEL` (Standard `anthropic/claude-sonnet-5-5`). Fällt es aus, versucht der Server `IMPORT_FALLBACK_MODEL` (Standard `google/gemini-3.6-flash`).
+- **Ergebnis:** Titel, Portionen, Zeiten, Quelle, Zutatenzeilen mit Zwischenüberschrift, Schritte, Notizen und unsichere Stellen. Die Zutatenzeilen haben das Format „Menge Einheit Zutat, Zusatz“; dieselbe Logik wie im Editor zerlegt sie beim Speichern.
+- **Prüfansicht in der App:** der normale Editor mit dem erkannten Entwurf. Darüber stehen die unsicheren Stellen. Das erste Foto wird zum Rezeptfoto und lässt sich ersetzen oder entfernen.
+- **Fleischrezepte:** Die KI schlägt eine vegetarische Option vor. Daraus wird eine Wahlkomponente: Die erste Option ist das Original, die zweite vegetarisch, jeweils mit eigenen Zutaten und Schritten. Lässt sich eine Zutat nicht getrennt kochen (z. B. Hühnerbrühe in der Suppe), nennt die KI den Austausch als Hinweis.
+- **Zuordnung der Zutaten zu Lebensmitteln:** verschoben nach M4, weil sie den Lebensmittel-Katalog braucht.
+- **Noch offen:** Modellwahl mit einem Testset aus 10 Fotos aus euren Kochbüchern (2–3 Modelle vergleichen). Später möglich: Rezepte aus anderen Apps über „Teilen“ empfangen.
 
 ## 10. Technik
 
@@ -250,6 +252,11 @@ Entschieden am 4. Oktober 2026:
 - **Name:** „Zauberjournal“, Paketname `org.langfeld.zauberjournal`.
 - **APK-Build:** per GitHub Actions (10.1).
 - **GitHub-Repo:** voraussichtlich öffentlich.
+
+Entschieden bei der Umsetzung von M3:
+- **Fotos** bekommen eine zufällige ID statt des Inhalts-Hashs (5.2).
+- **KI-Modell:** Standard ist Claude Sonnet 5.5 über Requesty, Fallback Gemini 3.6 Flash; beides per Umgebungsvariable änderbar (9).
+- **Zuordnung der Zutaten** zu Lebensmitteln kommt mit dem Katalog in M4.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.

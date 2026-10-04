@@ -33,7 +33,8 @@ Server und `core` laufen direkt mit Node 24, das die Typen beim Ausführen entfe
 ## Besonderheiten
 
 - `overrides` im Root-`package.json`: TinyBase verlangt React ≥ 19.3, Expo SDK 57 bringt 19.2.3 mit. TinyBase nutzt nur Standard-Hooks, deshalb ist das unkritisch. Den Eintrag entfernen, sobald Expo nachzieht.
-- `apps/mobile/src/data/persister.web.ts` speichert im Browser in `localStorage`. Das dient nur dazu, die App im Browser zu testen (`npm run dev:app`, dann `w`). Dasselbe gilt für `credentials.web.ts` und `socket.web.ts`, wo das Token im Browser als URL-Parameter mitgeht.
+- `apps/mobile/src/data/persister.web.ts` speichert im Browser in `localStorage`. Das dient nur dazu, die App im Browser zu testen (`npm run dev:app`, dann `w`). Dasselbe gilt für `credentials.web.ts`, `socket.web.ts` (dort geht das Token im Browser als URL-Parameter mit) und `photos.web.ts` (neue Fotos bleiben bis zum Upload im Speicher).
+- KI-Import: Der Server spricht Requesty an (`apps/server/src/importer.ts`). Zum Entwickeln liest `npm run dev:server` den Schlüssel aus `apps/server/.env`. Tests ersetzen `fetch`, sie brauchen keinen Schlüssel.
 - Server: Ein Server hat genau einen Haushalt. Für das Docker-Image wird der Server mit esbuild zu `apps/server/dist/*.mjs` gebündelt (`npm run bundle -w @zauberjournal/server`); zum Entwickeln läuft er weiter direkt aus `src`.
 - Betrieb, Pangolin und APK-Build: `docs/BETRIEB.md`. Die GitHub-Workflows liegen in `.github/workflows/`.
 

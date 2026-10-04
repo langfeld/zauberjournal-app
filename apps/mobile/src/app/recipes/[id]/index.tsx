@@ -12,6 +12,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { IngredientRows } from '@/components/ingredient-rows';
 import { NotFound } from '@/components/not-found';
+import { RecipePhoto } from '@/components/recipe-photo';
 import { Button, Card, SectionTitle, Stepper } from '@/components/ui';
 import { useRecipeTables } from '@/data/recipes';
 import { colors, radius, spacing } from '@/theme';
@@ -61,6 +62,7 @@ export default function RecipeDetailScreen() {
           ),
         }}
       />
+      <RecipePhoto photoId={view.photo} style={styles.photo} alt={`Foto: ${view.title}`} />
       <Text style={styles.title}>{view.title}</Text>
       {times.length > 0 ? <Text style={styles.meta}>{times.join(' · ')}</Text> : null}
       {view.description ? <Text style={styles.body}>{view.description}</Text> : null}
@@ -143,6 +145,7 @@ export default function RecipeDetailScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
+  photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.md },
   title: { fontSize: 26, fontWeight: '700', color: colors.text },
   meta: { fontSize: 14, color: colors.textMuted },
   link: { color: colors.primary, textDecorationLine: 'underline' },

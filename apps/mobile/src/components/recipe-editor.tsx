@@ -10,6 +10,7 @@ import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useConnection } from '@/data/connection';
 import { applyWrites, useRecipeTables } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { confirm } from '@/lib/confirm';
@@ -17,6 +18,7 @@ import { colors, radius, spacing } from '@/theme';
 
 import { ChoiceGroupsEditor } from './choice-groups-editor';
 import { IngredientListEditor } from './ingredient-list-editor';
+import { PhotoField } from './photo-field';
 import { StepListEditor } from './step-list-editor';
 import { Button, Hint, SectionTitle, Stepper, TextField } from './ui';
 import { useConfirmDiscard } from './use-confirm-discard';
@@ -42,16 +44,23 @@ type RecipeEditorProps = {
   /** `null` für ein neues Rezept. */
   recipeId: string | null;
   initialDraft: RecipeDraft;
+  /** Titel in der Kopfzeile; sonst „Neues Rezept“ oder „Rezept bearbeiten“. */
+  title?: string;
+  /** Hinweise über dem Formular, z. B. unsichere Stellen nach einem Import. */
+  notices?: string[];
+  /** Der Entwurf gilt schon zu Beginn als ungespeichert (z. B. nach einem Import). */
+  dirty?: boolean;
 };
 
-export function RecipeEditor({ recipeId, initialDraft }: RecipeEditorProps) {
+export function RecipeEditor({ recipeId, initialDraft, title, notices = [], dirty = false }: RecipeEditorProps) {
   const store = useStore();
   const tables = useRecipeTables();
+  const { uploadPhotos } = useConnection();
   const [initial] = useState(initialDraft);
   const [draft, setDraft] = useState(initialDraft);
   const [errors, setErrors] = useState<string[]>([]);
   const leaving = useRef(false);
-  useConfirmDiscard(draft !== initial, leaving);
+  useConfirmDiscard(dirty || draft !== initial, leaving);
 
   const set = <K extends keyof RecipeDraft>(key: K, value: RecipeDraft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
@@ -67,6 +76,7 @@ export function RecipeEditor({ recipeId, initialDraft }: RecipeEditorProps) {
     if (problems.length > 0) return;
     const { recipeId: savedId, writes } = planRecipeSave(tables, recipeId, draft, Date.now(), createId);
     applyWrites(store, writes);
+    if (draft.photo) uploadPhotos();
     leaving.current = true;
     if (recipeId && router.canGoBack()) router.back();
     else router.replace(`/recipes/${savedId}`);
@@ -85,11 +95,21 @@ export function RecipeEditor({ recipeId, initialDraft }: RecipeEditorProps) {
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen
         options={{
-          title: recipeId ? 'Rezept bearbeiten' : 'Neues Rezept',
+          title: title ?? (recipeId ? 'Rezept bearbeiten' : 'Neues Rezept'),
           headerRight: () => <Button small variant="ghost" title="Speichern" onPress={save} />,
         }}
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {notices.length > 0 ? (
+          <View style={styles.notices}>
+            <Text style={styles.noticesTitle}>Bitte prüfen</Text>
+            {notices.map((notice, index) => (
+              <Text key={index} style={styles.noticeText}>
+                • {notice}
+              </Text>
+            ))}
+          </View>
+        ) : null}
         {errors.length > 0 ? (
           <View style={styles.errors} accessibilityRole="alert">
             {errors.map((error) => (
@@ -100,6 +120,7 @@ export function RecipeEditor({ recipeId, initialDraft }: RecipeEditorProps) {
           </View>
         ) : null}
 
+        <PhotoField photoId={draft.photo} onChange={(photo) => set('photo', photo)} />
         <TextField
           label="Titel"
           value={draft.title}
@@ -169,5 +190,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerSoft,
   },
   errorText: { color: colors.danger, fontSize: 15 },
+  notices: {
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.warning,
+    backgroundColor: colors.warningSoft,
+  },
+  noticesTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  noticeText: { fontSize: 15, lineHeight: 21, color: colors.text },
   footer: { gap: spacing.md, marginTop: spacing.lg },
 });

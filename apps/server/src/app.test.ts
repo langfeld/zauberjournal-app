@@ -1,13 +1,32 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { createId } from '@zauberjournal/core';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
 import { createHousehold } from './household.ts';
+import { createImporter } from './importer.ts';
+import { createPhotoStore } from './photos.ts';
+
+const temporaryDirs: string[] = [];
+afterEach(() => {
+  for (const dir of temporaryDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
 
 function setUp() {
   const household = createHousehold(openDatabase(':memory:'));
+  const dir = mkdtempSync(join(tmpdir(), 'zauberjournal-test-'));
+  temporaryDirs.push(dir);
   const revoked: string[] = [];
-  const app = createApp(household, (deviceId) => revoked.push(deviceId));
+  const app = createApp({
+    household,
+    photos: createPhotoStore(dir),
+    importer: createImporter({ apiKey: '', models: [], log: () => {} }),
+    onDeviceRevoked: (deviceId) => revoked.push(deviceId),
+  });
   const post = (path: string, body: unknown, token?: string) =>
     app.request(path, {
       method: 'POST',
@@ -16,7 +35,13 @@ function setUp() {
     });
   const get = (path: string, token?: string) =>
     app.request(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-  return { household, app, post, get, revoked };
+  const put = (path: string, body: Uint8Array, token?: string) =>
+    app.request(path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body,
+    });
+  return { household, app, post, get, put, revoked };
 }
 
 describe('API', () => {
@@ -66,5 +91,41 @@ describe('API', () => {
     expect(revoked).toEqual([second.deviceId]);
     expect((await get('/api/session', second.token)).status).toBe(401);
     expect((await get('/api/session', first.token)).status).toBe(200);
+  });
+
+  it('speichert Fotos und liefert sie wieder aus', async () => {
+    const { household, get, put } = setUp();
+    const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;
+    const id = createId();
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+
+    expect((await put(`/api/photos/${id}`, jpeg)).status).toBe(401);
+    expect((await put(`/api/photos/${id}`, jpeg, token)).status).toBe(204);
+    // Eine ID gehört immer zum selben Foto; ein zweiter Upload ändert nichts.
+    expect((await put(`/api/photos/${id}`, new Uint8Array([0xff, 0xd8, 0xff, 9]), token)).status).toBe(204);
+
+    const res = await get(`/api/photos/${id}`, token);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/jpeg');
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(jpeg);
+
+    expect((await get(`/api/photos/${id}`)).status).toBe(401);
+    expect((await get(`/api/photos/${createId()}`, token)).status).toBe(404);
+    expect((await put('/api/photos/..%2Fzauberjournal.db', jpeg, token)).status).toBe(400);
+    expect((await put(`/api/photos/${createId()}`, new TextEncoder().encode('kein Bild'), token)).status).toBe(415);
+  });
+
+  it('importiert nur für angemeldete Geräte und meldet fehlende Angaben', async () => {
+    const { household, post } = setUp();
+    const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;
+
+    expect((await post('/api/import', { text: 'Rezept' })).status).toBe(401);
+
+    const empty = await post('/api/import', {}, token);
+    expect(empty.status).toBe(400);
+    expect(await empty.json()).toEqual({ error: 'Bitte ein Foto, einen Link oder einen Text angeben.' });
+
+    const withoutKey = await post('/api/import', { text: 'Rezept' }, token);
+    expect(withoutKey.status).toBe(503);
   });
 });

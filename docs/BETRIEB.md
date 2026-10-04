@@ -24,9 +24,19 @@ Beim ersten Start schreibt der Server einen **Einrichtungscode** in sein Protoko
 Einrichtungscode für das erste Gerät: YGWTFY6MFS9T
 ```
 
+### KI-Import
+
+Für den Import per Foto, Text und Links ohne Rezeptdaten braucht der Server einen Schlüssel von [Requesty](https://app.requesty.ai). In der Compose-Datei bei `REQUESTY_API_KEY=` eintragen und die App neu starten. Das Protokoll zeigt dann beim Start:
+
+```
+KI-Import mit anthropic/claude-sonnet-5-5, ersatzweise google/gemini-3.6-flash
+```
+
+Ohne Schlüssel lassen sich nur Links von Rezeptseiten mit schema.org-Daten importieren, etwa von Chefkoch. Ein Import kostet je nach Modell und Zahl der Fotos etwa 1–3 Cent; die Abrechnung zeigt Requesty. Andere Modelle stellt man über `IMPORT_MODEL` und `IMPORT_FALLBACK_MODEL` ein (Modellnamen wie bei Requesty, z. B. `openai/gpt-5.4-mini`). Bei Fehlern schreibt der Server die Antwort von Requesty ins Protokoll.
+
 ### Backup
 
-Alle Daten liegen im Dataset (`zauberjournal.db`). ZFS-Snapshots des Datasets sind das Backup. Zum Zurückspielen die App stoppen, den Snapshot zurückrollen und die App wieder starten.
+Alle Daten liegen im Dataset: `zauberjournal.db` und der Ordner `photos/` mit den Rezeptfotos. ZFS-Snapshots des Datasets sind das Backup. Zum Zurückspielen die App stoppen, den Snapshot zurückrollen und die App wieder starten.
 
 ## 2. Zugang von unterwegs über Pangolin
 
@@ -73,11 +83,11 @@ Schlüssel und Passwort gut aufbewahren: Updates lassen sich nur installieren, w
 ### Neue Version veröffentlichen
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
-Die Action baut die APK und hängt sie an ein GitHub-Release an. Ein Testbuild ohne Release geht über *Actions → Android-APK → Run workflow*; die APK liegt dann als Artefakt am Lauf.
+Ohne Terminal geht es auf GitHub: *Releases → Draft a new release*, bei „Choose a tag“ die neue Version eintippen (z. B. `v0.3.0`), *Create new tag* wählen und veröffentlichen. Die Action baut die APK und hängt sie an das GitHub-Release an. Ein Testbuild ohne Release geht über *Actions → Android-APK → Run workflow*; die APK liegt dann als Artefakt am Lauf.
 
 ### Installieren und aktualisieren mit Obtainium
 
@@ -93,3 +103,11 @@ npm run dev:app      # Expo; im Browser mit „w“, auf dem Handy mit Expo Go
 ```
 
 Lokal lautet die Server-Adresse in der App `http://<IP-des-Rechners>:3000`; Expo Go erlaubt unverschlüsseltes HTTP. Im Browser geht das Token zum Entwickeln als URL-Parameter mit, weil Browser bei WebSockets keine Header erlauben. Die App auf dem Handy schickt es als Header.
+
+Für den KI-Import beim Entwickeln eine Datei `apps/server/.env` anlegen (Git ignoriert sie):
+
+```
+REQUESTY_API_KEY=…
+```
+
+`npm run dev:server` liest sie beim Start.

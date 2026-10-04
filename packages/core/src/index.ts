@@ -11,6 +11,13 @@ export {
 } from './pairing.ts';
 export { formatAmount, formatNumber, roundScaledAmount, scaleAmount } from './quantity.ts';
 export * from './recipe.ts';
+export {
+  IMPORT_LIMITS,
+  importedRecipeToDraft,
+  type ImportedIngredient,
+  type ImportedRecipe,
+  type VegetarianSuggestion,
+} from './recipe-import.ts';
 export { tablesSchema, type AppTablesSchema } from './schema.ts';
 export { assignSortKeys, compareSortKeys } from './sort-keys.ts';
 export { findUnit, unitLabel, unitRounding, UNITS, type UnitDefinition, type UnitRounding } from './units.ts';

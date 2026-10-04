@@ -1,3 +1,5 @@
+import type { ImportedRecipe } from '@zauberjournal/core';
+
 /** Zugangsdaten dieses Geräts für den Server des Haushalts. */
 export type Credentials = { serverUrl: string; deviceId: string; token: string };
 
@@ -18,9 +20,13 @@ export class ApiError extends Error {
   }
 }
 
-type RequestOptions = { method?: string; body?: unknown; token?: string };
+type RequestOptions = { method?: string; body?: unknown; token?: string; signal?: AbortSignal };
 
-async function request<T>(serverUrl: string, path: string, { method = 'GET', body, token }: RequestOptions = {}): Promise<T> {
+async function request<T>(
+  serverUrl: string,
+  path: string,
+  { method = 'GET', body, token, signal }: RequestOptions = {},
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${serverUrl}${path}`, {
@@ -30,8 +36,10 @@ async function request<T>(serverUrl: string, path: string, { method = 'GET', bod
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
-  } catch {
+  } catch (error) {
+    if (signal?.aborted) throw error;
     throw new ApiError('Der Server ist nicht erreichbar. Stimmt die Adresse, und ist das Gerät online?', 0);
   }
   if (response.status === 204) return undefined as T;
@@ -87,4 +95,31 @@ export async function checkSession(credentials: Credentials): Promise<'ok' | 're
 
 export function syncUrl(credentials: Credentials): string {
   return `${credentials.serverUrl.replace(/^http/i, 'ws')}/api/sync`;
+}
+
+export type ImportInput = {
+  /** JPEG-Bilder als Base64 ohne `data:`-Präfix. */
+  images: string[];
+  text: string;
+  url: string;
+  suggestVegetarian: boolean;
+};
+
+/** Lässt den Server aus Fotos, Link oder Text ein Rezept erkennen; das dauert meist einige Sekunden. */
+export async function importRecipe(credentials: Credentials, input: ImportInput, signal?: AbortSignal): Promise<ImportedRecipe> {
+  const { recipe } = await request<{ recipe: ImportedRecipe }>(credentials.serverUrl, '/api/import', {
+    method: 'POST',
+    token: credentials.token,
+    body: { ...input, images: input.images.map((data) => ({ data, mimeType: 'image/jpeg' })) },
+    signal,
+  });
+  return recipe;
+}
+
+export function photoUrl(credentials: Credentials, photoId: string): string {
+  return `${credentials.serverUrl}/api/photos/${encodeURIComponent(photoId)}`;
+}
+
+export function authHeaders(credentials: Credentials): Record<string, string> {
+  return { Authorization: `Bearer ${credentials.token}` };
 }

@@ -15,6 +15,7 @@ export type RecipeRow = {
   cookMinutes: number | null;
   source: string;
   notes: string;
+  photo: string;
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;
@@ -113,6 +114,8 @@ export type RecipeView = {
   cookMinutes: number | null;
   source: string;
   notes: string;
+  /** ID des Rezeptfotos, leer = kein Foto. */
+  photo: string;
   ingredients: IngredientItem[];
   groups: ChoiceGroupView[];
   steps: StepItem[];
@@ -160,6 +163,7 @@ export function buildRecipeView(tables: RecipeTables, recipeId: string): RecipeV
     cookMinutes: recipe.cookMinutes ?? null,
     source: recipe.source,
     notes: recipe.notes,
+    photo: recipe.photo ?? '',
     ingredients: ingredientsOf(tables, recipeId, ''),
     groups,
     steps: activeSorted(tables.recipeSteps, (row) => row.recipeId === recipeId).map(([id, row]) => ({
@@ -176,6 +180,7 @@ export type RecipeSummary = {
   servings: number;
   totalMinutes: number | null;
   optionNames: string[];
+  photo: string;
 };
 
 function normalizeForSearch(text: string): string {
@@ -210,6 +215,7 @@ export function listRecipes(tables: RecipeTables, query = ''): RecipeSummary[] {
         servings: recipe.servings,
         totalMinutes: minutes > 0 ? minutes : null,
         optionNames: optionNames.get(id) ?? [],
+        photo: recipe.photo ?? '',
       };
     })
     .sort((a, b) => a.title.localeCompare(b.title, 'de', { sensitivity: 'base' }));
@@ -336,6 +342,7 @@ export type RecipeDraft = {
   cookMinutes: number | null;
   source: string;
   notes: string;
+  photo: string;
   ingredients: IngredientDraft[];
   groups: ChoiceGroupDraft[];
   steps: StepDraft[];
@@ -350,6 +357,7 @@ export function emptyRecipeDraft(): RecipeDraft {
     cookMinutes: null,
     source: '',
     notes: '',
+    photo: '',
     ingredients: [],
     groups: [],
     steps: [],
@@ -373,6 +381,7 @@ export function recipeViewToDraft(view: RecipeView): RecipeDraft {
     cookMinutes: view.cookMinutes,
     source: view.source,
     notes: view.notes,
+    photo: view.photo,
     ingredients: view.ingredients.map(toIngredientDraft),
     groups: view.groups.map((group) => ({
       id: group.id,
@@ -526,6 +535,7 @@ export function planRecipeSave(
     cookMinutes: draft.cookMinutes,
     source: draft.source.trim(),
     notes: draft.notes.trim(),
+    photo: draft.photo,
     deletedAt: null,
   };
   if (!tables.recipes[id]) recipeDesired.createdAt = now;

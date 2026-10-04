@@ -1,13 +1,18 @@
 import { APP_NAME } from '@zauberjournal/core';
 import { Hono, type Context } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
 
 import type { Device, Household } from './household.ts';
+import { ImportError, readImportRequest, type Importer } from './importer.ts';
+import { isJpeg, isPhotoId, type PhotoStore } from './photos.ts';
 
 type Env = { Variables: { device: Device } };
 
 const MAX_NAME_LENGTH = 60;
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORT_BYTES = 40 * 1024 * 1024;
 
 export function bearerToken(header: string | null | undefined): string | null {
   const match = /^Bearer\s+(\S+)$/i.exec(header ?? '');
@@ -27,11 +32,16 @@ function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-/**
- * HTTP-API des Servers.
- * `onDeviceRevoked` wird aufgerufen, nachdem ein Gerät abgemeldet wurde (z. B. um offene Sync-Verbindungen zu trennen).
- */
-export function createApp(household: Household, onDeviceRevoked: (deviceId: string) => void = () => {}) {
+export type AppOptions = {
+  household: Household;
+  photos: PhotoStore;
+  importer: Importer;
+  /** Wird aufgerufen, nachdem ein Gerät abgemeldet wurde (z. B. um offene Sync-Verbindungen zu trennen). */
+  onDeviceRevoked?: (deviceId: string) => void;
+};
+
+/** HTTP-API des Servers. */
+export function createApp({ household, photos, importer, onDeviceRevoked = () => {} }: AppOptions) {
   const app = new Hono<Env>();
   app.use('/api/*', cors());
 
@@ -87,6 +97,43 @@ export function createApp(household: Household, onDeviceRevoked: (deviceId: stri
     if (!household.revokeDevice(deviceId)) return c.json({ error: 'Dieses Gerät gibt es nicht.' }, 404);
     onDeviceRevoked(deviceId);
     return c.body(null, 204);
+  });
+
+  app.post(
+    '/api/import',
+    requireDevice,
+    bodyLimit({ maxSize: MAX_IMPORT_BYTES, onError: (c) => c.json({ error: 'Die Bilder sind zusammen zu groß.' }, 413) }),
+    async (c) => {
+      try {
+        const request = readImportRequest(await readBody(c));
+        return c.json({ recipe: await importer.importRecipe(request) });
+      } catch (error) {
+        if (error instanceof ImportError) return c.json({ error: error.message }, error.status);
+        throw error;
+      }
+    },
+  );
+
+  app.put(
+    '/api/photos/:id',
+    requireDevice,
+    bodyLimit({ maxSize: MAX_PHOTO_BYTES, onError: (c) => c.json({ error: 'Das Foto ist zu groß.' }, 413) }),
+    async (c) => {
+      const id = c.req.param('id');
+      if (!isPhotoId(id)) return c.json({ error: 'Ungültige Foto-ID.' }, 400);
+      const data = new Uint8Array(await c.req.arrayBuffer());
+      if (!isJpeg(data)) return c.json({ error: 'Erwartet wird ein Foto im JPEG-Format.' }, 415);
+      await photos.save(id, data);
+      return c.body(null, 204);
+    },
+  );
+
+  app.get('/api/photos/:id', requireDevice, async (c) => {
+    const id = c.req.param('id');
+    const data = isPhotoId(id) ? await photos.read(id) : null;
+    if (!data) return c.json({ error: 'Dieses Foto gibt es nicht.' }, 404);
+    // Ein Foto ändert sich nie; die App darf es dauerhaft zwischenspeichern.
+    return c.body(data, 200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=31536000, immutable' });
   });
 
   return app;

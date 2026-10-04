@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import type { Credentials } from './api';
 import { clearCredentials, loadCredentials, saveCredentials } from './credentials';
+import { usePhotoUploads } from './photo-uploads';
 import type { AppStore } from './store';
 import { useSync, type SyncStatus } from './sync';
 
@@ -12,6 +13,8 @@ type Connection = {
   connect: (credentials: Credentials) => Promise<void>;
   /** Trennt dieses Gerät vom Haushalt; die lokalen Daten bleiben erhalten. */
   disconnect: () => Promise<void>;
+  /** Lädt neue Rezeptfotos hoch, falls der Server erreichbar ist. */
+  uploadPhotos: () => void;
 };
 
 const ConnectionContext = createContext<Connection | null>(null);
@@ -27,6 +30,7 @@ export function ConnectionProvider({ store, children }: { store: AppStore; child
   }, []);
 
   const status = useSync(store, credentials ?? null);
+  const uploadPhotos = usePhotoUploads(store, credentials ?? null, status);
 
   const value = useMemo<Connection>(
     () => ({
@@ -40,8 +44,9 @@ export function ConnectionProvider({ store, children }: { store: AppStore; child
         await clearCredentials();
         setCredentials(null);
       },
+      uploadPhotos,
     }),
-    [credentials, status],
+    [credentials, status, uploadPhotos],
   );
 
   if (credentials === undefined) return null;
