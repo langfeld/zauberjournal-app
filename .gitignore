@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+/data/
+/apps/server/data/
+coverage/
+*.log
+.DS_Store
+.openchamber/
