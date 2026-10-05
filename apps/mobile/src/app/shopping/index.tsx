@@ -11,6 +11,7 @@ import {
   syncShoppingList,
   updateFood,
   type RowWrite,
+  type ShoppingListEntry,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -18,13 +19,29 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
 import { Icon } from '@/components/icon';
+import { RecipeCover } from '@/components/recipe-photo';
 import { ShoppingItemRow } from '@/components/shopping-item-row';
 import { AddField, Button, Card, Chip, EmptyState, Hint, IconCircle, ProgressBar } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { useAppTables, useToday } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
-import { colors, fonts, spacing, tones } from '@/theme';
+import { colors, fonts, radius, spacing, tones } from '@/theme';
+
+/** Kleine Karte für ein Gericht der Liste; viele passen in eine Reihe zum Wischen. */
+function EntryCard({ entry }: { entry: ShoppingListEntry }) {
+  return (
+    <View style={styles.entryCard}>
+      <RecipeCover photoId={entry.photo} title={entry.title} aspectRatio={4 / 3} letterSize={34} />
+      <View style={styles.entryText}>
+        <Text style={styles.entryDate}>{formatShortDate(entry.date)}</Text>
+        <Text style={styles.entryTitle} numberOfLines={2}>
+          {entry.title}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export default function ShoppingScreen() {
   const store = useStore();
@@ -100,12 +117,12 @@ export default function ShoppingScreen() {
           {total > 0 ? <Text style={styles.progressCount}>{Math.round((view.done.length / total) * 100)} %</Text> : null}
         </View>
         <ProgressBar value={total > 0 ? view.done.length / total : 0} />
-        <Text style={styles.meta}>
-          {view.entries.length > 0
-            ? `Für ${view.entries.map((entry) => `${entry.title} (${formatShortDate(entry.date)})`).join(', ')}`
-            : 'Noch keine Gerichte auf der Liste.'}
-        </Text>
-        <View style={styles.cardActions}>
+        <View style={styles.entriesHeader}>
+          <Text style={styles.entriesLabel}>
+            {view.entries.length === 0
+              ? 'Noch keine Gerichte'
+              : `Für ${view.entries.length} ${view.entries.length === 1 ? 'Gericht' : 'Gerichte'}`}
+          </Text>
           <Button
             small
             variant="secondary"
@@ -114,6 +131,13 @@ export default function ShoppingScreen() {
             onPress={() => router.push({ pathname: '/shopping/entries', params: { list: view.id } })}
           />
         </View>
+        {view.entries.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.entries} contentContainerStyle={styles.entriesRow}>
+            {view.entries.map((entry) => (
+              <EntryCard key={entry.entryId} entry={entry} />
+            ))}
+          </ScrollView>
+        ) : null}
       </Card>
 
       <AddField
@@ -215,8 +239,22 @@ const styles = StyleSheet.create({
   progressRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   progressTitle: { fontFamily: fonts.display, fontSize: 20, lineHeight: 26, color: colors.text },
   progressCount: { fontSize: 14, fontWeight: '700', color: colors.primary },
-  meta: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  cardActions: { flexDirection: 'row' },
+  entriesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  entriesLabel: { flexShrink: 1, fontSize: 13, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase', color: colors.textMuted },
+  // Die Reihe reicht bis an die Kartenränder, damit man sieht, dass sie sich wischen lässt.
+  entries: { marginHorizontal: -spacing.lg },
+  entriesRow: { gap: spacing.sm + 2, paddingHorizontal: spacing.lg },
+  entryCard: {
+    width: 120,
+    overflow: 'hidden',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: colors.background,
+  },
+  entryText: { padding: spacing.sm, gap: 2 },
+  entryDate: { fontSize: 11.5, fontWeight: '700', letterSpacing: 0.4, color: colors.primary },
+  entryTitle: { fontFamily: fonts.display, fontSize: 14, lineHeight: 18, color: colors.text },
   section: { paddingVertical: spacing.md, gap: spacing.xs },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingBottom: spacing.xs },
   sectionTitle: { flex: 1, fontFamily: fonts.display, fontSize: 18, lineHeight: 24, color: colors.text },

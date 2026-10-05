@@ -240,7 +240,7 @@ export type ShoppingItemView = {
   amount: string;
   checked: boolean;
   origin: ShoppingItemOrigin;
-  /** Für welche Gerichte, z. B. „Curry (Mi 7.10.), Lasagne (Fr 9.10.)“. */
+  /** Für welche Gerichte, z. B. „2× Curry, Lasagne“. */
   sources: string;
   stock: FoodStock;
   category: FoodCategory;
@@ -248,12 +248,15 @@ export type ShoppingItemView = {
 
 export type ShoppingSection = { category: FoodCategory; label: string; items: ShoppingItemView[] };
 
+/** Ein Gericht auf der Liste, mit dem Foto seines Rezepts (leer, wenn es keins gibt). */
+export type ShoppingListEntry = NeedSource & { photo: string };
+
 export type ShoppingListView = {
   id: string;
   name: string;
   status: ShoppingListStatus;
   createdAt: number;
-  entries: NeedSource[];
+  entries: ShoppingListEntry[];
   /** Noch zu kaufen, nach Warengruppen. */
   sections: ShoppingSection[];
   /** Lebensmittel, die laut Vorrat da sind: vor dem Einkauf prüfen. */
@@ -261,6 +264,16 @@ export type ShoppingListView = {
   /** Abgehakt. */
   done: ShoppingItemView[];
 };
+
+/**
+ * Für welche Gerichte eine Zutat gebraucht wird: jedes Gericht einmal, mehrfach geplante mit Anzahl,
+ * z. B. „3× Curry, Salat“. Die Tage stehen schon bei den Gerichten der Liste.
+ */
+export function describeSources(sources: readonly NeedSource[]): string {
+  const counts = new Map<string, number>();
+  for (const source of sources) counts.set(source.title, (counts.get(source.title) ?? 0) + 1);
+  return [...counts].map(([title, count]) => (count > 1 ? `${count}× ${title}` : title)).join(', ');
+}
 
 export function formatItemAmount(amount: number | null, unit: string): string {
   if (amount === null) return '';
@@ -288,7 +301,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
   const entries = entryIds
     .flatMap((id) => {
       const entry = buildPlanEntry(tables, id, dietOf);
-      return entry ? [{ entryId: id, date: entry.date, title: entry.title }] : [];
+      return entry ? [{ entryId: id, date: entry.date, title: entry.title, photo: entry.recipe?.photo ?? '' }] : [];
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -304,7 +317,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
         amount: formatItemAmount(item.amount, item.unit),
         checked: item.checked,
         origin: item.origin,
-        sources: sources.map((source) => `${source.title} (${formatShortDate(source.date)})`).join(', '),
+        sources: describeSources(sources),
         stock: food && isActive(food) ? (food.stock ?? '') : '',
         category: food && isActive(food) ? food.category : 'other',
       };

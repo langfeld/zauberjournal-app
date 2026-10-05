@@ -71,9 +71,11 @@ export function RecipeThumbnail({ photoId, title, size = 64 }: { photoId: string
   );
 }
 
+type RecipeCoverProps = { photoId: string; title: string; aspectRatio?: number; letterSize?: number };
+
 /** Titelbild über die ganze Breite einer Karte. */
-export function RecipeCover({ photoId, title, aspectRatio = 1 }: { photoId: string; title: string; aspectRatio?: number }) {
-  return <PhotoTile photoId={photoId} title={title} style={{ width: '100%', aspectRatio }} letterSize={60} />;
+export function RecipeCover({ photoId, title, aspectRatio = 1, letterSize = 60 }: RecipeCoverProps) {
+  return <PhotoTile photoId={photoId} title={title} style={{ width: '100%', aspectRatio }} letterSize={letterSize} />;
 }
 
 const styles = StyleSheet.create({

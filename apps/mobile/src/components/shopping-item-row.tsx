@@ -32,7 +32,11 @@ export function ShoppingItemRow({ item, onToggle, action, onRemove, divider }: S
         </View>
         <View style={styles.text}>
           <Text style={[styles.name, item.checked && styles.checked]}>{item.name}</Text>
-          {note ? <Text style={styles.note}>{note}</Text> : null}
+          {note ? (
+            <Text style={styles.note} numberOfLines={1}>
+              {note}
+            </Text>
+          ) : null}
         </View>
         {item.amount ? (
           <Text style={[styles.amount, item.checked && styles.amountChecked]}>{item.amount}</Text>

@@ -78,7 +78,8 @@ describe('Einkaufsliste', () => {
       'Olivenöl: 2 EL',
       'Salz: ',
     ]);
-    expect(view.sections[0]!.items[1]!.sources).toBe('Salat (Di 6.10.)');
+    expect(view.sections[0]!.items[1]!.sources).toBe('Salat');
+    expect(view.entries).toEqual([{ entryId: saladEntry, date: '2026-10-06', title: 'Salat', photo: '' }]);
 
     // Mehr Portionen für Anna und ein zweites Gericht: Die Liste folgt dem Plan.
     test.apply(setShoppingListEntries(test.tables(), listId, [saladEntry, curryEntry]));
@@ -90,6 +91,19 @@ describe('Einkaufsliste', () => {
     // Zwiebel: Salat 1 × 3/2 + Curry 2 × 2/4; Knoblauch: Obergrenze 3 × 2/4
     expect(amounts).toMatchObject({ Zwiebel: '2½ Stück', Halloumi: '200 g', Kokosmilch: '200 ml', Knoblauch: '1½ Zehen' });
     expect(Object.keys(test.tables().foods)).toContain('food:zwiebel');
+  });
+
+  it('nennt jedes Gericht einmal, mehrfach geplante mit Anzahl', () => {
+    const { test, ids, salad, curry, plan } = setUp();
+    const entries = [plan('2026-10-06', curry), plan('2026-10-07', salad), plan('2026-10-09', curry)];
+    const { listId, writes } = createShoppingList(test.tables(), entries, '2026-10-05', 1000, ids);
+    test.apply(writes);
+    test.apply(syncShoppingList(test.tables(), listId, 2000));
+
+    const items = buildShoppingListView(test.tables(), listId)!.sections.flatMap((section) => section.items);
+    const sources = Object.fromEntries(items.map((item) => [item.name, item.sources]));
+    // Das Curry steht zuerst im Plan, deshalb heißt das Lebensmittel nach seiner Zutat „2 Zwiebeln“.
+    expect(sources).toMatchObject({ Zwiebeln: '2× Curry, Salat', Kokosmilch: '2× Curry', Romanasalat: 'Salat' });
   });
 
   it('trennt Vorrat, Nachkaufen und Abgehaktes und schließt den Einkauf ab', () => {
