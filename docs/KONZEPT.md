@@ -21,7 +21,7 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 1. **Rezepte sammeln:** per Foto, Link oder manuell.
 2. **Planen:** Beliebig viele Gerichte in einem rollierenden Zeitraum, also ohne feste Kalenderwochen. Standard ist nur das Abendessen; weitere Mahlzeiten lassen sich in den Einstellungen zuschalten. Pro Mahlzeit wird festgelegt, wer mitisst und welche Option jede Person bekommt (z. B. Hähnchen oder Halloumi).
 3. **Einkaufsliste erzeugen:** aus ausgewählten Planeinträgen. Die Mengen werden zusammengefasst, der Vorrat wird abgezogen, eigene Zusatzartikel kommen dazu.
-4. **REWE-Abgleich:** Für jede Position wird ein passendes REWE-Produkt gesucht. Gelernte Stammprodukte haben Vorrang, danach folgt eine Suche mit Filtern. Unsichere Treffer sind markiert, Alternativen lassen sich auswählen.
+4. **REWE-Abgleich:** Für jede Position wird ein passendes REWE-Produkt gesucht. Gemerkte Produkte haben Vorrang, in der Reihenfolge des Haushalts. Danach folgt eine Suche mit Filtern. Unsichere Treffer sind markiert, Alternativen lassen sich auswählen.
 5. **Einkaufen:** rewe.de öffnen, am PC oder in Firefox auf dem Handy. Das Userscript legt alles in den Warenkorb und meldet das Ergebnis zurück.
 6. **Vorrat pflegen:** Nach der Abholung wird der Einkauf in den Vorrat gebucht, beim Kochen wird wieder abgebucht.
 
@@ -147,7 +147,14 @@ Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten�
 - Seit M4 der einfache Vorrat: pro Lebensmittel „da“ oder „nachkaufen“ (`foods.stock`), ohne Mengen.
 - Ab M6: `pantryStock` mit Lebensmittel, Lagerort, Füllstand (bei grober Erfassung), Mindesthaltbarkeit und „geöffnet am“, außerdem `pantryBookings` mit Lebensmittel, Menge (+/−), Grund (`einkauf` | `gekocht` | `korrektur` | `verdorben`), Zeitpunkt und Bezug (Planeintrag oder Liste).
 
-**REWE** (`reweProducts`, seit M5): eine Zeile je Lebensmittel (Zeilen-ID = Lebensmittel) mit Produkt-ID, Name, Bild, Preis und Packungsangabe vom letzten Abgleich, Listing-ID und Zustand: `sure` und `unsure` (Vorschlag, passend bzw. bitte prüfen), `none` (nichts gefunden), `chosen` (vom Haushalt gewählt, gilt als Stammprodukt), `missing` (gewählt, beim letzten Abgleich aber nicht gefunden) und `skip` (nicht bei REWE kaufen).
+**REWE** (seit M5):
+- `reweProducts`: das Produkt für den Einkauf, eine Zeile je Lebensmittel (Zeilen-ID = Lebensmittel). Sie enthält Produkt-ID, Name, Bild, Preis und Packungsangabe vom letzten Abgleich oder der letzten Wahl sowie die Listing-ID. Dazu kommt der Zustand:
+  - `sure` und `unsure`: Vorschlag, passend bzw. bitte prüfen
+  - `none`: nichts gefunden
+  - `chosen`: ein gemerktes Produkt
+  - `missing`: Keins der gemerkten Produkte war zu finden; das Produkt ist ein Vorschlag zum Prüfen.
+  - `skip`: nicht bei REWE kaufen
+- `reweFavorites`: gemerkte Produkte je Lebensmittel als Rangliste (feste ID `<Lebensmittel>~<Produkt>`, Reihenfolge über Sortierschlüssel, Soft-Delete). Sie enthalten Produkt-ID, Name, Bild, Preis und Packungsangabe für die Anzeige. Wird ein Produkt vergessen, das gerade für den Einkauf gilt, zeigt die App es wieder als Vorschlag zum Prüfen.
 
 **Einstellungen** (TinyBase-Values): aktive Mahlzeiten (seit M4, je ein Schalter; Standard: nur Abendessen), seit M5 der REWE-Markt (ID, Name, Adresse) und „Bio bevorzugen“. Standardportionen braucht es nicht: Die Portionen ergeben sich aus den Personen.
 
@@ -179,7 +186,7 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
 Die Genauigkeit kommt aus dem Lebensmittel-Katalog, nicht aus einer Freitextsuche. „Tomaten (frisch)“, „Tomaten, getrocknet“ und „Tomaten, passiert“ sind verschiedene Lebensmittel, jeweils mit eigener Warengruppe, eigenem Suchbegriff und eigenen Ausschlusswörtern. Damit erledigt sich der Fall, dass für „Tomaten“ ein „Nudelgericht mit Tomatensoße“ vorgeschlagen wird.
 
 Ablauf pro Position:
-1. Gibt es ein gelerntes Stammprodukt, das im Markt verfügbar ist, wird es übernommen.
+1. Hat der Haushalt Produkte für das Lebensmittel gemerkt, wird das erste davon übernommen, das im Markt verfügbar ist.
 2. Sonst wird mit dem Suchbegriff des Lebensmittels gesucht. Die Kandidaten werden gefiltert: passende Kategorie, keine Ausschlusswörter, verträgliche Einheit.
 3. Die übrigen Kandidaten werden bewertet nach:
    - Ähnlichkeit des Namens
@@ -188,7 +195,7 @@ Ablauf pro Position:
    - Packungsgröße passend zum Bedarf (der Rest wandert in den Vorrat)
    - Wunsch nach Bio oder regional
 4. Ist das Ergebnis knapp oder unklar, wird die Position markiert. Optional prüft die KI alle unsicheren Positionen in einer gemeinsamen Anfrage.
-5. Die Auswahl in der App (Alternativen oder eigene Suche) wird als Stammprodukt gelernt.
+5. Die Auswahl in der App (Alternativen oder eigene Suche) wird gemerkt, als erste Wahl oder als Ersatz.
 
 Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen getestet, etwa dem Tomaten-Fall.
 
@@ -198,7 +205,11 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
 - **Preis:** für alle nötigen Packungen. Bei Bedarf ohne Menge und bei kleinem Bedarf an Vorratsdingen (Gewürze, Öl, Konserven …) zählt der Grundpreis. Viele kleine Packungen und Wörter, die nicht zum Lebensmittel gehören, kosten Punkte; auf Wunsch hat Bio Vorrang.
 - **Packungen:** aus Menge und Packungsangabe; g und ml gelten als gleich, eine Dose als etwa 240 g Abtropfgewicht. EL, Zehe oder Prise brauchen eine Packung. Stück abgepackter Ware sind Packungen („2 Butter“), bei Obst, Gemüse, Fleisch und Fisch reicht eine Packung nach Gewicht.
 - **Unsicher** ist ein Treffer ohne klaren Namen oder mit falscher Warengruppe. „Salz und Pfeffer“ sind zwei Lebensmittel: Gesucht wird das erste, sicher ist der Treffer nie. Passt gar kein Name, gilt die Reihenfolge der REWE-Suche.
-- **Lernen:** Das Produkt gilt je Lebensmittel, die Packungen je Position. Was der Haushalt wählt oder bestätigt, wird beim nächsten Abgleich zuerst gesucht.
+- **Lernen:** Das Produkt gilt je Lebensmittel, die Packungen je Position. Was der Haushalt wählt oder bestätigt, merkt sich die App in einer Rangliste.
+  - **Wählen:** Ein neu gewähltes Produkt wird erste Wahl oder kommt als Ersatz ans Ende. Für den Einkauf gilt sofort das erste gemerkte Produkt, das es bekanntermaßen gibt.
+  - **Abgleich:** Der Server prüft bis zu fünf gemerkte Produkte der Reihe nach und nimmt das erste, das im Markt zu finden ist. Ist es nicht die erste Wahl, ist es mit „Ersatz“ markiert, braucht aber keine Prüfung.
+  - **Nichts zu finden:** Gibt es keins der gemerkten Produkte, gilt der beste Vorschlag. Er ist mit „prüfen“ markiert und kommt so auch in den Warenkorb.
+  - **Reihenfolge ändern:** Neue Reihenfolge und vergessene Produkte gelten ab dem nächsten Abgleich.
 - **Noch nicht umgesetzt:** eigener Suchbegriff und Ausschlusswörter je Lebensmittel, die KI-Prüfung unsicherer Treffer und „schon einmal gekauft“.
 
 ### 8.2 Produktquelle
@@ -212,7 +223,7 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
   - Mit `Accept: application/json` kommt stattdessen das verschachtelte HAL-Format; das nutzt der Server. Je Produkt: `_embedded.articles[0]._embedded.listing` mit Listing-ID und `pricing` (Preis und Grundpreis in Cent, Packungsangabe wie „500g (1 kg = 3,50 €)“), `_embedded.categoryPath` und Merkmale in `attributes.tags` (`organic`, `discounted`, `regional` …).
   - Bilder sind PNGs mit 1200 × 1200 Pixeln; `?resize=120px:120px&output-format=jpg` liefert kleine JPEGs.
 - **Märkte zu einer PLZ:** `GET https://www.rewe.de/shop/api/marketselection/zipcodes/<PLZ>/services/pickup` liefert eine Liste mit `wwIdent` (Markt-ID), `displayName` und `isPickupStation`.
-- **Verfügbarkeit eines Stammprodukts:** Einen Abruf per Produkt-ID kennen wir nicht. Geprüft wird, ob die ID in den Suchergebnissen zum Produktnamen auftaucht.
+- **Verfügbarkeit eines gemerkten Produkts:** Einen Abruf per Produkt-ID kennen wir nicht. Geprüft wird, ob die ID in den Suchergebnissen zum Produktnamen auftaucht.
 - **Zurückhaltend abfragen:** Der Server speichert Suchergebnisse 6 Stunden und Märkte 7 Tage zwischen (`rewe_cache` in SQLite). Er stellt die Anfragen nacheinander, mit 400 ms Pause dazwischen. Die App schickt lange Listen in Teilen und zeigt den Fortschritt.
 
 ### 8.3 Warenkorb per Userscript (neu geschrieben)
@@ -286,6 +297,7 @@ Entschieden bei der Umsetzung von M4:
 
 Entschieden bei der Umsetzung von M5:
 - **REWE-Produkt je Lebensmittel,** nicht je Position: So gilt eine Wahl auch für spätere Einkäufe. Die Packungen rechnet die App je Position aus der Menge.
+- **Gemerkte Produkte als Rangliste:** Je Lebensmittel kann sich der Haushalt mehrere Produkte merken. Der Abgleich nimmt das erste, das der Markt gerade hat. Fehlen alle, gilt der beste Vorschlag zum Prüfen; das fehlende Produkt kommt nicht in den Warenkorb.
 - **Abgleich auf dem Server, Auswahl in der App:** Der Server sucht und bewertet; die App sucht für die Auswahl selbst über den Server und bewertet mit derselben Logik aus `packages/core`.
 - **Ein Markt für den Haushalt,** gewählt per PLZ im Haushalt oder in der Einkaufsliste.
 

@@ -1,16 +1,101 @@
-import type { ReweMatchRequestItem, ReweMatchResult, ReweProduct, ReweProductRow } from './rewe.ts';
-import { changedCells, isActive, type CellValue, type RowWrite } from './rows.ts';
+import {
+  REWE_MAX_PREFERRED,
+  type ReweFavoriteRow,
+  type ReweMatchRequestItem,
+  type ReweMatchResult,
+  type ReweProduct,
+} from './rewe.ts';
+import { activeSorted, changedCells, isActive, type CellValue, type RowWrite } from './rows.ts';
 import type { ShoppingListView, ShoppingTables } from './shopping.ts';
+import { assignSortKeys } from './sort-keys.ts';
 
 /**
  * REWE-Abgleich einer Einkaufsliste: welche Positionen gesucht werden und wie die Ergebnisse
- * im Store landen. Das Produkt gilt je Lebensmittel, die Packungen je Position.
+ * im Store landen. Das Produkt gilt je Lebensmittel, die Packungen je Position. Je Lebensmittel
+ * merkt sich der Haushalt Produkte in einer Reihenfolge; der Abgleich nimmt das erste, das der Markt hat.
  */
 
-/** Gewählte Produkte bleiben bei jedem Abgleich, auch wenn sie einmal nicht zu finden sind. */
-function isChosen(product: ReweProductRow | undefined): product is ReweProductRow {
-  return (product?.state === 'chosen' || product?.state === 'missing') && product.productId !== '';
+// ─── Gemerkte Produkte ───
+
+/** Ein gemerktes Produkt für die Anzeige. */
+export type ReweFavorite = Pick<ReweFavoriteRow, 'productId' | 'name' | 'imageUrl' | 'price' | 'grammage'>;
+
+/** Was zu einem gemerkten Produkt gespeichert wird, außer der Reihenfolge. */
+type FavoriteData = Pick<ReweProduct, 'name' | 'imageUrl' | 'price' | 'grammage'>;
+
+function favoriteId(foodId: string, productId: string): string {
+  return `${foodId}~${productId}`;
 }
+
+function favoriteRows(tables: ShoppingTables, foodId: string): [string, ReweFavoriteRow][] {
+  return activeSorted(tables.reweFavorites, (favorite) => favorite.foodId === foodId);
+}
+
+/** Gemerkte Produkte eines Lebensmittels, die erste Wahl zuerst. */
+export function reweFavoritesOf(tables: ShoppingTables, foodId: string): ReweFavorite[] {
+  return favoriteRows(tables, foodId).map(([, { productId, name, imageUrl, price, grammage }]) => ({
+    productId,
+    name,
+    imageUrl,
+    price,
+    grammage,
+  }));
+}
+
+function favoriteOrder(tables: ShoppingTables, foodId: string): string[] {
+  return favoriteRows(tables, foodId).map(([, favorite]) => favorite.productId);
+}
+
+function favoriteCells(product: FavoriteData): Record<string, CellValue> {
+  return { name: product.name, imageUrl: product.imageUrl, price: product.price, grammage: product.grammage };
+}
+
+/**
+ * Schreibt die gemerkten Produkte eines Lebensmittels in der Reihenfolge `order`. `added` bringt die
+ * Daten eines neu gemerkten Produkts mit. Sortierschlüssel bleiben, wo die Reihenfolge es zulässt.
+ */
+function writeFavoriteOrder(
+  tables: ShoppingTables,
+  foodId: string,
+  order: readonly string[],
+  added?: FavoriteData & { productId: string },
+): RowWrite[] {
+  const rows = order.map((productId) => {
+    const id = favoriteId(foodId, productId);
+    return { id, productId, row: tables.reweFavorites[id] };
+  });
+  const keys = assignSortKeys(rows.map(({ row }) => (row && isActive(row) ? row.sortKey : undefined)));
+  return rows.flatMap(({ id, productId, row }, index) => {
+    const cells = {
+      foodId,
+      productId,
+      sortKey: keys[index]!,
+      deletedAt: null,
+      ...(added?.productId === productId ? favoriteCells(added) : {}),
+    };
+    const write = changedCells('reweFavorites', id, row, cells);
+    return write ? [write] : [];
+  });
+}
+
+/** Schiebt ein gemerktes Produkt einen Platz nach vorn (−1) oder nach hinten (1); gilt ab dem nächsten Abgleich. */
+export function moveReweFavorite(tables: ShoppingTables, foodId: string, productId: string, delta: -1 | 1): RowWrite[] {
+  const order = favoriteOrder(tables, foodId);
+  const from = order.indexOf(productId);
+  const to = from + delta;
+  if (from < 0 || to < 0 || to >= order.length) return [];
+  [order[from], order[to]] = [order[to]!, order[from]!];
+  return writeFavoriteOrder(tables, foodId, order);
+}
+
+/** Vergisst ein gemerktes Produkt. Gilt es gerade für den Einkauf, ist es dort nur noch ein Vorschlag. */
+export function forgetReweFavorite(tables: ShoppingTables, foodId: string, productId: string, now: number): RowWrite[] {
+  const id = favoriteId(foodId, productId);
+  const row = tables.reweFavorites[id];
+  return row && isActive(row) ? [{ table: 'reweFavorites', rowId: id, cells: { deletedAt: now } }] : [];
+}
+
+// ─── Abgleich ───
 
 /**
  * Positionen, die noch zu kaufen sind und bei REWE gesucht werden sollen, je Lebensmittel eine.
@@ -22,15 +107,16 @@ export function reweMatchItems(tables: ShoppingTables, listId: string): ReweMatc
     if (item.listId !== listId || !isActive(item) || item.checked || !item.foodId || items.has(item.foodId)) continue;
     const food = tables.foods[item.foodId];
     if (!food || !isActive(food) || (item.origin === 'plan' && food.stock === 'have')) continue;
-    const product = tables.reweProducts[item.foodId];
-    if (product?.state === 'skip') continue;
+    if (tables.reweProducts[item.foodId]?.state === 'skip') continue;
     items.set(item.foodId, {
       id: item.foodId,
       name: food.name || item.name,
       category: food.category,
       amount: item.amount,
       unit: item.unit,
-      preferred: isChosen(product) ? { productId: product.productId, name: product.name } : null,
+      preferred: favoriteRows(tables, item.foodId)
+        .slice(0, REWE_MAX_PREFERRED)
+        .map(([, favorite]) => ({ productId: favorite.productId, name: favorite.name })),
     });
   }
   return [...items.values()];
@@ -72,8 +158,8 @@ function writeProduct(
 }
 
 /**
- * Übernimmt die Ergebnisse des Abgleichs. Vorschläge ersetzen frühere Vorschläge; gewählte Produkte
- * bleiben und heißen `missing`, solange sie im Markt nicht zu finden sind.
+ * Übernimmt die Ergebnisse des Abgleichs. Ist ein gemerktes Produkt zu finden, gilt es (`chosen`).
+ * Sonst gilt der beste Vorschlag; gibt es gemerkte Produkte, nur zum Prüfen (`missing`).
  */
 export function applyReweMatches(
   tables: ShoppingTables,
@@ -83,28 +169,62 @@ export function applyReweMatches(
 ): RowWrite[] {
   return results.flatMap((result) => {
     const best = result.candidates[0];
+    const remembered = favoriteRows(tables, result.id).length > 0;
     let cells: Record<string, CellValue>;
     if (result.learned && best) cells = { state: 'chosen', ...productCells(best) };
-    else if (isChosen(tables.reweProducts[result.id])) cells = { state: 'missing' };
+    else if (remembered) cells = { state: 'missing', ...(best ? productCells(best) : NO_PRODUCT) };
     else if (best) cells = { state: result.confidence === 'sure' ? 'sure' : 'unsure', ...productCells(best) };
     else cells = { state: 'none', ...NO_PRODUCT };
-    return writeProduct(tables, listId, result.id, cells, now);
+    const writes = writeProduct(tables, listId, result.id, cells, now);
+    if (result.learned && best) writes.push(...refreshFavorite(tables, result.id, best));
+    return writes;
   });
 }
 
-/** Der Haushalt wählt ein Produkt für das Lebensmittel einer Position; es gilt auch bei späteren Einkäufen. */
-export function chooseReweProduct(tables: ShoppingTables, itemId: string, product: ReweProduct, now: number): RowWrite[] {
-  const item = tables.shoppingItems[itemId];
-  if (!item?.foodId) return [];
-  return writeProduct(tables, item.listId, item.foodId, { state: 'chosen', ...productCells(product) }, now);
+/** Bringt Name, Bild, Preis und Packung eines gemerkten Produkts auf den Stand der Suche. */
+function refreshFavorite(tables: ShoppingTables, foodId: string, product: ReweProduct): RowWrite[] {
+  const id = favoriteId(foodId, product.id);
+  const favorite = tables.reweFavorites[id];
+  const write = favorite && isActive(favorite) ? changedCells('reweFavorites', id, favorite, favoriteCells(product)) : null;
+  return write ? [write] : [];
 }
 
-/** Der Haushalt bestätigt das vorgeschlagene Produkt; es gilt dann auch bei späteren Einkäufen. */
+/**
+ * Der Haushalt wählt ein Produkt für das Lebensmittel einer Position und merkt es sich als erste Wahl
+ * oder als Ersatz (ans Ende). Für den Einkauf gilt das erste gemerkte Produkt, das es gerade gibt:
+ * das gewählte oder das bisherige, wenn es weiter vorn steht.
+ */
+export function chooseReweProduct(
+  tables: ShoppingTables,
+  itemId: string,
+  product: ReweProduct,
+  place: 'first' | 'fallback',
+  now: number,
+): RowWrite[] {
+  const item = tables.shoppingItems[itemId];
+  if (!item?.foodId) return [];
+  const others = favoriteOrder(tables, item.foodId).filter((productId) => productId !== product.id);
+  const order = place === 'first' ? [product.id, ...others] : [...others, product.id];
+  const current = tables.reweProducts[item.foodId];
+  const currentRank = current?.state === 'chosen' ? order.indexOf(current.productId) : -1;
+  const takeNow = currentRank === -1 || order.indexOf(product.id) <= currentRank;
+  return [
+    ...writeFavoriteOrder(tables, item.foodId, order, { ...product, productId: product.id }),
+    ...(takeNow ? writeProduct(tables, item.listId, item.foodId, { state: 'chosen', ...productCells(product) }, now) : []),
+  ];
+}
+
+/** Der Haushalt merkt sich das vorgeschlagene Produkt, als Ersatz hinter den schon gemerkten. */
 export function confirmReweProduct(tables: ShoppingTables, itemId: string, now: number): RowWrite[] {
   const item = tables.shoppingItems[itemId];
   const product = item?.foodId ? tables.reweProducts[item.foodId] : undefined;
   if (!item || !product?.productId || product.state === 'skip') return [];
-  return writeProduct(tables, item.listId, item.foodId, { state: 'chosen' }, now);
+  const order = favoriteOrder(tables, item.foodId);
+  if (!order.includes(product.productId)) order.push(product.productId);
+  return [
+    ...writeFavoriteOrder(tables, item.foodId, order, product),
+    ...writeProduct(tables, item.listId, item.foodId, { state: 'chosen' }, now),
+  ];
 }
 
 /** Das Lebensmittel einer Position wird nicht bei REWE gekauft; ein Produkt wählen hebt das wieder auf. */

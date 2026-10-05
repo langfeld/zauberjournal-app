@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, tones } from '@/theme';
+import { colors, radius, spacing, tones, type Tone } from '@/theme';
 
 import { Icon } from './icon';
 
@@ -35,10 +35,12 @@ export function packsLabel(packs: number, name: string): string {
   return packs > 1 ? `${packs}× ${name}` : name;
 }
 
-const STATE_TAGS = {
-  unsure: 'prüfen',
-  missing: 'nicht gefunden',
-} as const;
+/** Markierung hinter dem Produkt: Vorschlag zum Prüfen oder Ersatz für die erste Wahl. */
+function lineTag(rewe: ShoppingItemRewe): { label: string; tone: Tone } | null {
+  if (rewe.state === 'unsure' || rewe.state === 'missing') return { label: 'prüfen', tone: tones.ochre };
+  if (rewe.rank !== null && rewe.rank > 1) return { label: 'Ersatz', tone: tones.teal };
+  return null;
+}
 
 const CART_LABELS: Record<ReweOrderStatus, string> = {
   pending: '',
@@ -75,13 +77,14 @@ export function ReweProductLine({ rewe, onPress, cart = 'pending' }: ReweProduct
     );
   }
 
-  const tag = rewe.state === 'unsure' || rewe.state === 'missing' ? STATE_TAGS[rewe.state] : null;
+  const tag = lineTag(rewe);
   const name = packsLabel(rewe.packs, rewe.name);
   const total = formatPrice(rewe.packs * rewe.price);
+  const details = [name, total, tag?.label, CART_LABELS[cart]].filter(Boolean).join(', ');
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`REWE: ${name}, ${total}${tag ? `, ${tag}` : ''}${CART_LABELS[cart] ? `, ${CART_LABELS[cart]}` : ''}. Ändern`}
+      accessibilityLabel={`REWE: ${details}. Ändern`}
       onPress={onPress}
       style={({ pressed }) => [styles.line, pressed && styles.pressed]}>
       <ReweImage url={rewe.imageUrl} size={30} />
@@ -89,8 +92,8 @@ export function ReweProductLine({ rewe, onPress, cart = 'pending' }: ReweProduct
         {name}
       </Text>
       {tag ? (
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>{tag}</Text>
+        <View style={[styles.tag, { backgroundColor: tag.tone.background }]}>
+          <Text style={[styles.tagText, { color: tag.tone.foreground }]}>{tag.label}</Text>
         </View>
       ) : null}
       {cart === 'added' || cart === 'present' ? <Icon name="shopping_cart" size={16} color={colors.primary} /> : null}
@@ -125,7 +128,7 @@ const styles = StyleSheet.create({
   name: { flex: 1, fontSize: 13.5, color: colors.text },
   muted: { color: colors.textMuted },
   choose: { fontSize: 13.5, fontWeight: '700', color: colors.primary },
-  tag: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: tones.ochre.background },
-  tagText: { fontSize: 12, fontWeight: '700', color: tones.ochre.foreground },
+  tag: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill },
+  tagText: { fontSize: 12, fontWeight: '700' },
   price: { fontSize: 13.5, fontWeight: '700', color: colors.text, fontVariant: ['tabular-nums'] },
 });

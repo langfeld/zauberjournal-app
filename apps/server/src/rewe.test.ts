@@ -106,10 +106,15 @@ describe('REWE', () => {
     expect(readMatchRequest({ market: MARKET, items: [item] })).toEqual({
       marketId: MARKET,
       organic: false,
-      items: [{ id: 'a', need: { name: 'Zwiebeln', category: 'produce', amount: 2, unit: 'Stück' }, preferred: null }],
+      items: [{ id: 'a', need: { name: 'Zwiebeln', category: 'produce', amount: 2, unit: 'Stück' }, preferred: [] }],
     });
-    expect(readMatchRequest({ market: MARKET, organic: true, items: [{ ...item, amount: null, preferred: { productId: '1', name: 'X' } }] }))
-      .toMatchObject({ organic: true, items: [{ need: { amount: null }, preferred: { productId: '1', name: 'X' } }] });
+    const remembered = [{ productId: '1', name: 'X' }];
+    expect(readMatchRequest({ market: MARKET, organic: true, items: [{ ...item, amount: null, preferred: remembered }] }))
+      .toMatchObject({ organic: true, items: [{ need: { amount: null }, preferred: remembered }] });
+    // Unvollständige gemerkte Produkte fallen weg, und mehr als fünf prüft der Server nicht.
+    const preferred = [{ productId: '1' }, 'X', ...['2', '3', '4', '5', '6', '7'].map((productId) => ({ productId, name: 'X' }))];
+    const read = readMatchRequest({ market: MARKET, items: [{ ...item, preferred }] });
+    expect(read?.items[0]?.preferred.map(({ productId }) => productId)).toEqual(['2', '3', '4', '5', '6']);
     expect(readMatchRequest({ items: [item] })).toBeNull();
     expect(readMatchRequest({ market: 'Musterstadt', items: [item] })).toBeNull();
     expect(readMatchRequest({ market: MARKET, items: [{ ...item, category: 'Gemüse' }] })).toBeNull();
@@ -117,7 +122,7 @@ describe('REWE', () => {
     expect(readMatchRequest({ market: MARKET, items: Array.from({ length: 26 }, () => item) })).toBeNull();
   });
 
-  it('gleicht Positionen ab und nimmt gelernte Produkte, wenn es sie gibt', async () => {
+  it('gleicht Positionen ab und nimmt das erste gemerkte Produkt, das es gibt', async () => {
     const onions = parseProducts(fixture('rewe-search-zwiebeln.json'));
     const searches: string[] = [];
     const client: ReweClient = {
@@ -128,13 +133,16 @@ describe('REWE', () => {
       },
     };
     const need = { name: 'Zwiebeln', category: 'produce' as const, amount: 500, unit: 'g' };
+    const redOnions = { productId: '8919738', name: 'REWE Bio Zwiebeln rot 500g' };
+    const gone = { productId: '123', name: 'Alte Zwiebeln' };
     const results = await matchItems(client, {
       marketId: MARKET,
       organic: false,
       items: [
-        { id: 'neu', need, preferred: null },
-        { id: 'gelernt', need, preferred: { productId: '8919738', name: 'REWE Bio Zwiebeln rot 500g' } },
-        { id: 'weg', need, preferred: { productId: '123', name: 'Alte Zwiebeln' } },
+        { id: 'neu', need, preferred: [] },
+        { id: 'gelernt', need, preferred: [redOnions, gone] },
+        { id: 'weg', need, preferred: [gone] },
+        { id: 'ersatz', need, preferred: [gone, redOnions] },
       ],
     });
 
@@ -142,10 +150,12 @@ describe('REWE', () => {
       ['neu', 'sure', false],
       ['gelernt', 'sure', true],
       ['weg', 'sure', false],
+      ['ersatz', 'sure', true],
     ]);
     expect(results[1]?.candidates[0]).toMatchObject({ id: '8919738', packs: 1, total: 175 });
     expect(results[1]?.candidates.filter((candidate) => candidate.id === '8919738')).toHaveLength(1);
-    // Nicht in der ersten Suche: Das gelernte Produkt wird unter seinem Namen gesucht.
-    expect(searches).toEqual(['Zwiebeln', 'Zwiebeln', 'Zwiebeln', 'Alte Zwiebeln']);
+    expect(results[3]?.candidates[0]?.id).toBe('8919738');
+    // Was nicht in der ersten Suche steht, wird unter seinem Namen gesucht; nach einem Treffer ist Schluss.
+    expect(searches).toEqual(['Zwiebeln', 'Zwiebeln', 'Zwiebeln', 'Alte Zwiebeln', 'Zwiebeln', 'Alte Zwiebeln']);
   });
 });

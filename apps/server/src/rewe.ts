@@ -5,11 +5,13 @@ import {
   FOOD_CATEGORY_IDS,
   matchReweProducts,
   rateProduct,
+  REWE_MAX_PREFERRED,
   reweSearchTerm,
   type FoodCategory,
   type ReweMarket,
   type ReweMatchResult,
   type ReweNeed,
+  type RewePreferred,
   type ReweProduct,
 } from '@zauberjournal/core';
 
@@ -197,8 +199,8 @@ export function createReweClient({ db, fetch: fetchImpl = fetch, now = Date.now,
 export type MatchItem = {
   id: string;
   need: ReweNeed;
-  /** Gelerntes Stammprodukt; hat Vorrang, wenn es im Markt zu finden ist. */
-  preferred: { productId: string; name: string } | null;
+  /** Gemerkte Produkte in ihrer Reihenfolge; das erste, das im Markt zu finden ist, hat Vorrang. */
+  preferred: RewePreferred[];
 };
 
 export type MatchRequest = { marketId: string; organic: boolean; items: MatchItem[] };
@@ -210,6 +212,18 @@ export function isMarketId(value: string): boolean {
 function shortText(value: unknown): string | null {
   const text = str(value);
   return text && text.length <= MAX_TEXT_LENGTH ? text : null;
+}
+
+/** Gemerkte Produkte einer Position; unvollständige fallen weg, mehr als `REWE_MAX_PREFERRED` auch. */
+function readPreferred(value: unknown): RewePreferred[] {
+  return (Array.isArray(value) ? value : [])
+    .filter(isObject)
+    .flatMap((entry) => {
+      const productId = shortText(entry.productId);
+      const name = shortText(entry.name);
+      return productId && name ? [{ productId, name }] : [];
+    })
+    .slice(0, REWE_MAX_PREFERRED);
 }
 
 /** Prüft die Anfrage der App; `null`, wenn etwas fehlt oder nicht passt. */
@@ -224,30 +238,23 @@ export function readMatchRequest(body: JsonObject): MatchRequest | null {
     const category = str(item.category) as FoodCategory;
     if (!id || !name || !FOOD_CATEGORY_IDS.includes(category)) return null;
     const amount = typeof item.amount === 'number' && Number.isFinite(item.amount) ? item.amount : null;
-    const preferred = isObject(item.preferred) ? item.preferred : null;
-    const preferredId = preferred ? shortText(preferred.productId) : null;
-    const preferredName = preferred ? shortText(preferred.name) : null;
-    items.push({
-      id,
-      need: { name, category, amount, unit: str(item.unit) },
-      preferred: preferredId && preferredName ? { productId: preferredId, name: preferredName } : null,
-    });
+    items.push({ id, need: { name, category, amount, unit: str(item.unit) }, preferred: readPreferred(item.preferred) });
   }
   return { marketId, organic: body.organic === true, items };
 }
 
-/** Sucht und bewertet Produkte für alle Positionen, nacheinander. */
+/** Sucht und bewertet Produkte für alle Positionen, nacheinander; gemerkte Produkte in ihrer Reihenfolge. */
 export async function matchItems(client: ReweClient, request: MatchRequest): Promise<ReweMatchResult[]> {
   const results: ReweMatchResult[] = [];
   for (const item of request.items) {
     const products = await client.search(reweSearchTerm(item.need.name).term, request.marketId);
     const match = matchReweProducts(item.need, products, { organic: request.organic });
     let learned: ReweProduct | undefined;
-    if (item.preferred) {
-      const { productId, name } = item.preferred;
+    for (const { productId, name } of item.preferred) {
       // Ein Abruf per Produkt-ID ist nicht bekannt; also prüfen, ob es in der Suche nach seinem Namen auftaucht.
       learned = products.find((product) => product.id === productId);
       learned ??= (await client.search(name, request.marketId)).find((product) => product.id === productId);
+      if (learned) break;
     }
     results.push(
       learned

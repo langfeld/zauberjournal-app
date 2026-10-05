@@ -351,14 +351,20 @@ export function matchReweProducts(need: ReweNeed, products: readonly ReweProduct
   };
 }
 
+/** Ein gemerktes Produkt, so wie der Server es im Markt sucht. */
+export type RewePreferred = { productId: string; name: string };
+
+/** So viele gemerkte Produkte je Lebensmittel prüft der Abgleich höchstens. */
+export const REWE_MAX_PREFERRED = 5;
+
 /** Eine Position für den Abgleich; `id` ist die ID des Lebensmittels. */
 export type ReweMatchRequestItem = ReweNeed & {
   id: string;
-  /** Vom Haushalt gewähltes Produkt; der Server prüft, ob es im Markt zu finden ist. */
-  preferred: { productId: string; name: string } | null;
+  /** Gemerkte Produkte in ihrer Reihenfolge; der Server nimmt das erste, das im Markt zu finden ist. */
+  preferred: RewePreferred[];
 };
 
-/** Ergebnis für eine Position; `learned`: Das gewählte Produkt ist im Markt zu finden und steht vorn. */
+/** Ergebnis für eine Position; `learned`: Ein gemerktes Produkt ist im Markt zu finden und steht vorn. */
 export type ReweMatchResult = { id: string; confidence: ReweConfidence; learned: boolean; candidates: ReweCandidate[] };
 
 // ─── Gespeicherte Zuordnung ───
@@ -367,8 +373,8 @@ export type ReweMatchResult = { id: string; confidence: ReweConfidence; learned:
  * Stand des REWE-Produkts eines Lebensmittels:
  * - `sure`, `unsure`: Vorschlag des Abgleichs, passend bzw. bitte prüfen
  * - `none`: nichts gefunden
- * - `chosen`: vom Haushalt gewählt; gilt bei jedem Abgleich wieder
- * - `missing`: gewählt, aber beim letzten Abgleich nicht im Markt gefunden
+ * - `chosen`: ein gemerktes Produkt, beim Abgleich gefunden oder vom Haushalt gewählt
+ * - `missing`: Keins der gemerkten Produkte war zu finden; das Produkt ist ein Vorschlag zum Prüfen
  * - `skip`: nicht bei REWE kaufen
  */
 export const REWE_STATES = ['sure', 'unsure', 'none', 'chosen', 'missing', 'skip'] as const;
@@ -386,6 +392,19 @@ export type ReweProductRow = {
   grammage: string;
   listingId: string;
   updatedAt: number;
+};
+
+/** Zeile der Tabelle `reweFavorites`: ein gemerktes Produkt eines Lebensmittels, ID `<Lebensmittel>~<Produkt>`. */
+export type ReweFavoriteRow = {
+  foodId: string;
+  productId: string;
+  sortKey: string;
+  name: string;
+  imageUrl: string;
+  /** Preis einer Packung in Cent, Stand der letzten Suche. */
+  price: number;
+  grammage: string;
+  deletedAt: number | null;
 };
 
 /** Preis in Euro für die Anzeige, z. B. „1,29 €“. */

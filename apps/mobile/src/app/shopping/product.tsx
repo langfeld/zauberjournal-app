@@ -2,17 +2,21 @@ import {
   buildShoppingListView,
   chooseReweProduct,
   confirmReweProduct,
+  forgetReweFavorite,
   formatPrice,
   matchReweProducts,
+  moveReweFavorite,
   packsFor,
   parsePackSize,
+  reweFavoritesOf,
   reweSearchTerm,
   setRewePacks,
   skipRewe,
   type ReweCandidate,
+  type ReweFavorite,
   type ReweProduct,
-  type ReweState,
   type RowWrite,
+  type ShoppingItemRewe,
 } from '@zauberjournal/core';
 import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -38,63 +42,150 @@ const PRODUCT_TAGS: { id: string; label: string; icon?: IconName; tone: Tone }[]
   { id: 'vegan', label: 'Vegan', tone: tones.olive },
 ];
 
-const CURRENT_LABELS: Partial<Record<ReweState, { label: string; icon: IconName; tone: Tone }>> = {
-  sure: { label: 'Vorschlag', icon: 'check_circle', tone: tones.green },
-  unsure: { label: 'Vorschlag, bitte prüfen', icon: 'warning', tone: tones.ochre },
-  chosen: { label: 'Gemerkt für die nächsten Einkäufe', icon: 'bookmark', tone: tones.green },
-  missing: { label: 'Gemerkt, aber diesmal nicht gefunden', icon: 'warning', tone: tones.ochre },
-};
+type Place = 'first' | 'fallback';
+
+/** Hinweis, wenn der Abgleich keins der gemerkten Produkte gefunden hat. */
+function missingText(count: number): string {
+  return count === 1 ? 'Das gemerkte Produkt gibt es gerade nicht.' : 'Die gemerkten Produkte gibt es gerade nicht.';
+}
+
+type CurrentLabel = { label: string; icon: IconName; tone: Tone; detail?: string };
+
+/** Woher das Produkt für diesen Einkauf kommt; `favorites`: Zahl der gemerkten Produkte. */
+function currentLabel(rewe: ShoppingItemRewe, favorites: number): CurrentLabel | null {
+  if (rewe.rank === 1) return { label: 'Gemerkt, 1. Wahl', icon: 'bookmark', tone: tones.green };
+  if (rewe.rank !== null) return { label: `Ersatz, ${rewe.rank}. Wahl`, icon: 'alt_route', tone: tones.teal };
+  switch (rewe.state) {
+    case 'sure':
+      return { label: 'Vorschlag', icon: 'check_circle', tone: tones.green };
+    case 'unsure':
+      return { label: 'Vorschlag, bitte prüfen', icon: 'warning', tone: tones.ochre };
+    case 'missing':
+      return { label: 'Vorschlag, bitte prüfen', icon: 'warning', tone: tones.ochre, detail: missingText(favorites) };
+    default:
+      return null;
+  }
+}
+
+/** Packungsangabe ohne Grundpreis, z. B. „1,5kg“. */
+function packOnly(grammage: string): string {
+  return grammage.split('(')[0]!.trim();
+}
+
+function FavoriteRow({
+  favorite,
+  rank,
+  divider,
+  onMoveUp,
+  onForget,
+}: {
+  favorite: ReweFavorite;
+  rank: number;
+  divider: boolean;
+  onMoveUp: (productId: string) => void;
+  onForget: (productId: string) => void;
+}) {
+  const meta = [`${rank}. Wahl`, formatPrice(favorite.price), packOnly(favorite.grammage)].filter(Boolean).join(' · ');
+  return (
+    <View style={[styles.favorite, divider && styles.divider]}>
+      <ReweImage url={favorite.imageUrl} size={40} />
+      <View style={styles.productText}>
+        <Text style={styles.favoriteName} numberOfLines={2}>
+          {favorite.name}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
+      </View>
+      <IconButton
+        icon="arrow_upward"
+        variant="muted"
+        size={36}
+        accessibilityLabel={`${favorite.name} nach oben`}
+        disabled={rank === 1}
+        onPress={() => onMoveUp(favorite.productId)}
+      />
+      <IconButton
+        icon="close"
+        variant="muted"
+        size={36}
+        accessibilityLabel={`${favorite.name} vergessen`}
+        onPress={() => onForget(favorite.productId)}
+      />
+    </View>
+  );
+}
 
 function CandidateRow({
   candidate,
   selected,
+  rank,
   divider,
-  onChoose,
+  expanded,
+  onPress,
+  onPick,
 }: {
   candidate: ReweCandidate;
   selected: boolean;
+  /** Platz unter den gemerkten Produkten, falls es dazugehört. */
+  rank: number | null;
   divider: boolean;
-  onChoose: (product: ReweProduct) => void;
+  /** Zeigt die Knöpfe zum Merken als erste Wahl oder als Ersatz. */
+  expanded: boolean;
+  onPress: (product: ReweProduct) => void;
+  onPick: (product: ReweProduct, place: Place) => void;
 }) {
   const tags = PRODUCT_TAGS.filter((tag) => candidate.tags.includes(tag.id));
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={`${candidate.name}, ${formatPrice(candidate.price)}`}
-      onPress={() => onChoose(candidate)}
-      style={({ pressed }) => [styles.candidate, divider && styles.divider, pressed && styles.pressed]}>
-      <ReweImage url={candidate.imageUrl} size={56} />
-      <View style={styles.productText}>
-        <Text style={styles.candidateName} numberOfLines={2}>
-          {candidate.name}
-        </Text>
-        {candidate.grammage ? (
-          <Text style={styles.meta} numberOfLines={1}>
-            {candidate.grammage}
+    <View style={divider && styles.divider}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected, expanded }}
+        accessibilityLabel={`${candidate.name}, ${formatPrice(candidate.price)}${rank ? `, gemerkt als ${rank}. Wahl` : ''}`}
+        onPress={() => onPress(candidate)}
+        style={({ pressed }) => [styles.candidate, pressed && styles.pressed]}>
+        <ReweImage url={candidate.imageUrl} size={56} />
+        <View style={styles.productText}>
+          <Text style={styles.candidateName} numberOfLines={2}>
+            {candidate.name}
           </Text>
-        ) : null}
-        {tags.length > 0 ? (
-          <View style={styles.tags}>
-            {tags.map((tag) => (
-              <Tag key={tag.id} label={tag.label} icon={tag.icon} tone={tag.tone} />
-            ))}
-          </View>
-        ) : null}
-      </View>
-      <View style={styles.priceColumn}>
-        <Text style={styles.price}>{formatPrice(candidate.price)}</Text>
-        {candidate.packs > 1 ? <Text style={styles.meta}>{`×${candidate.packs} = ${formatPrice(candidate.total)}`}</Text> : null}
-        {selected ? <Icon name="check_circle" size={20} color={colors.primary} /> : null}
-      </View>
-    </Pressable>
+          {candidate.grammage ? (
+            <Text style={styles.meta} numberOfLines={1}>
+              {candidate.grammage}
+            </Text>
+          ) : null}
+          {rank || tags.length > 0 ? (
+            <View style={styles.tags}>
+              {rank ? <Tag label={`${rank}. Wahl`} icon="bookmark" tone={tones.green} /> : null}
+              {tags.map((tag) => (
+                <Tag key={tag.id} label={tag.label} icon={tag.icon} tone={tag.tone} />
+              ))}
+            </View>
+          ) : null}
+        </View>
+        <View style={styles.priceColumn}>
+          <Text style={styles.price}>{formatPrice(candidate.price)}</Text>
+          {candidate.packs > 1 ? <Text style={styles.meta}>{`×${candidate.packs} = ${formatPrice(candidate.total)}`}</Text> : null}
+          {selected ? <Icon name="check_circle" size={20} color={colors.primary} /> : null}
+        </View>
+      </Pressable>
+      {expanded ? (
+        <View style={styles.pickActions}>
+          <Button small variant="secondary" icon="bookmark" title="Als 1. Wahl" onPress={() => onPick(candidate, 'first')} />
+          <Button small variant="secondary" icon="alt_route" title="Als Ersatz" onPress={() => onPick(candidate, 'fallback')} />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 type SearchRound = { term: string; round: number };
 type SearchResult = { round: number; products: ReweProduct[]; error: string | null };
 
-/** Produkt für eine Position der Einkaufsliste wählen; die Wahl gilt auch bei späteren Einkäufen. */
+/**
+ * Produkt für eine Position der Einkaufsliste wählen. Gewählte Produkte merkt sich die App je Lebensmittel
+ * in einer Reihenfolge; beim Abgleich nimmt sie das erste, das REWE gerade hat.
+ */
 export default function ReweProductScreen() {
   const { item: itemId = '' } = useLocalSearchParams<{ item?: string }>();
   const store = useStore();
@@ -109,16 +200,21 @@ export default function ReweProductScreen() {
   const amount = row?.amount ?? null;
   const unit = row?.unit ?? '';
   const listId = row?.listId ?? '';
+  const foodId = row?.foodId ?? '';
   const marketId = settings.marketId;
 
   const view = useMemo(() => (listId ? buildShoppingListView(tables, listId) : undefined), [tables, listId]);
   const item = view
     ? [...view.sections.flatMap((section) => section.items), ...view.pantry, ...view.done].find((entry) => entry.id === itemId)
     : undefined;
+  const favorites = useMemo(() => (foodId ? reweFavoritesOf(tables, foodId) : []), [tables, foodId]);
+  const ranks = useMemo(() => new Map(favorites.map((favorite, index) => [favorite.productId, index + 1])), [favorites]);
 
   const [query, setQuery] = useState(() => reweSearchTerm(foodName).term);
   const [search, setSearch] = useState<SearchRound>(() => ({ term: reweSearchTerm(foodName).term, round: 0 }));
   const [result, setResult] = useState<SearchResult | null>(null);
+  /** Suchergebnis, unter dem die Knöpfe „Als 1. Wahl“ und „Als Ersatz“ stehen. */
+  const [picking, setPicking] = useState<string | null>(null);
 
   useEffect(() => {
     if (!credentials || !marketId || !search.term) return;
@@ -147,7 +243,7 @@ export default function ReweProductScreen() {
   const loading = canSearch && !!search.term && result?.round !== search.round;
   const rewe = item.rewe;
   const current = rewe && rewe.productId && rewe.state !== 'none' && rewe.state !== 'skip' ? rewe : null;
-  const currentLabel = current ? CURRENT_LABELS[current.state] : undefined;
+  const label = current ? currentLabel(current, favorites.length) : null;
   const computedPacks = current ? packsFor(amount, unit, parsePackSize(current.grammage, current.name), category) : 1;
   const need = [item.amount, item.origin === 'pantry' ? 'Vorrat: nachkaufen' : item.sources ? `für ${item.sources}` : '']
     .filter(Boolean)
@@ -156,10 +252,17 @@ export default function ReweProductScreen() {
   const write = (writes: RowWrite[]) => {
     if (store && writes.length > 0) applyWrites(store, writes);
   };
-  const choose = (product: ReweProduct) => {
-    write(chooseReweProduct(tables, itemId, product, Date.now()));
+  const pick = (product: ReweProduct, place: Place) => {
+    write(chooseReweProduct(tables, itemId, product, place, Date.now()));
     router.back();
   };
+  // Ist noch nichts gemerkt, wird das Produkt gleich zur ersten Wahl.
+  const pressCandidate = (product: ReweProduct) => {
+    if (favorites.length === 0) pick(product, 'first');
+    else setPicking((previous) => (previous === product.id ? null : product.id));
+  };
+  const moveUp = (productId: string) => write(moveReweFavorite(tables, foodId, productId, -1));
+  const forget = (productId: string) => write(forgetReweFavorite(tables, foodId, productId, Date.now()));
   const confirm = () => {
     write(confirmReweProduct(tables, itemId, Date.now()));
     router.back();
@@ -185,12 +288,19 @@ export default function ReweProductScreen() {
         {need ? <Text style={styles.meta}>{need}</Text> : null}
       </View>
 
+      {rewe?.state === 'missing' && !current ? (
+        <Notice tone="warning">{`${missingText(favorites.length)} Wähle unten ein anderes.`}</Notice>
+      ) : null}
+
       {current ? (
         <Card>
-          {currentLabel ? (
+          {label ? (
             <View style={styles.currentLabel}>
-              <Icon name={currentLabel.icon} size={18} color={currentLabel.tone.foreground} />
-              <Text style={[styles.currentLabelText, { color: currentLabel.tone.foreground }]}>{currentLabel.label}</Text>
+              <Icon name={label.icon} size={18} color={label.tone.foreground} />
+              <View style={styles.productText}>
+                <Text style={[styles.currentLabelText, { color: label.tone.foreground }]}>{label.label}</Text>
+                {label.detail ? <Text style={styles.meta}>{label.detail}</Text> : null}
+              </View>
             </View>
           ) : null}
           <View style={styles.product}>
@@ -217,8 +327,29 @@ export default function ReweProductScreen() {
             )}
             <Text style={styles.sum}>{`Zusammen ${formatPrice(current.packs * current.price)}`}</Text>
           </View>
-          {current.state === 'chosen' ? null : <Button icon="bookmark" title="Passt, merken" onPress={confirm} />}
+          {current.rank === null ? (
+            <Button icon="bookmark" title={favorites.length > 0 ? 'Als Ersatz merken' : 'Passt, merken'} onPress={confirm} />
+          ) : null}
         </Card>
+      ) : null}
+
+      {favorites.length > 0 ? (
+        <>
+          <SectionTitle>Gemerkt</SectionTitle>
+          <Card style={styles.list}>
+            {favorites.map((favorite, index) => (
+              <FavoriteRow
+                key={favorite.productId}
+                favorite={favorite}
+                rank={index + 1}
+                divider={index > 0}
+                onMoveUp={moveUp}
+                onForget={forget}
+              />
+            ))}
+          </Card>
+          <Hint>Beim nächsten Abgleich nimmt die App das erste, das REWE gerade hat.</Hint>
+        </>
       ) : null}
 
       <SectionTitle>{current ? 'Anderes Produkt' : 'Produkt suchen'}</SectionTitle>
@@ -249,8 +380,11 @@ export default function ReweProductScreen() {
                   key={candidate.id}
                   candidate={candidate}
                   selected={candidate.id === current?.productId}
+                  rank={ranks.get(candidate.id) ?? null}
                   divider={index > 0}
-                  onChoose={choose}
+                  expanded={picking === candidate.id && favorites.length > 0}
+                  onPress={pressCandidate}
+                  onPick={pick}
                 />
               ))}
             </Card>
@@ -276,7 +410,7 @@ const styles = StyleSheet.create({
   need: { gap: 2 },
   needName: { fontFamily: fonts.display, fontSize: 24, lineHeight: 30, color: colors.text },
   meta: { fontSize: 13.5, lineHeight: 19, color: colors.textMuted },
-  currentLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
+  currentLabel: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs + 2 },
   currentLabelText: { fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
   product: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   productText: { flex: 1, gap: 2 },
@@ -286,6 +420,9 @@ const styles = StyleSheet.create({
   loading: { marginVertical: spacing.lg },
   list: { paddingVertical: spacing.xs, gap: 0 },
   candidate: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  pickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.md },
+  favorite: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm + 2 },
+  favoriteName: { fontSize: 15, lineHeight: 20, color: colors.text },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   pressed: { opacity: 0.6 },
   candidateName: { fontSize: 15, lineHeight: 20, color: colors.text },

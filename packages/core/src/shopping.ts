@@ -5,8 +5,8 @@ import { parseIngredientLine } from './ingredient-line.ts';
 import { buildPlanEntry, createDietLookup, type PlanTables } from './plan.ts';
 import { formatAmount, roundScaledAmount } from './quantity.ts';
 import type { IngredientItem } from './recipe.ts';
-import { packsFor, parsePackSize, type ReweProductRow, type ReweState } from './rewe.ts';
-import { changedCells, isActive, type RowWrite, type Table } from './rows.ts';
+import { packsFor, parsePackSize, type ReweFavoriteRow, type ReweProductRow, type ReweState } from './rewe.ts';
+import { activeSorted, changedCells, isActive, type RowWrite, type Table } from './rows.ts';
 import { unitLabel } from './units.ts';
 
 export type ShoppingListStatus = 'open' | 'done';
@@ -33,6 +33,7 @@ export type ShoppingTables = PlanTables & {
   shoppingLists: Table<ShoppingListRow>;
   shoppingItems: Table<ShoppingItemRow>;
   reweProducts: Table<ReweProductRow>;
+  reweFavorites: Table<ReweFavoriteRow>;
 };
 
 // ─── Einheiten zusammenfassen ───
@@ -267,6 +268,8 @@ export type ShoppingItemRewe = {
   packs: number;
   /** Packungen von Hand geändert. */
   manualPacks: boolean;
+  /** Platz unter den gemerkten Produkten (1 = erste Wahl); `null`, wenn das Produkt nicht gemerkt ist. */
+  rank: number | null;
 };
 
 /** Stand des REWE-Abgleichs für alles, was noch zu kaufen ist. */
@@ -303,11 +306,34 @@ export type ShoppingListView = {
   rewe: ShoppingListRewe;
 };
 
-function itemRewe(item: ShoppingItemRow, category: FoodCategory, product: ReweProductRow | undefined): ShoppingItemRewe | null {
+/** Gemerkte Produkte je Lebensmittel, als Produkt-IDs in ihrer Reihenfolge. */
+function favoriteProductIds(tables: ShoppingTables): Map<string, string[]> {
+  const byFood = new Map<string, string[]>();
+  for (const [, favorite] of activeSorted(tables.reweFavorites, () => true)) {
+    byFood.set(favorite.foodId, [...(byFood.get(favorite.foodId) ?? []), favorite.productId]);
+  }
+  return byFood;
+}
+
+/** Zustand für die Anzeige: Wird ein gemerktes Produkt vergessen, ist es nur noch ein Vorschlag. */
+function viewState(product: ReweProductRow, rank: number | null, favorites: readonly string[]): ReweState {
+  if (product.state === 'chosen' && rank === null) return 'unsure';
+  if (product.state === 'missing' && favorites.length === 0) return product.productId ? 'unsure' : 'none';
+  return product.state;
+}
+
+function itemRewe(
+  item: ShoppingItemRow,
+  category: FoodCategory,
+  product: ReweProductRow | undefined,
+  favorites: readonly string[],
+): ShoppingItemRewe | null {
   if (!product) return null;
   const manualPacks = item.rewePacks !== null && item.rewePacks !== undefined;
+  const index = product.productId ? favorites.indexOf(product.productId) : -1;
+  const rank = index >= 0 ? index + 1 : null;
   return {
-    state: product.state,
+    state: viewState(product, rank, favorites),
     productId: product.productId,
     listingId: product.listingId,
     name: product.name,
@@ -318,6 +344,7 @@ function itemRewe(item: ShoppingItemRow, category: FoodCategory, product: RewePr
       ? item.rewePacks!
       : packsFor(item.amount, item.unit, parsePackSize(product.grammage, product.name), category),
     manualPacks,
+    rank,
   };
 }
 
@@ -385,6 +412,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
     .sort((a, b) => a.date.localeCompare(b.date));
   const photos = new Map(entries.map((entry) => [entry.entryId, entry.photo]));
   const photoOf = (entryId: string) => photos.get(entryId) ?? '';
+  const favorites = favoriteProductIds(tables);
 
   const items = Object.entries(tables.shoppingItems)
     .filter(([, item]) => item.listId === listId && isActive(item))
@@ -403,7 +431,9 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
         sources: describeDishes(dishes),
         stock: food && isActive(food) ? (food.stock ?? '') : '',
         category,
-        rewe: item.foodId ? itemRewe(item, category, tables.reweProducts[item.foodId]) : null,
+        rewe: item.foodId
+          ? itemRewe(item, category, tables.reweProducts[item.foodId], favorites.get(item.foodId) ?? [])
+          : null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));

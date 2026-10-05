@@ -14,7 +14,8 @@ const optionalNumber = { type: 'number', allowNull: true, default: null } as con
  * Mengen in Zutaten beziehen sich immer auf die Basisportionen des Rezepts.
  *
  * Ausnahme bei den IDs: Zeilen, die sich aus anderen Daten ergeben, haben eine feste ID aus ihrem Schlüssel
- * (Lebensmittel aus Zutatennamen, Esser und Wahlen im Plan, Positionen der Einkaufsliste aus dem Plan).
+ * (Lebensmittel aus Zutatennamen, Esser und Wahlen im Plan, Positionen der Einkaufsliste aus dem Plan,
+ * REWE-Produkte je Lebensmittel).
  * So entsteht auf zwei Geräten dieselbe Zeile statt eines Duplikats.
  */
 export const tablesSchema = {
@@ -132,8 +133,8 @@ export const tablesSchema = {
     deletedAt: optionalNumber,
   },
   /**
-   * REWE-Produkt je Lebensmittel; die Zeilen-ID ist die ID des Lebensmittels. Was der Haushalt wählt,
-   * gilt bei jedem Abgleich wieder (Zustände siehe `ReweState`). Preis und Packung: Stand des letzten Abgleichs.
+   * REWE-Produkt je Lebensmittel für den Einkauf; die Zeilen-ID ist die ID des Lebensmittels. Ergebnis des
+   * letzten Abgleichs oder der letzten Wahl (Zustände siehe `ReweState`). Preis und Packung: Stand des letzten Abgleichs.
    */
   reweProducts: {
     state: { enum: REWE_STATES, default: 'none' },
@@ -144,6 +145,20 @@ export const tablesSchema = {
     grammage: { type: 'string', default: '' },
     listingId: { type: 'string', default: '' },
     updatedAt: { type: 'number', default: 0 },
+  },
+  /**
+   * Gemerkte REWE-Produkte je Lebensmittel, ID `<Lebensmittel>~<Produkt>`. Beim Abgleich gilt das erste,
+   * das der Markt gerade hat. Name, Bild, Preis und Packung: Stand der letzten Suche.
+   */
+  reweFavorites: {
+    foodId: { type: 'string', default: '' },
+    productId: { type: 'string', default: '' },
+    sortKey: { type: 'string', default: '' },
+    name: { type: 'string', default: '' },
+    imageUrl: { type: 'string', default: '' },
+    price: { type: 'number', default: 0 },
+    grammage: { type: 'string', default: '' },
+    deletedAt: optionalNumber,
   },
 } as const satisfies TablesSchema;
 
