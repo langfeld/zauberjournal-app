@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Erzeugt App-Icon, Startbildschirm und Favicon unter apps/mobile/assets/images.
 
-Motiv: ein „Z“ in Fraunces mit Funkeln aus Material Symbols auf Kräutergrün.
+Motiv: ein aufgeschlagenes Rezeptbuch mit Funkeln, beides aus Material Symbols, auf Kräutergrün.
 Aufruf im Repo-Root nach `npm install` (die Schriften kommen aus node_modules):
 
     python3 scripts/create-app-icons.py
@@ -18,9 +18,10 @@ ROOT = Path(__file__).resolve().parent.parent
 FONTS = ROOT / 'node_modules/@expo-google-fonts'
 OUT = ROOT / 'apps/mobile/assets/images'
 
-LETTER_FONT = FONTS / 'fraunces/700Bold_Italic/Fraunces_700Bold_Italic.ttf'
 SYMBOL_FONT = FONTS / 'material-symbols/600SemiBold/MaterialSymbols_600SemiBold.ttf'
-SPARKLE = chr(json.loads((ROOT / 'node_modules/expo-symbols/build/android/symbols.json').read_text())['auto_awesome'])
+SYMBOLS = json.loads((ROOT / 'node_modules/expo-symbols/build/android/symbols.json').read_text())
+BOOK = chr(SYMBOLS['menu_book'])
+SPARKLE = chr(SYMBOLS['auto_awesome'])
 
 GREEN_TOP, GREEN_BOTTOM = '#3A7A5A', '#24533D'
 CREAM = '#F7F2EA'
@@ -51,14 +52,19 @@ def centered(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont,
     draw.text((center[0] - (right - left) / 2 - left, center[1] - (bottom - top) / 2 - top), text, font=font, fill=fill)
 
 
-def motif(size: int, extent: float, letter=CREAM, sparkle=SAFFRON) -> Image.Image:
-    """Z und Funkeln auf durchsichtigem Grund; `extent` ist der Anteil der Fläche, den das Motiv füllt."""
+def motif(size: int, extent: float, book=CREAM, sparkle=SAFFRON) -> Image.Image:
+    """Buch und Funkeln auf durchsichtigem Grund; `extent` ist der Anteil der Fläche, den das Motiv füllt.
+
+    Das Funkeln bleibt innerhalb des Kreises, den Android bei runden Icons sicher zeigt.
+    """
     image = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     unit = size * extent
     offset = (size - unit) / 2
-    centered(draw, 'Z', ImageFont.truetype(str(LETTER_FONT), int(unit * 0.60)), (offset + unit * 0.47, offset + unit * 0.54), letter)
-    centered(draw, SPARKLE, ImageFont.truetype(str(SYMBOL_FONT), int(unit * 0.20)), (offset + unit * 0.73, offset + unit * 0.26), sparkle)
+    font = ImageFont.truetype(str(SYMBOL_FONT), int(unit * 0.50))
+    centered(draw, BOOK, font, (offset + unit * 0.45, offset + unit * 0.57), book)
+    font = ImageFont.truetype(str(SYMBOL_FONT), int(unit * 0.20))
+    centered(draw, SPARKLE, font, (offset + unit * 0.73, offset + unit * 0.26), sparkle)
     return image
 
 
@@ -80,7 +86,7 @@ def main() -> None:
     save(gradient(big), 'android-icon-background.png')
     save(motif(big, adaptive), 'android-icon-foreground.png')
     white = (255, 255, 255)
-    save(motif(big, adaptive, letter=white, sparkle=white), 'android-icon-monochrome.png')
+    save(motif(big, adaptive, book=white, sparkle=white), 'android-icon-monochrome.png')
 
     # Startbildschirm: das Icon als Kreis auf cremefarbenem Grund (Farbe in app.json).
     # Android 12+ schneidet das Bild rund zu; der Kreis bleibt deshalb innerhalb von 62 %.
