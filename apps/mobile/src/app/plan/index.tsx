@@ -12,6 +12,7 @@ import {
   startOfWeek,
   weekday,
   weekdayLabel,
+  type Meal,
   type PlanEntryView,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
@@ -20,7 +21,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { MEAL_ICONS } from '@/components/category-style';
 import { Icon, type IconName } from '@/components/icon';
-import { RecipeThumbnail } from '@/components/recipe-photo';
+import { RecipeCover, RecipeThumbnail } from '@/components/recipe-photo';
 import { Button, IconButton, Segmented, Tag } from '@/components/ui';
 import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
 import { colors, fonts, radius, shadows, spacing, tones, type Tone } from '@/theme';
@@ -41,7 +42,8 @@ function statusTag(entry: PlanEntryView): { label: string; icon: IconName; tone:
   return entry.shoppingListId ? { label: 'auf der Einkaufsliste', icon: 'shopping_cart', tone: tones.ochre } : null;
 }
 
-function EntryRow({ entry }: { entry: PlanEntryView }) {
+/** Ein Gericht im Plan. Das erste des Tages steht schon groß im Bild darüber, deshalb ohne Vorschaubild. */
+function EntryRow({ entry, featured }: { entry: PlanEntryView; featured: boolean }) {
   const status = statusTag(entry);
   const description = describePlanEntry(entry);
   return (
@@ -49,9 +51,11 @@ function EntryRow({ entry }: { entry: PlanEntryView }) {
       accessibilityRole="button"
       onPress={() => router.push(`/plan/${entry.id}`)}
       style={({ pressed }) => [styles.entry, pressed && styles.pressed]}>
-      <RecipeThumbnail photoId={entry.recipe?.photo ?? ''} title={entry.title} size={48} />
+      {featured ? null : <RecipeThumbnail photoId={entry.recipe?.photo ?? ''} title={entry.title} size={44} />}
       <View style={styles.entryText}>
-        <Text style={[styles.entryTitle, entry.status === 'cooked' && styles.done]} numberOfLines={2}>
+        <Text
+          style={[styles.entryTitle, featured && styles.entryTitleFeatured, entry.status === 'cooked' && styles.done]}
+          numberOfLines={2}>
           {entry.title}
         </Text>
         {description ? <Text style={styles.meta}>{description}</Text> : null}
@@ -59,6 +63,72 @@ function EntryRow({ entry }: { entry: PlanEntryView }) {
       </View>
       <Icon name="chevron_right" size={20} color={colors.borderStrong} />
     </Pressable>
+  );
+}
+
+/** Oben „Heute“, „Morgen“ oder der Wochentag, darunter der Tag des Monats. */
+function DateBadge({ day, today, onPhoto }: { day: string; today: string; onPhoto?: boolean }) {
+  const relative = formatRelativeDate(day, today);
+  const label = relative === formatDate(day) ? weekdayLabel(weekday(day)) : relative;
+  const isToday = day === today;
+  return (
+    <View style={[styles.dateBadge, onPhoto && styles.dateBadgeOnPhoto, isToday && styles.dateBadgeToday]}>
+      <Text style={[styles.dateLabel, isToday && styles.dateTextToday]}>{label}</Text>
+      <Text style={[styles.dateNumber, isToday && styles.dateTextToday]}>{dayOfMonth(day)}</Text>
+    </View>
+  );
+}
+
+/**
+ * Ein Tag der Wochenansicht. Ist etwas geplant, steht das Bild des ersten Gerichts groß oben
+ * und das Datum darauf; ein leerer Tag ist nur eine schmale Zeile.
+ */
+function WeekDay({ day, today, meals, entries }: { day: string; today: string; meals: Meal[]; entries: PlanEntryView[] }) {
+  const byMeal = meals.map((meal) => ({ meal, entries: entries.filter((entry) => entry.meal === meal.id) }));
+  const hero = byMeal.flatMap((group) => group.entries)[0];
+  return (
+    <View style={[styles.day, day === today && styles.today, day < today && styles.dayPast]}>
+      {hero ? (
+        <View>
+          {/* Für Screenreader reicht die Zeile darunter, sie führt zum selben Eintrag. */}
+          <Pressable aria-hidden onPress={() => router.push(`/plan/${hero.id}`)} style={({ pressed }) => pressed && styles.pressed}>
+            {/* Ohne Foto genügt ein flacheres Banner mit dem Anfangsbuchstaben. */}
+            <RecipeCover photoId={hero.recipe?.photo ?? ''} title={hero.title} aspectRatio={hero.recipe?.photo ? 16 / 9 : 3} />
+          </Pressable>
+          <View style={styles.badgeOnPhoto}>
+            <DateBadge day={day} today={today} onPhoto />
+          </View>
+        </View>
+      ) : null}
+      <View style={[styles.dayBody, !hero && styles.dayBodyEmpty]}>
+        {hero ? null : <DateBadge day={day} today={today} />}
+        <View style={styles.meals}>
+          {byMeal.map(({ meal, entries: mealEntries }) => (
+            <View key={meal.id} style={styles.meal}>
+              {meals.length > 1 ? (
+                <View style={styles.mealLabel}>
+                  <Icon name={MEAL_ICONS[meal.id]} size={15} color={colors.textMuted} />
+                  <Text style={styles.mealLabelText}>{meal.label}</Text>
+                </View>
+              ) : null}
+              {mealEntries.map((entry) => (
+                <EntryRow key={entry.id} entry={entry} featured={entry === hero} />
+              ))}
+              <View style={styles.addRow}>
+                <Button
+                  small
+                  variant="ghost"
+                  icon="add"
+                  title="Gericht"
+                  accessibilityLabel={`${meal.label} am ${formatDate(day)} planen`}
+                  onPress={() => router.push({ pathname: '/plan/add', params: { date: day, meal: meal.id } })}
+                />
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -115,47 +185,7 @@ export default function PlanScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {mode === 'week' ? (
-          days.map((day) => {
-            const isToday = day === today;
-            const relative = formatRelativeDate(day, today);
-            return (
-              <View key={day} style={[styles.day, isToday && styles.today]}>
-                <View style={[styles.dateBadge, isToday && styles.dateBadgeToday, day < today && styles.dateBadgePast]}>
-                  <Text style={[styles.dateWeekday, isToday && styles.dateTextToday]}>{weekdayLabel(weekday(day))}</Text>
-                  <Text style={[styles.dateNumber, isToday && styles.dateTextToday]}>{dayOfMonth(day)}</Text>
-                </View>
-                <View style={styles.dayBody}>
-                  {relative !== formatDate(day) ? <Text style={styles.relative}>{relative}</Text> : null}
-                  {meals.map((meal) => {
-                    const mealEntries = (byDay.get(day) ?? []).filter((entry) => entry.meal === meal.id);
-                    return (
-                      <View key={meal.id} style={styles.meal}>
-                        {meals.length > 1 ? (
-                          <View style={styles.mealLabel}>
-                            <Icon name={MEAL_ICONS[meal.id]} size={15} color={colors.textMuted} />
-                            <Text style={styles.mealLabelText}>{meal.label}</Text>
-                          </View>
-                        ) : null}
-                        {mealEntries.map((entry) => (
-                          <EntryRow key={entry.id} entry={entry} />
-                        ))}
-                        <View style={styles.addRow}>
-                          <Button
-                            small
-                            variant="ghost"
-                            icon="add"
-                            title="Gericht"
-                            accessibilityLabel={`${meal.label} am ${formatDate(day)} planen`}
-                            onPress={() => router.push({ pathname: '/plan/add', params: { date: day, meal: meal.id } })}
-                          />
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            );
-          })
+          days.map((day) => <WeekDay key={day} day={day} today={today} meals={meals} entries={byDay.get(day) ?? []} />)
         ) : (
           <View style={styles.month}>
             <View style={styles.weekRow}>
@@ -219,9 +249,7 @@ const styles = StyleSheet.create({
   },
   content: { padding: spacing.lg, paddingTop: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
   day: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.md,
+    overflow: 'hidden',
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.hairline,
@@ -229,27 +257,32 @@ const styles = StyleSheet.create({
     boxShadow: shadows.card,
   },
   today: { borderColor: colors.primary, borderWidth: 1.5 },
+  dayPast: { opacity: 0.6 },
+  badgeOnPhoto: { position: 'absolute', top: spacing.md, left: spacing.md, pointerEvents: 'none' },
   dateBadge: {
-    width: 52,
-    paddingVertical: spacing.sm,
+    minWidth: 54,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm,
     alignItems: 'center',
     alignSelf: 'flex-start',
     borderRadius: radius.md,
     backgroundColor: colors.surfaceSunken,
   },
+  dateBadgeOnPhoto: { backgroundColor: colors.surface, boxShadow: shadows.raised },
   dateBadgeToday: { backgroundColor: colors.primary },
-  dateBadgePast: { opacity: 0.55 },
-  dateWeekday: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted },
+  dateLabel: { fontSize: 11.5, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: colors.textMuted },
   dateNumber: { fontFamily: fonts.display, fontSize: 24, lineHeight: 30, color: colors.text },
   dateTextToday: { color: colors.primaryText },
-  dayBody: { flex: 1, gap: spacing.xs },
-  relative: { fontSize: 12.5, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: colors.primary },
+  dayBody: { padding: spacing.md, paddingTop: spacing.sm + 2, gap: spacing.xs },
+  dayBodyEmpty: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingTop: spacing.md },
+  meals: { flex: 1, gap: spacing.xs },
   meal: { gap: spacing.xs },
   mealLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   mealLabelText: { fontSize: 12.5, fontWeight: '700', letterSpacing: 0.4, color: colors.textMuted, textTransform: 'uppercase' },
   entry: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xs },
   entryText: { flex: 1, gap: 3 },
   entryTitle: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },
+  entryTitleFeatured: { fontSize: 19, lineHeight: 25 },
   done: { color: colors.textMuted },
   meta: { fontSize: 13, color: colors.textMuted },
   addRow: { flexDirection: 'row', marginLeft: -spacing.sm },
