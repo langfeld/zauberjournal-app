@@ -258,6 +258,7 @@ export type ShoppingItemView = {
 export type ShoppingItemRewe = {
   state: ReweState;
   productId: string;
+  listingId: string;
   name: string;
   imageUrl: string;
   grammage: string;
@@ -308,6 +309,7 @@ function itemRewe(item: ShoppingItemRow, category: FoodCategory, product: RewePr
   return {
     state: product.state,
     productId: product.productId,
+    listingId: product.listingId,
     name: product.name,
     imageUrl: product.imageUrl,
     grammage: product.grammage,

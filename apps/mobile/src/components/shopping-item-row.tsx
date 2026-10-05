@@ -1,4 +1,4 @@
-import type { ShoppingItemDish, ShoppingItemView } from '@zauberjournal/core';
+import type { ReweOrderStatus, ShoppingItemDish, ShoppingItemView } from '@zauberjournal/core';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '@/theme';
@@ -35,10 +35,12 @@ type ShoppingItemRowProps = {
   divider?: boolean;
   /** Zeigt das REWE-Produkt der Position; Antippen öffnet die Auswahl. */
   onOpenProduct?: () => void;
+  /** Was das Userscript mit dem REWE-Produkt gemacht hat. */
+  cart?: ReweOrderStatus;
 };
 
 /** Eine Position der Einkaufsliste; Antippen hakt sie ab. */
-export function ShoppingItemRow({ item, onToggle, action, onRemove, divider, onOpenProduct }: ShoppingItemRowProps) {
+export function ShoppingItemRow({ item, onToggle, action, onRemove, divider, onOpenProduct, cart }: ShoppingItemRowProps) {
   const note = item.origin === 'pantry' ? 'Vorrat: nachkaufen' : item.sources;
   const rewe = onOpenProduct && !item.checked ? item.rewe : null;
   return (
@@ -75,7 +77,7 @@ export function ShoppingItemRow({ item, onToggle, action, onRemove, divider, onO
       </View>
       {rewe && onOpenProduct ? (
         <View style={styles.product}>
-          <ReweProductLine rewe={rewe} onPress={onOpenProduct} />
+          <ReweProductLine rewe={rewe} onPress={onOpenProduct} cart={cart} />
         </View>
       ) : null}
     </View>

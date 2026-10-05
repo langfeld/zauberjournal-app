@@ -21,6 +21,8 @@ ENV NODE_ENV=production \
     PORT=3000
 WORKDIR /app
 COPY --from=build /repo/apps/server/dist/ ./
+# Der Server liefert das Userscript unter /rewe.user.js aus.
+COPY userscript/zauberjournal-rewe.user.js ./
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME /data

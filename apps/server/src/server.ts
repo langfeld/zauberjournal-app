@@ -11,6 +11,7 @@ import { createHousehold } from './household.ts';
 import { createImporter, type ImporterConfig } from './importer.ts';
 import { createPhotoStore } from './photos.ts';
 import { createReweClient } from './rewe.ts';
+import { createOrderStore } from './rewe-order.ts';
 import { createSyncServer } from './sync.ts';
 
 export type ServerOptions = {
@@ -45,6 +46,7 @@ export async function startServer({
     photos,
     importer,
     rewe: createReweClient({ db, log }),
+    orders: createOrderStore(db),
     onDeviceRevoked: (deviceId) => {
       sync.disconnectDevice(deviceId);
       announceSetupCode();

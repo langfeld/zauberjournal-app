@@ -1,4 +1,4 @@
-import { formatPrice, reweImageUrl, type ShoppingItemRewe } from '@zauberjournal/core';
+import { formatPrice, reweImageUrl, type ReweOrderStatus, type ShoppingItemRewe } from '@zauberjournal/core';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -40,8 +40,22 @@ const STATE_TAGS = {
   missing: 'nicht gefunden',
 } as const;
 
+const CART_LABELS: Record<ReweOrderStatus, string> = {
+  pending: '',
+  added: 'im Warenkorb',
+  present: 'im Warenkorb',
+  failed: 'nicht in den Warenkorb gekommen',
+};
+
+type ReweProductLineProps = {
+  rewe: ShoppingItemRewe;
+  onPress: () => void;
+  /** Was das Userscript mit dem Produkt gemacht hat. */
+  cart?: ReweOrderStatus;
+};
+
 /** Das REWE-Produkt unter einer Position der Einkaufsliste; Antippen öffnet die Auswahl. */
-export function ReweProductLine({ rewe, onPress }: { rewe: ShoppingItemRewe; onPress: () => void }) {
+export function ReweProductLine({ rewe, onPress, cart = 'pending' }: ReweProductLineProps) {
   if (rewe.state === 'skip' || rewe.state === 'none' || !rewe.productId) {
     const skipped = rewe.state === 'skip';
     const label = skipped ? 'Nicht bei REWE' : 'Kein Produkt gefunden';
@@ -67,7 +81,7 @@ export function ReweProductLine({ rewe, onPress }: { rewe: ShoppingItemRewe; onP
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`REWE: ${name}, ${total}${tag ? `, ${tag}` : ''}. Ändern`}
+      accessibilityLabel={`REWE: ${name}, ${total}${tag ? `, ${tag}` : ''}${CART_LABELS[cart] ? `, ${CART_LABELS[cart]}` : ''}. Ändern`}
       onPress={onPress}
       style={({ pressed }) => [styles.line, pressed && styles.pressed]}>
       <ReweImage url={rewe.imageUrl} size={30} />
@@ -79,6 +93,8 @@ export function ReweProductLine({ rewe, onPress }: { rewe: ShoppingItemRewe; onP
           <Text style={styles.tagText}>{tag}</Text>
         </View>
       ) : null}
+      {cart === 'added' || cart === 'present' ? <Icon name="shopping_cart" size={16} color={colors.primary} /> : null}
+      {cart === 'failed' ? <Icon name="error" size={16} color={colors.danger} /> : null}
       <Text style={styles.price}>{total}</Text>
       <Icon name="chevron_right" size={18} color={colors.textMuted} />
     </Pressable>

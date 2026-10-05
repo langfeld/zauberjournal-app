@@ -8,6 +8,7 @@ import type { Device, Household } from './household.ts';
 import { ImportError, readImportRequest, type Importer } from './importer.ts';
 import { isJpeg, isPhotoId, type PhotoStore } from './photos.ts';
 import { isMarketId, matchItems, readMatchRequest, ReweError, type ReweClient } from './rewe.ts';
+import { loadUserscript, readOrderRequest, readOrderResults, type OrderStore } from './rewe-order.ts';
 
 type Env = { Variables: { device: Device } };
 
@@ -33,17 +34,26 @@ function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+/** Adresse, unter der Geräte den Server erreichen; hinter Pangolin aus den Kopfzeilen der Weiterleitung. */
+function publicOrigin(c: Context): string {
+  const url = new URL(c.req.url);
+  const proto = c.req.header('X-Forwarded-Proto')?.split(',')[0]?.trim() || url.protocol.replace(':', '');
+  const host = c.req.header('X-Forwarded-Host')?.split(',')[0]?.trim() || c.req.header('Host') || url.host;
+  return `${proto}://${host}`;
+}
+
 export type AppOptions = {
   household: Household;
   photos: PhotoStore;
   importer: Importer;
   rewe: ReweClient;
+  orders: OrderStore;
   /** Wird aufgerufen, nachdem ein Gerät abgemeldet wurde (z. B. um offene Sync-Verbindungen zu trennen). */
   onDeviceRevoked?: (deviceId: string) => void;
 };
 
 /** HTTP-API des Servers. */
-export function createApp({ household, photos, importer, rewe, onDeviceRevoked = () => {} }: AppOptions) {
+export function createApp({ household, photos, importer, rewe, orders, onDeviceRevoked = () => {} }: AppOptions) {
   const app = new Hono<Env>();
   app.use('/api/*', cors());
 
@@ -167,6 +177,34 @@ export function createApp({ household, photos, importer, rewe, onDeviceRevoked =
     const request = readMatchRequest(await readBody(c));
     if (!request) return c.json({ error: 'Die Positionen für den Abgleich sind unvollständig.' }, 400);
     return askRewe(c, async () => ({ results: await matchItems(rewe, request) }));
+  });
+
+  app.get('/api/rewe/order', requireDevice, (c) => c.json({ order: orders.get() }));
+
+  app.put('/api/rewe/order', requireDevice, async (c) => {
+    const request = readOrderRequest(await readBody(c));
+    if (!request) return c.json({ error: 'Der Auftrag für den Warenkorb ist unvollständig.' }, 400);
+    return c.json({ order: orders.replace(request) });
+  });
+
+  app.delete('/api/rewe/order', requireDevice, (c) => {
+    orders.clear();
+    return c.body(null, 204);
+  });
+
+  app.post('/api/rewe/order/results', requireDevice, async (c) => {
+    const body = readOrderResults(await readBody(c));
+    if (!body) return c.json({ error: 'Die Rückmeldung ist unvollständig.' }, 400);
+    const order = orders.report(body.order, body.results);
+    if (!order) return c.json({ error: 'Dieser Auftrag ist nicht mehr aktuell.' }, 409);
+    return c.json({ order });
+  });
+
+  // Ohne Anmeldung: Im Script steht kein Schlüssel, das Token gibt man beim Einrichten ein.
+  app.get('/rewe.user.js', (c) => {
+    const script = loadUserscript(publicOrigin(c));
+    if (!script) return c.text('Das Userscript fehlt auf dem Server.', 404);
+    return c.body(script, 200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache' });
   });
 
   return app;

@@ -7,13 +7,14 @@ import { planAddEntry } from './plan.ts';
 import { rateProduct, type ReweMatchResult, type ReweProduct } from './rewe.ts';
 import {
   applyReweMatches,
+  buildReweOrder,
   chooseReweProduct,
   confirmReweProduct,
   reweMatchItems,
   setRewePacks,
   skipRewe,
 } from './rewe-shopping.ts';
-import { buildShoppingListView, createShoppingList, syncShoppingList, type ShoppingItemView } from './shopping.ts';
+import { addManualItem, buildShoppingListView, createShoppingList, syncShoppingList, type ShoppingItemView } from './shopping.ts';
 import { counterIds, createTestStore } from './test-helpers.ts';
 
 const searches: Record<string, ReweProduct[]> = fixtures;
@@ -52,7 +53,7 @@ function setUp() {
     const need = { amount, unit, category: item(name).category };
     return { id: foodId, confidence, learned, candidates: candidates.map((candidate) => rateProduct(need, candidate)) };
   };
-  return { test, listId, view, item, result };
+  return { test, ids, listId, view, item, result };
 }
 
 describe('REWE-Abgleich der Einkaufsliste', () => {
@@ -140,5 +141,47 @@ describe('REWE-Abgleich der Einkaufsliste', () => {
 
     test.apply(chooseReweProduct(test.tables(), item('Knoblauch').id, product('Knoblauch', 'Frischer Knoblauch ca. 60g'), 4000));
     expect(item('Knoblauch').rewe).toMatchObject({ state: 'chosen', packs: 1 });
+  });
+
+  it('stellt den Auftrag fürs Userscript zusammen', () => {
+    const { test, ids, listId, view, item, result } = setUp();
+    test.apply(addManualItem(test.tables(), listId, '2 Zwiebeln', 2500, ids));
+    test.apply(
+      applyReweMatches(
+        test.tables(),
+        listId,
+        [result('Zwiebeln', [looseOnion], 'sure'), result('Kokosmilch', [coconutMilk], 'unsure'), result('Knoblauch', [], 'none')],
+        3000,
+      ),
+    );
+    const onionItems = view()
+      .sections.flatMap((section) => section.items)
+      .filter((entry) => entry.name === 'Zwiebeln')
+      .map((entry) => entry.id);
+
+    // Ohne Produkt (Knoblauch) oder ohne Abgleich (Salz) kommt nichts in den Auftrag; gleiche Produkte zählen zusammen.
+    expect(buildReweOrder(view(), '1234567')).toEqual({
+      listId,
+      listName: 'Einkauf Mo 5.10.',
+      marketId: '1234567',
+      products: [
+        {
+          productId: looseOnion.id,
+          listingId: looseOnion.listingId,
+          name: looseOnion.name,
+          packs: 5,
+          price: looseOnion.price,
+          itemIds: onionItems,
+        },
+        {
+          productId: coconutMilk.id,
+          listingId: coconutMilk.listingId,
+          name: coconutMilk.name,
+          packs: 2,
+          price: coconutMilk.price,
+          itemIds: [item('Kokosmilch').id],
+        },
+      ],
+    });
   });
 });

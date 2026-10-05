@@ -1,5 +1,6 @@
 import {
   addManualItem,
+  buildReweOrder,
   buildShoppingListView,
   checkShoppingItem,
   completeShoppingList,
@@ -10,6 +11,7 @@ import {
   removeShoppingItem,
   syncShoppingList,
   updateFood,
+  type ReweOrderStatus,
   type RowWrite,
   type ShoppingListEntry,
 } from '@zauberjournal/core';
@@ -25,6 +27,7 @@ import { ShoppingItemRow } from '@/components/shopping-item-row';
 import { AddField, Button, Card, Chip, EmptyState, Hint, IconCircle, ProgressBar } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useReweMatch } from '@/data/rewe-match';
+import { useReweOrder } from '@/data/rewe-order';
 import { useStore } from '@/data/store';
 import { useAppTables, useToday } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
@@ -54,6 +57,7 @@ export default function ShoppingScreen() {
   const [newItem, setNewItem] = useState('');
   const [showDone, setShowDone] = useState(false);
   const rewe = useReweMatch();
+  const reweOrder = useReweOrder();
   const listId = lists.find((list) => list.id === selected)?.id ?? lists[0]?.id;
 
   // Die Positionen folgen dem Plan: Ändern sich Gerichte, Portionen oder der Vorrat, passt sich die Liste an.
@@ -64,6 +68,13 @@ export default function ShoppingScreen() {
   }, [store, tables, listId]);
 
   const view = useMemo(() => (listId ? buildShoppingListView(tables, listId) : undefined), [tables, listId]);
+  // Der Auftrag fürs Userscript gehört zu einer Liste; für andere Listen zählt er nicht.
+  const order = reweOrder.order && reweOrder.order.listId === listId ? reweOrder.order : null;
+  const cartStatus = useMemo(() => {
+    const statuses = new Map<string, ReweOrderStatus>();
+    for (const product of order?.products ?? []) for (const id of product.itemIds) statuses.set(id, product.status);
+    return statuses;
+  }, [order]);
 
   const write = (writes: RowWrite[]) => {
     if (store && writes.length > 0) applyWrites(store, writes);
@@ -101,6 +112,18 @@ export default function ShoppingScreen() {
   };
   const toggle = (itemId: string, checked: boolean) => write(checkShoppingItem(tables, itemId, checked));
   const openProduct = (itemId: string) => router.push({ pathname: '/shopping/product', params: { item: itemId } });
+  const sendOrder = async () => {
+    const { toCheck, pending } = view.rewe;
+    if (toCheck > 0 || pending > 0) {
+      const parts = [
+        toCheck > 0 ? `${toCheck} ${toCheck === 1 ? 'Position ist' : 'Positionen sind'} noch zu prüfen.` : '',
+        pending > 0 ? `${pending} ${pending === 1 ? 'Position ist' : 'Positionen sind'} noch nicht abgeglichen.` : '',
+        'Unsichere Vorschläge kommen so in den Warenkorb, Positionen ohne Produkt fehlen.',
+      ];
+      if (!(await confirm('Trotzdem in den Warenkorb?', parts.filter(Boolean).join(' '), 'Schicken'))) return;
+    }
+    await reweOrder.send(buildReweOrder(view, rewe.settings.marketId));
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -149,8 +172,11 @@ export default function ShoppingScreen() {
           summary={view.rewe}
           settings={rewe.settings}
           progress={rewe.progress}
-          error={rewe.error}
+          error={rewe.error ?? reweOrder.error}
           onMatch={() => void rewe.run(tables, view.id)}
+          order={order}
+          sending={reweOrder.sending}
+          onSend={() => void sendOrder()}
         />
       ) : null}
 
@@ -180,6 +206,7 @@ export default function ShoppingScreen() {
                   onToggle={() => toggle(item.id, true)}
                   onRemove={item.origin === 'manual' ? () => write(removeShoppingItem(item.id, Date.now())) : undefined}
                   onOpenProduct={rewe.connected && rewe.settings.marketId ? () => openProduct(item.id) : undefined}
+                  cart={cartStatus.get(item.id)}
                 />
               ))}
             </View>

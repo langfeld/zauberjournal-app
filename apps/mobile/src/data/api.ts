@@ -1,4 +1,12 @@
-import type { ImportedRecipe, ReweMarket, ReweMatchRequestItem, ReweMatchResult, ReweProduct } from '@zauberjournal/core';
+import type {
+  ImportedRecipe,
+  ReweMarket,
+  ReweMatchRequestItem,
+  ReweMatchResult,
+  ReweOrder,
+  ReweOrderRequest,
+  ReweProduct,
+} from '@zauberjournal/core';
 
 /** Zugangsdaten dieses Geräts für den Server des Haushalts. */
 export type Credentials = { serverUrl: string; deviceId: string; token: string };
@@ -154,6 +162,27 @@ export async function matchReweItems(
     body: { market: marketId, organic, items },
   });
   return results;
+}
+
+/** Auftrag fürs Userscript mit dessen Rückmeldungen; `null`, wenn es keinen gibt. */
+export async function getReweOrder(credentials: Credentials): Promise<ReweOrder | null> {
+  const { order } = await request<{ order: ReweOrder | null }>(credentials.serverUrl, '/api/rewe/order', { token: credentials.token });
+  return order;
+}
+
+/** Legt einen neuen Auftrag fürs Userscript ab; er ersetzt den vorigen. */
+export async function sendReweOrder(credentials: Credentials, order: ReweOrderRequest): Promise<ReweOrder> {
+  const result = await request<{ order: ReweOrder }>(credentials.serverUrl, '/api/rewe/order', {
+    method: 'PUT',
+    token: credentials.token,
+    body: order,
+  });
+  return result.order;
+}
+
+/** Adresse, unter der der Server das Userscript ausliefert. */
+export function userscriptUrl(credentials: Credentials): string {
+  return `${credentials.serverUrl}/rewe.user.js`;
 }
 
 export function photoUrl(credentials: Credentials, photoId: string): string {

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { createId } from '@zauberjournal/core';
+import { createId, type ReweOrder } from '@zauberjournal/core';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from './app.ts';
@@ -11,6 +11,7 @@ import { createHousehold } from './household.ts';
 import { createImporter } from './importer.ts';
 import { createPhotoStore } from './photos.ts';
 import { ReweError, type ReweClient } from './rewe.ts';
+import { createOrderStore } from './rewe-order.ts';
 
 const temporaryDirs: string[] = [];
 afterEach(() => {
@@ -18,7 +19,8 @@ afterEach(() => {
 });
 
 function setUp() {
-  const household = createHousehold(openDatabase(':memory:'));
+  const db = openDatabase(':memory:');
+  const household = createHousehold(db);
   const dir = mkdtempSync(join(tmpdir(), 'zauberjournal-test-'));
   temporaryDirs.push(dir);
   const revoked: string[] = [];
@@ -35,6 +37,7 @@ function setUp() {
     photos: createPhotoStore(dir),
     importer: createImporter({ apiKey: '', models: [], log: () => {} }),
     rewe,
+    orders: createOrderStore(db, () => 1000),
     onDeviceRevoked: (deviceId) => revoked.push(deviceId),
   });
   const post = (path: string, body: unknown, token?: string) =>
@@ -156,5 +159,51 @@ describe('API', () => {
     expect((await post('/api/rewe/match', { market: '1234567', items: [{ id: 'a' }] }, token)).status).toBe(400);
     const emptyMatch = await post('/api/rewe/match', { market: '1234567', items: [] }, token);
     expect(await emptyMatch.json()).toEqual({ results: [] });
+  });
+
+  it('legt einen Auftrag fürs Userscript ab und nimmt Rückmeldungen an', async () => {
+    const { household, app, get, post } = setUp();
+    const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;
+    const put = (body: unknown) =>
+      app.request('/api/rewe/order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+    const product = { productId: '9578896', listingId: '8-RHN5TTNE-x', name: 'Zwiebeln 1,5kg', packs: 1, price: 159, itemIds: ['a'] };
+    const request = { listId: 'l', listName: 'Einkauf Mo 5.10.', marketId: '1234567', products: [product] };
+
+    expect((await get('/api/rewe/order')).status).toBe(401);
+    expect(await (await get('/api/rewe/order', token)).json()).toEqual({ order: null });
+    expect((await put({ ...request, products: [{ ...product, packs: 0 }] })).status).toBe(400);
+
+    const { order } = (await (await put(request)).json()) as { order: ReweOrder };
+    expect(order).toMatchObject({ listName: 'Einkauf Mo 5.10.', createdAt: 1000 });
+    expect(order.products).toEqual([{ ...product, status: 'pending', message: '' }]);
+
+    const report = (results: unknown, at = order.createdAt) => post('/api/rewe/order/results', { order: at, results }, token);
+    expect((await report([{ productId: '9578896', status: 'pending' }])).status).toBe(400);
+    // Rückmeldungen zu einem älteren Auftrag zählen nicht.
+    expect((await report([{ productId: '9578896', status: 'added' }], 999)).status).toBe(409);
+    const reported = (await (await report([{ productId: '9578896', status: 'failed', message: 'nicht lieferbar' }])).json()) as {
+      order: ReweOrder;
+    };
+    expect(reported.order.products[0]).toMatchObject({ status: 'failed', message: 'nicht lieferbar' });
+
+    const removed = await app.request('/api/rewe/order', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    expect(removed.status).toBe(204);
+    expect(await (await get('/api/rewe/order', token)).json()).toEqual({ order: null });
+  });
+
+  it('liefert das Userscript mit der Adresse des Servers aus', async () => {
+    const { app } = setUp();
+    const res = await app.request('http://intern:3000/rewe.user.js', {
+      headers: { 'X-Forwarded-Proto': 'https', 'X-Forwarded-Host': 'kochbuch.example.org' },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toContain('javascript');
+    const script = await res.text();
+    expect(script).toContain('// ==UserScript==');
+    expect(script).toContain('const SERVER_FROM_INSTALL = "https://kochbuch.example.org";');
   });
 });

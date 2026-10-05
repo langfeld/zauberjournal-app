@@ -1,6 +1,6 @@
 import type { ReweMatchRequestItem, ReweMatchResult, ReweProduct, ReweProductRow } from './rewe.ts';
 import { changedCells, isActive, type CellValue, type RowWrite } from './rows.ts';
-import type { ShoppingTables } from './shopping.ts';
+import type { ShoppingListView, ShoppingTables } from './shopping.ts';
 
 /**
  * REWE-Abgleich einer Einkaufsliste: welche Positionen gesucht werden und wie die Ergebnisse
@@ -117,4 +117,64 @@ export function skipRewe(tables: ShoppingTables, itemId: string, now: number): R
 /** Packungen einer Position von Hand; `null` = wieder aus der Menge berechnen. */
 export function setRewePacks(itemId: string, packs: number | null): RowWrite[] {
   return [{ table: 'shoppingItems', rowId: itemId, cells: { rewePacks: packs } }];
+}
+
+// ─── Auftrag fürs Userscript ───
+
+/** Was das Userscript mit einem Produkt gemacht hat; `present`: lag schon im Warenkorb. */
+export const REWE_ORDER_STATUSES = ['pending', 'added', 'present', 'failed'] as const;
+
+export type ReweOrderStatus = (typeof REWE_ORDER_STATUSES)[number];
+
+/** Ein Produkt im Auftrag; Positionen mit demselben Produkt sind zusammengefasst. */
+export type ReweOrderProduct = {
+  productId: string;
+  listingId: string;
+  name: string;
+  packs: number;
+  /** Preis einer Packung in Cent. */
+  price: number;
+  /** Positionen der Einkaufsliste, für die es gekauft wird. */
+  itemIds: string[];
+};
+
+/** Was die App an den Server schickt. */
+export type ReweOrderRequest = { listId: string; listName: string; marketId: string; products: ReweOrderProduct[] };
+
+/** Der Auftrag auf dem Server, mit Rückmeldung des Userscripts je Produkt. */
+export type ReweOrder = Omit<ReweOrderRequest, 'products'> & {
+  createdAt: number;
+  updatedAt: number;
+  products: (ReweOrderProduct & { status: ReweOrderStatus; message: string })[];
+};
+
+/** Auftrag aus allem, was noch zu kaufen ist und ein REWE-Produkt hat. */
+export function buildReweOrder(view: ShoppingListView, marketId: string): ReweOrderRequest {
+  const products = new Map<string, ReweOrderProduct>();
+  for (const item of view.sections.flatMap((section) => section.items)) {
+    const { rewe } = item;
+    if (!rewe?.productId || rewe.state === 'none' || rewe.state === 'skip') continue;
+    const existing = products.get(rewe.productId);
+    if (existing) {
+      existing.packs += rewe.packs;
+      existing.itemIds.push(item.id);
+    } else {
+      products.set(rewe.productId, {
+        productId: rewe.productId,
+        listingId: rewe.listingId,
+        name: rewe.name,
+        packs: rewe.packs,
+        price: rewe.price,
+        itemIds: [item.id],
+      });
+    }
+  }
+  return { listId: view.id, listName: view.name, marketId, products: [...products.values()] };
+}
+
+/** Stand des Auftrags für die Anzeige: wie viele Produkte in welchem Zustand. */
+export function countReweOrder(order: ReweOrder): Record<ReweOrderStatus, number> {
+  const counts: Record<ReweOrderStatus, number> = { pending: 0, added: 0, present: 0, failed: 0 };
+  for (const product of order.products) counts[product.status] += 1;
+  return counts;
 }

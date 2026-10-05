@@ -8,6 +8,7 @@ on:
     paths:
       - apps/server/**
       - packages/core/**
+      - userscript/**
       - package-lock.json
       - .github/workflows/server-image.yml
     tags: ['v*']
