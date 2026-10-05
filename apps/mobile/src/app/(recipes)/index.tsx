@@ -1,18 +1,51 @@
 import { formatDuration, listRecipes, type RecipeSummary } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { RecipeThumbnail } from '@/components/recipe-photo';
-import { Button } from '@/components/ui';
+import { Icon } from '@/components/icon';
+import { RecipeCover } from '@/components/recipe-photo';
+import { Button, EmptyState, SearchField } from '@/components/ui';
 import { useRecipeTables } from '@/data/recipes';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, shadows, spacing } from '@/theme';
 
-function describe(recipe: RecipeSummary): string {
-  const parts = [`${recipe.servings} ${recipe.servings === 1 ? 'Portion' : 'Portionen'}`];
-  if (recipe.totalMinutes !== null) parts.push(formatDuration(recipe.totalMinutes));
-  if (recipe.optionNames.length > 0) parts.push(recipe.optionNames.join(' / '));
-  return parts.join(' · ');
+/** Mindestbreite einer Karte; auf breiten Bildschirmen passen mehr Spalten nebeneinander. */
+const MIN_CARD_WIDTH = 160;
+
+function RecipeCard({ recipe, width }: { recipe: RecipeSummary; width: number }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(`/recipes/${recipe.id}`)}
+      style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
+      <RecipeCover photoId={recipe.photo} title={recipe.title} />
+      <View style={styles.cardText}>
+        <Text style={styles.title} numberOfLines={2}>
+          {recipe.title}
+        </Text>
+        <View style={styles.metaRow}>
+          {recipe.totalMinutes !== null ? (
+            <View style={styles.meta}>
+              <Icon name="schedule" size={15} color={colors.textMuted} />
+              <Text style={styles.metaText}>{formatDuration(recipe.totalMinutes)}</Text>
+            </View>
+          ) : null}
+          <View style={styles.meta}>
+            <Icon name="group" size={15} color={colors.textMuted} />
+            <Text style={styles.metaText}>{recipe.servings}</Text>
+          </View>
+        </View>
+        {recipe.optionNames.length > 0 ? (
+          <View style={styles.meta}>
+            <Icon name="alt_route" size={15} color={colors.primary} />
+            <Text style={[styles.metaText, styles.options]} numberOfLines={1}>
+              {recipe.optionNames.join(' / ')}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
+  );
 }
 
 export default function RecipeListScreen() {
@@ -20,52 +53,52 @@ export default function RecipeListScreen() {
   const [query, setQuery] = useState('');
   const recipes = useMemo(() => listRecipes(tables, query), [tables, query]);
   const hasRecipes = Object.keys(tables.recipes).length > 0;
+  const { width } = useWindowDimensions();
+  const columns = Math.max(2, Math.floor((width - spacing.lg * 2 + spacing.md) / (MIN_CARD_WIDTH + spacing.md)));
+  const cardWidth = (width - spacing.lg * 2 - spacing.md * (columns - 1)) / columns;
 
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ title: 'Rezepte' }} />
-      <View style={styles.search}>
-        <TextInput
-          accessibilityLabel="Rezepte durchsuchen"
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Suchen nach Titel oder Zutat"
-          placeholderTextColor={colors.textMuted}
-          clearButtonMode="while-editing"
-          style={styles.searchInput}
-        />
-      </View>
       <FlatList
+        key={columns}
         data={recipes}
+        numColumns={columns}
         keyExtractor={(recipe) => recipe.id}
         contentContainerStyle={styles.list}
+        columnWrapperStyle={styles.row}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push(`/recipes/${item.id}`)}
-            style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-            <RecipeThumbnail photoId={item.photo} title={item.title} />
-            <View style={styles.cardText}>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.meta}>{describe(item)}</Text>
+        ListHeaderComponent={
+          hasRecipes ? (
+            <View style={styles.header}>
+              <SearchField
+                accessibilityLabel="Rezepte durchsuchen"
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Suchen nach Titel oder Zutat"
+              />
+              <Text style={styles.count}>
+                {query ? `${recipes.length} Treffer` : `${recipes.length} ${recipes.length === 1 ? 'Rezept' : 'Rezepte'}`}
+              </Text>
             </View>
-          </Pressable>
-        )}
+          ) : null
+        }
+        renderItem={({ item }) => <RecipeCard recipe={item} width={cardWidth} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{hasRecipes && query ? 'Nichts gefunden' : 'Noch keine Rezepte'}</Text>
-            <Text style={styles.meta}>
-              {hasRecipes && query
-                ? 'Versuch es mit einem anderen Suchbegriff.'
-                : 'Importier ein Rezept aus Foto, Link oder Text, oder gib eins selbst ein.'}
-            </Text>
-          </View>
+          hasRecipes && query ? (
+            <EmptyState icon="search" title="Nichts gefunden">
+              Versuch es mit einem anderen Suchbegriff.
+            </EmptyState>
+          ) : (
+            <EmptyState icon="menu_book" title="Noch keine Rezepte">
+              Importier ein Rezept aus Foto, Link oder Text, oder gib eins selbst ein.
+            </EmptyState>
+          )
         }
       />
       <View style={styles.footer}>
         <View style={styles.footerButton}>
-          <Button title="Importieren" onPress={() => router.push('/recipes/import')} />
+          <Button icon="auto_awesome" title="Importieren" onPress={() => router.push('/recipes/import')} />
         </View>
         <View style={styles.footerButton}>
           <Button variant="secondary" title="Selbst eingeben" onPress={() => router.push('/recipes/new')} />
@@ -77,34 +110,34 @@ export default function RecipeListScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  search: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  searchInput: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
-  list: { padding: spacing.lg, gap: spacing.sm },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl, gap: spacing.md },
+  row: { gap: spacing.md },
+  header: { gap: spacing.md, marginBottom: spacing.xs },
+  count: { fontSize: 13, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.3 },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.sm,
-    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     backgroundColor: colors.surface,
+    boxShadow: shadows.card,
   },
-  cardText: { flex: 1, gap: spacing.xs },
-  pressed: { opacity: 0.7 },
-  title: { fontSize: 17, fontWeight: '600', color: colors.text },
-  meta: { fontSize: 14, color: colors.textMuted },
-  empty: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
-  footer: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  cardText: { padding: spacing.md, paddingTop: spacing.sm + 2, gap: spacing.xs + 2 },
+  title: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 13, color: colors.textMuted },
+  options: { flexShrink: 1, color: colors.primary, fontWeight: '600' },
+  footer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm + 2,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   footerButton: { flex: 1 },
 });

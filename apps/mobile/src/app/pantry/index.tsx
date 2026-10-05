@@ -1,13 +1,21 @@
 import { ensureFood, FOOD_CATEGORIES, listFoods, updateFood, type FoodStock, type RowWrite } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Chip, Hint } from '@/components/ui';
+import { CATEGORY_STYLES } from '@/components/category-style';
+import { HeaderButton, HeaderRight } from '@/components/header';
+import { SyncBadge } from '@/components/sync-status';
+import { AddField, Card, EmptyState, Hint, IconCircle, Segmented, Tag, type SegmentOption } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { useAppTables } from '@/data/tables';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, spacing, tones } from '@/theme';
+
+const STOCK_OPTIONS: SegmentOption<FoodStock>[] = [
+  { id: 'have', label: 'Da' },
+  { id: 'buy', label: 'Nachkaufen', color: colors.accent },
+];
 
 export default function PantryScreen() {
   const store = useStore();
@@ -34,7 +42,10 @@ export default function PantryScreen() {
         options={{
           title: 'Vorrat',
           headerRight: () => (
-            <Button small variant="ghost" title="Lebensmittel" onPress={() => router.push('/pantry/foods')} />
+            <HeaderRight>
+              <HeaderButton icon="category" title="Lebensmittel" onPress={() => router.push('/pantry/foods')} />
+              <SyncBadge />
+            </HeaderRight>
           ),
         }}
       />
@@ -42,42 +53,48 @@ export default function PantryScreen() {
         Was ihr meistens daheim habt. Auf der Einkaufsliste stehen diese Dinge unter „Vorrat prüfen“; was auf
         „Nachkaufen“ steht, kommt von selbst auf die nächste Liste.
       </Hint>
-      <View style={styles.addRow}>
-        <TextInput
-          accessibilityLabel="Lebensmittel zum Vorrat hinzufügen"
-          value={name}
-          onChangeText={setName}
-          placeholder="Hinzufügen, z. B. Olivenöl"
-          placeholderTextColor={colors.textMuted}
-          returnKeyType="done"
-          submitBehavior="submit"
-          onSubmitEditing={add}
-          style={styles.input}
-        />
-        <Button small title="+" accessibilityLabel="Hinzufügen" disabled={!name.trim()} onPress={add} />
-      </View>
-      {toBuy > 0 ? <Text style={styles.meta}>{toBuy} zum Nachkaufen</Text> : null}
+      <AddField
+        accessibilityLabel="Lebensmittel zum Vorrat hinzufügen"
+        value={name}
+        onChangeText={setName}
+        onAdd={add}
+        placeholder="Hinzufügen, z. B. Olivenöl"
+      />
+      {toBuy > 0 ? <Tag icon="add_shopping_cart" label={`${toBuy} zum Nachkaufen`} tone={tones.terracotta} /> : null}
 
-      {stocked.length === 0 ? <Hint>Noch nichts im Vorrat.</Hint> : null}
+      {stocked.length === 0 ? (
+        <EmptyState icon="kitchen" title="Noch nichts im Vorrat">
+          Trag ein, was ihr meistens daheim habt, z. B. Olivenöl, Reis oder Zwiebeln.
+        </EmptyState>
+      ) : null}
       {FOOD_CATEGORIES.map((category) => {
         const foods = stocked.filter((food) => food.category === category.id);
         if (foods.length === 0) return null;
+        const style = CATEGORY_STYLES[category.id];
         return (
-          <View key={category.id} style={styles.section}>
-            <Text style={styles.sectionTitle}>{category.label}</Text>
-            {foods.map((food) => (
-              <View key={food.id} style={styles.row}>
+          <Card key={category.id} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <IconCircle icon={style.icon} tone={style.tone} size={34} square />
+              <Text style={styles.sectionTitle}>{category.label}</Text>
+            </View>
+            {foods.map((food, index) => (
+              <View key={food.id} style={[styles.row, index > 0 && styles.divider]}>
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => router.push(`/pantry/${encodeURIComponent(food.id)}`)}
                   style={styles.name}>
                   <Text style={styles.foodName}>{food.name}</Text>
                 </Pressable>
-                <Chip label="Da" selected={food.stock === 'have'} onPress={() => setStock(food.id, 'have')} />
-                <Chip label="Nachkaufen" selected={food.stock === 'buy'} onPress={() => setStock(food.id, 'buy')} />
+                <Segmented
+                  small
+                  options={STOCK_OPTIONS}
+                  value={food.stock}
+                  labelPrefix={`${food.name}: `}
+                  onChange={(stock) => setStock(food.id, stock)}
+                />
               </View>
             ))}
-          </View>
+          </Card>
         );
       })}
     </ScrollView>
@@ -85,30 +102,12 @@ export default function PantryScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
-  addRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
-  meta: { fontSize: 14, color: colors.textMuted },
-  section: {
-    gap: spacing.xs,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: colors.primary },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: 2 },
-  name: { flex: 1, paddingVertical: spacing.xs },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
+  section: { paddingVertical: spacing.md, gap: spacing.xs },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingBottom: spacing.xs },
+  sectionTitle: { flex: 1, fontFamily: fonts.display, fontSize: 18, lineHeight: 24, color: colors.text },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs + 2 },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  name: { flex: 1, paddingVertical: spacing.sm },
   foodName: { fontSize: 16, color: colors.text },
 });

@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from './ui';
+import { IconButton } from './ui';
 
 type RowActionsProps = {
   /** Bezeichnung für Screenreader, z. B. „Zutat 2“. */
@@ -15,23 +15,23 @@ type RowActionsProps = {
 export function RowActions({ label, index, count, onMove, onRemove }: RowActionsProps) {
   return (
     <View style={styles.actions}>
-      <Button
-        small
-        variant="ghost"
-        title="↑"
+      <IconButton
+        icon="arrow_upward"
+        variant="muted"
+        size={36}
         accessibilityLabel={`${label} nach oben`}
         disabled={index === 0}
         onPress={() => onMove(index, -1)}
       />
-      <Button
-        small
-        variant="ghost"
-        title="↓"
+      <IconButton
+        icon="arrow_downward"
+        variant="muted"
+        size={36}
         accessibilityLabel={`${label} nach unten`}
         disabled={index === count - 1}
         onPress={() => onMove(index, 1)}
       />
-      <Button small variant="ghost" title="✕" accessibilityLabel={`${label} entfernen`} onPress={() => onRemove(index)} />
+      <IconButton icon="close" variant="muted" size={36} accessibilityLabel={`${label} entfernen`} onPress={() => onRemove(index)} />
     </View>
   );
 }

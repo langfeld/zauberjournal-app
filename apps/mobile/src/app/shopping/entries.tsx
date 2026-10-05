@@ -14,11 +14,13 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Hint } from '@/components/ui';
+import { Icon } from '@/components/icon';
+import { RecipeThumbnail } from '@/components/recipe-photo';
+import { Button, EmptyState, Hint, Tag } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { useAppTables, useToday } from '@/data/tables';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, shadows, spacing, tones } from '@/theme';
 
 /** So weit voraus werden geplante Gerichte angeboten. */
 const DAYS_AHEAD = 28;
@@ -85,7 +87,11 @@ export default function ShoppingEntriesScreen() {
       <Stack.Screen options={{ title: listId ? 'Gerichte der Liste' : 'Neue Einkaufsliste' }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Hint>Geplante Gerichte der nächsten vier Wochen. Ihre Zutaten kommen auf die Liste.</Hint>
-        {entries.length === 0 ? <Hint>Im Plan steht noch kein Gericht mit Rezept.</Hint> : null}
+        {entries.length === 0 ? (
+          <EmptyState icon="calendar_month" title="Nichts geplant">
+            Im Plan steht noch kein Gericht mit Rezept.
+          </EmptyState>
+        ) : null}
         {entries.map((entry) => {
           const checked = selected.has(entry.id);
           const elsewhere = entry.shoppingListId !== listId && openLists.has(entry.shoppingListId);
@@ -96,19 +102,18 @@ export default function ShoppingEntriesScreen() {
               accessibilityState={{ checked }}
               accessibilityLabel={`${entry.title}, ${formatShortDate(entry.date)}`}
               onPress={() => toggle(entry)}
-              style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.row, checked && styles.rowChecked, pressed && styles.pressed]}>
               <View style={[styles.box, checked && styles.boxChecked]}>
-                {checked ? <Text style={styles.check}>✓</Text> : null}
+                {checked ? <Icon name="check" size={16} color={colors.primaryText} /> : null}
               </View>
+              <RecipeThumbnail photoId={entry.recipe?.photo ?? ''} title={entry.title} size={44} />
               <View style={styles.text}>
-                <Text style={styles.title}>
-                  {formatShortDate(entry.date)} · {entry.title}
+                <Text style={styles.date}>{formatShortDate(entry.date)}</Text>
+                <Text style={styles.title} numberOfLines={2}>
+                  {entry.title}
                 </Text>
-                <Text style={styles.meta}>
-                  {[describePlanEntry(entry), elsewhere ? 'steht schon auf einer anderen Liste' : null]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
+                <Text style={styles.meta}>{describePlanEntry(entry)}</Text>
+                {elsewhere ? <Tag icon="shopping_cart" label="steht schon auf einer anderen Liste" tone={tones.ochre} /> : null}
               </View>
             </Pressable>
           );
@@ -116,6 +121,7 @@ export default function ShoppingEntriesScreen() {
       </ScrollView>
       <View style={styles.footer}>
         <Button
+          icon={listId ? 'check' : 'add_shopping_cart'}
           title={listId ? 'Übernehmen' : `Liste erstellen (${selected.size})`}
           disabled={!listId && selected.size === 0}
           onPress={save}
@@ -127,31 +133,40 @@ export default function ShoppingEntriesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.sm },
+  content: { padding: spacing.lg, gap: spacing.sm + 2, paddingBottom: spacing.xl },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.hairline,
     backgroundColor: colors.surface,
+    boxShadow: shadows.card,
   },
-  pressed: { opacity: 0.7 },
+  rowChecked: { borderColor: colors.primary },
+  pressed: { opacity: 0.8 },
   box: {
-    width: 24,
-    height: 24,
-    borderRadius: radius.sm,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 2,
     borderColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   boxChecked: { backgroundColor: colors.primary },
-  check: { color: colors.primaryText, fontSize: 15, fontWeight: '700', lineHeight: 18 },
   text: { flex: 1, gap: 2 },
-  title: { fontSize: 16, fontWeight: '600', color: colors.text },
+  date: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: colors.primary },
+  title: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },
   meta: { fontSize: 13, color: colors.textMuted },
-  footer: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm + 2,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+  },
 });

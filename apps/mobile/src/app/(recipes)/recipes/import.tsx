@@ -15,14 +15,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/icon';
 import { RecipeEditor } from '@/components/recipe-editor';
-import { Button, Card, Hint, SectionTitle, TextField } from '@/components/ui';
+import { Button, Card, CardHeader, Hint, Notice, TextField } from '@/components/ui';
 import { importRecipe } from '@/data/api';
 import { useConnection } from '@/data/connection';
 import { savePhoto } from '@/data/photos';
 import { errorMessage } from '@/lib/error-message';
 import { pickImages, resizeImage, type PickedImage } from '@/lib/images';
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, spacing, tones } from '@/theme';
 
 /** Bilder für die Erkennung: groß genug für die kleine Schrift in Kochbüchern. */
 const IMPORT_MAX_SIDE = 2048;
@@ -100,9 +101,9 @@ export default function ImportRecipeScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {credentials ? null : (
           <Card>
-            <Text style={styles.cardTitle}>Erst mit dem Haushalt verbinden</Text>
+            <CardHeader icon="cloud_off" title="Erst mit dem Haushalt verbinden" tone={tones.ochre} />
             <Text style={styles.body}>Die Erkennung läuft über den Server deines Haushalts.</Text>
-            <Button title="Zum Haushalt" onPress={() => router.push('/household')} />
+            <Button variant="secondary" icon="home" title="Zum Haushalt" onPress={() => router.push('/household')} />
           </Card>
         )}
         <Hint>
@@ -110,66 +111,87 @@ export default function ImportRecipeScreen() {
           Speichern prüfst.
         </Hint>
 
-        <SectionTitle>Fotos</SectionTitle>
-        {images.length > 0 ? (
-          <View style={styles.thumbnails}>
-            {images.map((image, index) => (
-              <View key={`${index}:${image.uri}`} style={styles.thumbnail}>
-                <Image source={{ uri: image.uri }} style={styles.thumbnailImage} contentFit="cover" alt={`Foto ${index + 1}`} />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Foto ${index + 1} entfernen`}
-                  hitSlop={8}
-                  disabled={busy}
-                  onPress={() => setImages((current) => current.filter((_, other) => other !== index))}
-                  style={styles.removeBadge}>
-                  <Text style={styles.removeText}>×</Text>
-                </Pressable>
-              </View>
-            ))}
+        <Card>
+          <CardHeader icon="photo_camera" title="Fotos" tone={tones.terracotta} />
+          {images.length > 0 ? (
+            <View style={styles.thumbnails}>
+              {images.map((image, index) => (
+                <View key={`${index}:${image.uri}`} style={styles.thumbnail}>
+                  <Image source={{ uri: image.uri }} style={styles.thumbnailImage} contentFit="cover" alt={`Foto ${index + 1}`} />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Foto ${index + 1} entfernen`}
+                    hitSlop={8}
+                    disabled={busy}
+                    onPress={() => setImages((current) => current.filter((_, other) => other !== index))}
+                    style={styles.removeBadge}>
+                    <Icon name="close" size={16} color={colors.surface} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          <View style={styles.row}>
+            <Button
+              small
+              variant="secondary"
+              icon="photo_camera"
+              title="Foto aufnehmen"
+              disabled={busy || full}
+              onPress={() => void addImages('camera')}
+            />
+            <Button
+              small
+              variant="secondary"
+              icon="photo_library"
+              title="Aus Galerie"
+              disabled={busy || full}
+              onPress={() => void addImages('library')}
+            />
           </View>
-        ) : null}
-        <View style={styles.row}>
-          <Button small variant="secondary" title="Foto aufnehmen" disabled={busy || full} onPress={() => void addImages('camera')} />
-          <Button small variant="secondary" title="Aus Galerie" disabled={busy || full} onPress={() => void addImages('library')} />
-        </View>
-        <Hint>Bis zu {IMPORT_LIMITS.images} Bilder, z. B. wenn ein Rezept über zwei Seiten geht.</Hint>
+          <Hint>Bis zu {IMPORT_LIMITS.images} Bilder, z. B. wenn ein Rezept über zwei Seiten geht.</Hint>
+        </Card>
 
-        <SectionTitle>Link</SectionTitle>
-        <TextField
-          accessibilityLabel="Link zum Rezept"
-          value={url}
-          onChangeText={setUrl}
-          placeholder="https://…"
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          editable={!busy}
-        />
+        <Card>
+          <CardHeader icon="link" title="Link" tone={tones.sky} />
+          <TextField
+            accessibilityLabel="Link zum Rezept"
+            value={url}
+            onChangeText={setUrl}
+            placeholder="https://…"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            editable={!busy}
+          />
+        </Card>
 
-        <SectionTitle>Text</SectionTitle>
-        <TextField
-          accessibilityLabel="Rezepttext"
-          multiline
-          value={text}
-          onChangeText={setText}
-          placeholder="Rezepttext hier einfügen"
-          editable={!busy}
-        />
+        <Card>
+          <CardHeader icon="content_paste" title="Text" tone={tones.lavender} />
+          <TextField
+            accessibilityLabel="Rezepttext"
+            multiline
+            value={text}
+            onChangeText={setText}
+            placeholder="Rezepttext hier einfügen"
+            editable={!busy}
+          />
+        </Card>
 
-        <View style={styles.switchRow}>
+        <Card style={styles.switchRow}>
+          <Icon name="eco" size={22} color={tones.green.foreground} />
           <Text style={styles.switchLabel}>Vegetarische Option vorschlagen, wenn Fleisch oder Fisch drin ist</Text>
           <Switch
             accessibilityLabel="Vegetarische Option vorschlagen"
             value={suggestVegetarian}
             onValueChange={setSuggestVegetarian}
             disabled={busy}
-            trackColor={{ true: colors.primary, false: colors.border }}
+            trackColor={{ true: colors.primary, false: colors.borderStrong }}
             thumbColor={colors.surface}
           />
-        </View>
+        </Card>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Notice tone="danger">{error}</Notice> : null}
         {busy ? (
           <View style={styles.busy} accessibilityLiveRegion="polite">
             <ActivityIndicator color={colors.primary} />
@@ -178,6 +200,7 @@ export default function ImportRecipeScreen() {
         ) : null}
         <SafeAreaView edges={['bottom']} style={styles.footer}>
           <Button
+            icon="auto_awesome"
             title={busy ? 'Wird erkannt …' : 'Rezept erkennen'}
             disabled={!credentials || !hasInput || busy}
             onPress={() => void recognize()}
@@ -193,10 +216,9 @@ const THUMBNAIL_SIZE = 88;
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  body: { fontSize: 15, lineHeight: 21, color: colors.text },
+  body: { fontSize: 15, lineHeight: 22, color: colors.text },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  thumbnails: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  thumbnails: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   thumbnail: { width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE },
   thumbnailImage: { width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE, borderRadius: radius.md },
   removeBadge: {
@@ -210,11 +232,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.text,
   },
-  removeText: { fontSize: 18, lineHeight: 20, fontWeight: '700', color: colors.surface },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md },
-  switchLabel: { flex: 1, fontSize: 16, color: colors.text },
-  error: { fontSize: 15, color: colors.danger },
-  busy: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  busyText: { flex: 1, fontSize: 15, color: colors.textMuted },
-  footer: { marginTop: spacing.md },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  switchLabel: { flex: 1, fontSize: 15, lineHeight: 21, color: colors.text },
+  busy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md + 2,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+  busyText: { flex: 1, fontSize: 15, lineHeight: 21, color: colors.text },
+  footer: { marginTop: spacing.sm },
 });

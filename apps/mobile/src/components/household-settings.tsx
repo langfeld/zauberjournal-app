@@ -1,27 +1,45 @@
-import { addMember, createId, listMembers, MEALS, MEMBER_DIETS, removeMember, updateMember, type RowWrite } from '@zauberjournal/core';
+import {
+  addMember,
+  createId,
+  listMembers,
+  MEALS,
+  MEMBER_DIETS,
+  removeMember,
+  updateMember,
+  type MemberDiet,
+  type RowWrite,
+} from '@zauberjournal/core';
 import { useMemo, useState } from 'react';
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { applyWrites } from '@/data/recipes';
 import { useStore, useTable, useValue } from '@/data/store';
 import { confirm } from '@/lib/confirm';
-import { colors, radius, spacing } from '@/theme';
+import { colors, spacing, tones } from '@/theme';
 
-import { Button, Chip, Hint, SectionTitle } from './ui';
+import { MEAL_ICONS } from './category-style';
+import { Icon } from './icon';
+import { AddField, Avatar, Card, Hint, IconButton, SectionTitle, Segmented, TextField, type SegmentOption } from './ui';
 
-function MealSwitch({ setting, label }: { setting: (typeof MEALS)[number]['setting']; label: string }) {
+const DIET_OPTIONS: SegmentOption<MemberDiet>[] = MEMBER_DIETS.map((diet) => ({
+  ...diet,
+  color: diet.id === 'omnivore' ? undefined : tones.green.foreground,
+}));
+
+function MealSwitch({ meal, divider }: { meal: (typeof MEALS)[number]; divider: boolean }) {
   const store = useStore();
-  const value = useValue(setting);
+  const value = useValue(meal.setting);
   return (
-    <View style={styles.switchRow}>
-      <Text style={styles.switchLabel}>{label}</Text>
+    <View style={[styles.switchRow, divider && styles.divider]}>
+      <Icon name={MEAL_ICONS[meal.id]} size={22} color={colors.textMuted} />
+      <Text style={styles.switchLabel}>{meal.label}</Text>
       <Switch
-        accessibilityLabel={`${label} im Plan zeigen`}
+        accessibilityLabel={`${meal.label} im Plan zeigen`}
         value={value}
         onValueChange={(next) => {
-          store?.setValue(setting, next);
+          store?.setValue(meal.setting, next);
         }}
-        trackColor={{ true: colors.primary, false: colors.border }}
+        trackColor={{ true: colors.primary, false: colors.borderStrong }}
         thumbColor={colors.surface}
       />
     </View>
@@ -53,91 +71,50 @@ export function HouseholdSettings() {
       <SectionTitle>Personen</SectionTitle>
       <Hint>Wer im Haushalt mitisst. Wer vegetarisch isst, bekommt im Plan automatisch die vegetarische Option.</Hint>
       {members.map((member) => (
-        <View key={member.id} style={styles.member}>
+        <Card key={member.id} style={styles.member}>
           <View style={styles.memberRow}>
-            <TextInput
+            <Avatar name={member.name || '?'} toneKey={member.id} />
+            <TextField
               accessibilityLabel="Name"
               value={member.name}
               onChangeText={(next) => write(updateMember({ members: membersTable }, member.id, { name: next }))}
               placeholder="Name"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
+              containerStyle={styles.grow}
             />
-            <Button
-              small
-              variant="ghost"
-              title="✕"
+            <IconButton
+              icon="close"
+              variant="muted"
               accessibilityLabel={`${member.name} entfernen`}
               onPress={() => void remove(member.id, member.name)}
             />
           </View>
-          <View style={styles.chips}>
-            {MEMBER_DIETS.map((diet) => (
-              <Chip
-                key={diet.id}
-                label={diet.label}
-                accessibilityLabel={`${member.name}: ${diet.label}`}
-                selected={member.diet === diet.id}
-                onPress={() => write(updateMember({ members: membersTable }, member.id, { diet: diet.id }))}
-              />
-            ))}
-          </View>
-        </View>
+          <Segmented
+            small
+            options={DIET_OPTIONS}
+            value={member.diet}
+            labelPrefix={`${member.name}: `}
+            onChange={(diet) => write(updateMember({ members: membersTable }, member.id, { diet }))}
+          />
+        </Card>
       ))}
-      <View style={styles.memberRow}>
-        <TextInput
-          accessibilityLabel="Neue Person"
-          value={name}
-          onChangeText={setName}
-          placeholder="Name, z. B. Anna"
-          placeholderTextColor={colors.textMuted}
-          returnKeyType="done"
-          submitBehavior="submit"
-          onSubmitEditing={add}
-          style={styles.input}
-        />
-        <Button small variant="secondary" title="Hinzufügen" disabled={!name.trim()} onPress={add} />
-      </View>
+      <AddField accessibilityLabel="Neue Person" value={name} onChangeText={setName} onAdd={add} placeholder="Name, z. B. Anna" />
 
       <SectionTitle>Mahlzeiten im Plan</SectionTitle>
-      <View style={styles.meals}>
-        {MEALS.map((meal) => (
-          <MealSwitch key={meal.id} setting={meal.setting} label={meal.label} />
+      <Card style={styles.meals}>
+        {MEALS.map((meal, index) => (
+          <MealSwitch key={meal.id} meal={meal} divider={index > 0} />
         ))}
-      </View>
+      </Card>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  member: {
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
+  member: { padding: spacing.md },
   memberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  meals: {
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm },
-  switchLabel: { fontSize: 16, color: colors.text },
+  grow: { flex: 1 },
+  meals: { paddingVertical: spacing.xs, gap: 0 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm + 2 },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  switchLabel: { flex: 1, fontSize: 16, color: colors.text },
 });

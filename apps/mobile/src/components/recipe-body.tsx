@@ -1,10 +1,11 @@
 import { displayIngredient, type Distribution, type RecipeView } from '@zauberjournal/core';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, spacing, tones } from '@/theme';
 
+import { Icon } from './icon';
 import { IngredientRows } from './ingredient-rows';
-import { SectionTitle } from './ui';
+import { Card, SectionTitle, Tag } from './ui';
 
 function portions(count: number): string {
   return `${count} ${count === 1 ? 'Portion' : 'Portionen'}`;
@@ -33,61 +34,66 @@ export function RecipeBody({ view, servings, distribution }: RecipeBodyProps) {
   return (
     <>
       <SectionTitle>Zutaten</SectionTitle>
-      <IngredientRows items={view.ingredients.map((item) => displayIngredient(item, servings / view.servings))} />
+      {view.ingredients.length > 0 ? (
+        <Card style={styles.ingredients}>
+          <IngredientRows items={view.ingredients.map((item) => displayIngredient(item, servings / view.servings))} />
+        </Card>
+      ) : null}
       {view.groups.map((group) =>
         group.options.map((option) => {
           const count = optionServings.get(option.id) ?? 0;
           if (count === 0) return null;
           return (
-            <View key={option.id} style={styles.optionBlock}>
-              <Text style={styles.optionTitle}>
-                {option.name} · {portions(count)}
-              </Text>
+            <Card key={option.id} style={styles.ingredients}>
+              <View style={styles.optionTitle}>
+                <Icon name="alt_route" size={18} color={colors.primary} />
+                <Text style={styles.optionName}>{option.name}</Text>
+                <Text style={styles.optionCount}>{portions(count)}</Text>
+              </View>
               <IngredientRows items={option.ingredients.map((item) => displayIngredient(item, count / view.servings))} />
-            </View>
+            </Card>
           );
         }),
       )}
 
       {steps.length > 0 ? <SectionTitle>Zubereitung</SectionTitle> : null}
-      {steps.map((step, index) => (
-        <View key={step.id} style={styles.step}>
-          <Text style={styles.stepNumber}>{index + 1}</Text>
-          <View style={styles.stepBody}>
-            {step.optionId ? <Text style={styles.badge}>Nur {optionNames.get(step.optionId)}</Text> : null}
-            <Text style={styles.body}>{step.text}</Text>
+      <View>
+        {steps.map((step, index) => (
+          <View key={step.id} style={styles.step}>
+            <View style={styles.rail}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>{index + 1}</Text>
+              </View>
+              {index < steps.length - 1 ? <View style={styles.line} /> : null}
+            </View>
+            <View style={styles.stepBody}>
+              {step.optionId ? <Tag icon="alt_route" label={`Nur ${optionNames.get(step.optionId)}`} tone={tones.green} /> : null}
+              <Text style={styles.body}>{step.text}</Text>
+            </View>
           </View>
-        </View>
-      ))}
+        ))}
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { fontSize: 16, lineHeight: 23, color: colors.text },
-  optionBlock: { gap: spacing.sm, marginTop: spacing.sm },
-  optionTitle: { fontSize: 16, fontWeight: '700', color: colors.primary },
+  ingredients: { paddingVertical: spacing.sm, gap: spacing.xs },
+  optionTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xs },
+  optionName: { flex: 1, fontFamily: fonts.display, fontSize: 17, lineHeight: 23, color: colors.primary },
+  optionCount: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   step: { flexDirection: 'row', gap: spacing.md },
+  rail: { alignItems: 'center', width: 32 },
   stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    textAlign: 'center',
-    lineHeight: 28,
-    fontWeight: '700',
-    color: colors.primaryText,
-    backgroundColor: colors.primary,
-    overflow: 'hidden',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentSoft,
   },
-  stepBody: { flex: 1, gap: spacing.xs },
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
+  stepNumberText: { fontFamily: fonts.display, fontSize: 16, lineHeight: 21, color: colors.accent },
+  line: { flex: 1, width: 2, marginVertical: spacing.xs, borderRadius: 1, backgroundColor: colors.border },
+  stepBody: { flex: 1, gap: spacing.xs + 2, paddingTop: 5, paddingBottom: spacing.lg },
+  body: { fontSize: 16, lineHeight: 24, color: colors.text },
 });

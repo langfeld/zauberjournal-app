@@ -1,15 +1,15 @@
 import { normalizeServerUrl, parsePairingLink } from '@zauberjournal/core';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
 import { QrScanner } from '@/components/qr-scanner';
-import { Button, Hint, TextField } from '@/components/ui';
+import { Button, EmptyState, Hint, Notice, TextField } from '@/components/ui';
 import { joinHousehold } from '@/data/api';
 import { useConnection } from '@/data/connection';
 import { suggestedDeviceName } from '@/lib/device-name';
 import { errorMessage } from '@/lib/error-message';
-import { colors, spacing } from '@/theme';
+import { spacing, tones } from '@/theme';
 
 export default function JoinScreen() {
   // Kommt auch über den Link aus dem QR-Code: zauberjournal://household/join?server=…&code=…
@@ -26,7 +26,9 @@ export default function JoinScreen() {
     return (
       <ScrollView contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: 'Haushalt beitreten' }} />
-        <Text style={styles.body}>Dieses Gerät ist schon mit einem Haushalt verbunden.</Text>
+        <EmptyState icon="home" title="Schon verbunden" tone={tones.teal}>
+          Dieses Gerät ist schon mit einem Haushalt verbunden.
+        </EmptyState>
         <Button variant="secondary" title="Zum Haushalt" onPress={() => router.replace('/household')} />
       </ScrollView>
     );
@@ -70,11 +72,12 @@ export default function JoinScreen() {
         {scanning ? (
           <QrScanner onScanned={onScanned} onCancel={() => setScanning(false)} />
         ) : (
-          <Button variant="secondary" title="QR-Code scannen" onPress={() => setScanning(true)} />
+          <Button variant="secondary" icon="qr_code_scanner" title="QR-Code scannen" onPress={() => setScanning(true)} />
         )}
         <Hint>Oder Serveradresse und Einladungscode vom anderen Gerät abtippen.</Hint>
         <TextField
           label="Server-Adresse"
+          icon="dns"
           value={serverUrl}
           onChangeText={setServerUrl}
           placeholder="https://kochbuch.example.de"
@@ -84,15 +87,16 @@ export default function JoinScreen() {
         />
         <TextField
           label="Einladungscode"
+          icon="qr_code"
           value={code}
           onChangeText={setCode}
           placeholder="z. B. 93ZK-JDE6"
           autoCapitalize="characters"
           autoCorrect={false}
         />
-        <TextField label="Name dieses Geräts" value={deviceName} onChangeText={setDeviceName} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button title={busy ? 'Verbinde …' : 'Beitreten'} disabled={busy} onPress={() => void submit()} />
+        <TextField label="Name dieses Geräts" icon="smartphone" value={deviceName} onChangeText={setDeviceName} />
+        {error ? <Notice tone="danger">{error}</Notice> : null}
+        <Button icon="group_add" title={busy ? 'Verbinde …' : 'Beitreten'} disabled={busy} onPress={() => void submit()} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -101,6 +105,4 @@ export default function JoinScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md },
-  body: { fontSize: 16, color: colors.text },
-  error: { fontSize: 15, color: colors.danger },
 });

@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@expo-google-fonts/fraunces": "^0.4.1",
+    "@expo-google-fonts/material-symbols": "^0.4.48",
     "@zauberjournal/core": "*",
     "expo": "~57.0.26",
     "expo-camera": "~57.0.6",

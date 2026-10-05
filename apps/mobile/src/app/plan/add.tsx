@@ -9,14 +9,16 @@ import {
 } from '@zauberjournal/core';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { MEAL_ICONS } from '@/components/category-style';
+import { Icon } from '@/components/icon';
 import { RecipeThumbnail } from '@/components/recipe-photo';
-import { Button, Chip, Hint } from '@/components/ui';
+import { AddField, Chip, EmptyState, SearchField, SectionTitle } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, shadows, spacing } from '@/theme';
 
 export default function AddPlanEntryScreen() {
   const params = useLocalSearchParams<{ date?: string; meal?: string }>();
@@ -51,31 +53,25 @@ export default function AddPlanEntryScreen() {
             {meals.length > 1 ? (
               <View style={styles.chips}>
                 {meals.map((option) => (
-                  <Chip key={option.id} label={option.label} selected={meal === option.id} onPress={() => setMeal(option.id)} />
+                  <Chip
+                    key={option.id}
+                    icon={MEAL_ICONS[option.id]}
+                    label={option.label}
+                    selected={meal === option.id}
+                    onPress={() => setMeal(option.id)}
+                  />
                 ))}
               </View>
             ) : null}
-            <View style={styles.freeText}>
-              <TextInput
-                accessibilityLabel="Eintrag ohne Rezept"
-                value={text}
-                onChangeText={setText}
-                placeholder="Ohne Rezept, z. B. Reste"
-                placeholderTextColor={colors.textMuted}
-                returnKeyType="done"
-                onSubmitEditing={() => text.trim() && add('', text)}
-                style={[styles.input, styles.grow]}
-              />
-              <Button small title="Eintragen" disabled={!text.trim()} onPress={() => add('', text)} />
-            </View>
-            <TextInput
-              accessibilityLabel="Rezepte durchsuchen"
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Rezept suchen"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
+            <AddField
+              accessibilityLabel="Eintrag ohne Rezept"
+              value={text}
+              onChangeText={setText}
+              onAdd={() => text.trim() && add('', text)}
+              placeholder="Ohne Rezept, z. B. Reste"
             />
+            <SectionTitle>Rezept wählen</SectionTitle>
+            <SearchField accessibilityLabel="Rezepte durchsuchen" value={query} onChangeText={setQuery} placeholder="Rezept suchen" />
           </View>
         }
         renderItem={({ item }) => (
@@ -84,14 +80,27 @@ export default function AddPlanEntryScreen() {
             accessibilityLabel={`${item.title} einplanen`}
             onPress={() => add(item.id)}
             style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-            <RecipeThumbnail photoId={item.photo} title={item.title} size={48} />
+            <RecipeThumbnail photoId={item.photo} title={item.title} size={52} />
             <View style={styles.cardText}>
-              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.title} numberOfLines={2}>
+                {item.title}
+              </Text>
               {item.optionNames.length > 0 ? <Text style={styles.meta}>{item.optionNames.join(' / ')}</Text> : null}
+            </View>
+            <View style={styles.addIcon}>
+              <Icon name="add" size={20} color={colors.primary} />
             </View>
           </Pressable>
         )}
-        ListEmptyComponent={<Hint>{query ? 'Kein Rezept gefunden.' : 'Noch keine Rezepte vorhanden.'}</Hint>}
+        ListEmptyComponent={
+          query ? (
+            <EmptyState icon="search" title="Kein Rezept gefunden" />
+          ) : (
+            <EmptyState icon="menu_book" title="Noch keine Rezepte">
+              Unter „Rezepte“ lassen sich welche importieren oder selbst eingeben.
+            </EmptyState>
+          )
+        }
       />
     </View>
   );
@@ -99,33 +108,30 @@ export default function AddPlanEntryScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  list: { padding: spacing.lg, gap: spacing.sm },
-  header: { gap: spacing.md, marginBottom: spacing.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  freeText: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  grow: { flex: 1 },
-  input: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
+  list: { padding: spacing.lg, gap: spacing.sm + 2, paddingBottom: spacing.xxl },
+  header: { gap: spacing.md, marginBottom: spacing.xs },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.sm,
-    borderRadius: radius.md,
+    padding: spacing.sm + 2,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     backgroundColor: colors.surface,
+    boxShadow: shadows.card,
   },
-  cardText: { flex: 1, gap: 2 },
-  pressed: { opacity: 0.7 },
-  title: { fontSize: 16, fontWeight: '600', color: colors.text },
+  cardText: { flex: 1, gap: 3 },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
+  title: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },
   meta: { fontSize: 13, color: colors.textMuted },
+  addIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+  },
 });

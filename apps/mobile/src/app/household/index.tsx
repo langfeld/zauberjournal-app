@@ -3,13 +3,14 @@ import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { HouseholdSettings } from '@/components/household-settings';
+import { Icon } from '@/components/icon';
 import { SyncStatusLine } from '@/components/sync-status';
-import { Button, Card, Hint, SectionTitle } from '@/components/ui';
+import { Button, Card, CardHeader, Hint, IconButton, IconCircle, Notice, SectionTitle, Tag } from '@/components/ui';
 import { listDevices, removeDevice, type DeviceInfo } from '@/data/api';
 import { useConnection } from '@/data/connection';
 import { confirm } from '@/lib/confirm';
 import { errorMessage } from '@/lib/error-message';
-import { colors, radius, spacing } from '@/theme';
+import { colors, spacing, tones } from '@/theme';
 
 function lastSeen(device: DeviceInfo): string {
   if (!device.lastSeenAt) return 'Noch nicht aktiv';
@@ -21,21 +22,23 @@ function NotConnected() {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: 'Haushalt' }} />
-      <SyncStatusLine status="off" />
       <Card>
-        <Text style={styles.cardTitle}>Neuen Haushalt einrichten</Text>
+        <SyncStatusLine status="off" />
+      </Card>
+      <Card>
+        <CardHeader icon="add_home" title="Neuen Haushalt einrichten" />
         <Text style={styles.body}>
           Für das erste Gerät. Du brauchst die Adresse deines Servers und den Einrichtungscode aus dem Protokoll des
           Servers.
         </Text>
-        <Button title="Einrichten" onPress={() => router.push('/household/setup')} />
+        <Button icon="add_home" title="Einrichten" onPress={() => router.push('/household/setup')} />
       </Card>
       <Card>
-        <Text style={styles.cardTitle}>Einem Haushalt beitreten</Text>
+        <CardHeader icon="group_add" title="Einem Haushalt beitreten" tone={tones.teal} />
         <Text style={styles.body}>
           Auf einem Gerät, das schon verbunden ist, unter „Haushalt → Gerät hinzufügen“ einen QR-Code anzeigen lassen.
         </Text>
-        <Button variant="secondary" title="Beitreten" onPress={() => router.push('/household/join')} />
+        <Button variant="secondary" icon="qr_code_scanner" title="Beitreten" onPress={() => router.push('/household/join')} />
       </Card>
       <Hint>Rezepte, die schon auf diesem Gerät liegen, werden beim Verbinden mit dem Haushalt zusammengeführt.</Hint>
       <HouseholdSettings />
@@ -93,64 +96,63 @@ export default function HouseholdScreen() {
       <Stack.Screen options={{ title: 'Haushalt' }} />
       <Card>
         <SyncStatusLine status={status} />
-        <Text style={styles.meta}>Server: {credentials.serverUrl}</Text>
+        <View style={styles.server}>
+          <Icon name="dns" size={18} color={colors.textMuted} />
+          <Text style={styles.meta} numberOfLines={1}>
+            {credentials.serverUrl}
+          </Text>
+        </View>
       </Card>
 
       {status === 'revoked' ? (
-        <Button title="Neu verbinden" onPress={() => void disconnect()} />
+        <Button icon="sync" title="Neu verbinden" onPress={() => void disconnect()} />
       ) : (
-        <Button title="Gerät hinzufügen" onPress={() => router.push('/household/invite')} />
+        <Button icon="qr_code" title="Gerät hinzufügen" onPress={() => router.push('/household/invite')} />
       )}
 
       <HouseholdSettings />
 
       <SectionTitle>Geräte</SectionTitle>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      {devices?.map((device) => (
-        <View key={device.id} style={styles.device}>
-          <View style={styles.deviceText}>
-            <Text style={styles.deviceName}>
-              {device.name}
-              {device.current ? <Text style={styles.meta}> · dieses Gerät</Text> : null}
-            </Text>
-            <Text style={styles.meta}>{lastSeen(device)}</Text>
-          </View>
-          {device.current ? null : (
-            <Button
-              small
-              variant="danger"
-              title="Entfernen"
-              accessibilityLabel={`${device.name} entfernen`}
-              onPress={() => void remove(device)}
-            />
-          )}
-        </View>
-      ))}
+      {error ? <Notice tone="danger">{error}</Notice> : null}
+      {devices && devices.length > 0 ? (
+        <Card style={styles.devices}>
+          {devices.map((device, index) => (
+            <View key={device.id} style={[styles.device, index > 0 && styles.divider]}>
+              <IconCircle icon="smartphone" tone={device.current ? tones.green : tones.stone} size={40} />
+              <View style={styles.deviceText}>
+                <Text style={styles.deviceName}>{device.name}</Text>
+                <Text style={styles.meta}>{lastSeen(device)}</Text>
+                {device.current ? <Tag label="dieses Gerät" tone={tones.green} /> : null}
+              </View>
+              {device.current ? null : (
+                <IconButton
+                  icon="delete"
+                  variant="muted"
+                  accessibilityLabel={`${device.name} entfernen`}
+                  onPress={() => void remove(device)}
+                />
+              )}
+            </View>
+          ))}
+        </Card>
+      ) : null}
 
       <View style={styles.footer}>
-        <Button variant="danger" title="Dieses Gerät abmelden" onPress={() => void leave()} />
+        <Button variant="danger" icon="logout" title="Dieses Gerät abmelden" onPress={() => void leave()} />
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  body: { fontSize: 15, lineHeight: 21, color: colors.text },
-  meta: { fontSize: 14, color: colors.textMuted, fontWeight: '400' },
-  error: { fontSize: 15, color: colors.danger },
-  device: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  deviceText: { flex: 1, gap: 2 },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
+  body: { fontSize: 15, lineHeight: 22, color: colors.text },
+  server: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  meta: { flexShrink: 1, fontSize: 14, color: colors.textMuted },
+  devices: { paddingVertical: spacing.xs, gap: 0 },
+  device: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  deviceText: { flex: 1, gap: 3 },
   deviceName: { fontSize: 16, fontWeight: '600', color: colors.text },
   footer: { marginTop: spacing.xl },
 });

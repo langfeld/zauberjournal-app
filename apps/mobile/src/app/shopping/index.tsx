@@ -14,15 +14,17 @@ import {
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { CATEGORY_STYLES } from '@/components/category-style';
+import { Icon } from '@/components/icon';
 import { ShoppingItemRow } from '@/components/shopping-item-row';
-import { Button, Card, Chip, Hint, SectionTitle } from '@/components/ui';
+import { AddField, Button, Card, Chip, EmptyState, Hint, IconCircle, ProgressBar } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { useAppTables, useToday } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, spacing, tones } from '@/theme';
 
 export default function ShoppingScreen() {
   const store = useStore();
@@ -31,6 +33,7 @@ export default function ShoppingScreen() {
   const lists = useMemo(() => listOpenShoppingLists(tables), [tables]);
   const [selected, setSelected] = useState<string | null>(null);
   const [newItem, setNewItem] = useState('');
+  const [showDone, setShowDone] = useState(false);
   const listId = lists.find((list) => list.id === selected)?.id ?? lists[0]?.id;
 
   // Die Positionen folgen dem Plan: Ändern sich Gerichte, Portionen oder der Vorrat, passt sich die Liste an.
@@ -50,21 +53,21 @@ export default function ShoppingScreen() {
     return (
       <ScrollView contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: 'Einkauf' }} />
-        <Card>
-          <Text style={styles.cardTitle}>Keine offene Einkaufsliste</Text>
-          <Text style={styles.body}>
-            Wähle geplante Gerichte aus; die Zutaten werden zusammengerechnet und nach Warengruppen sortiert.
-          </Text>
-          <Button title="Aus dem Plan erstellen" onPress={() => router.push('/shopping/entries')} />
-          <Button
-            variant="secondary"
-            title="Leere Liste"
-            onPress={() => write(createShoppingList(tables, [], today, Date.now(), createId).writes)}
-          />
-        </Card>
+        <EmptyState icon="shopping_cart" title="Keine offene Einkaufsliste">
+          Wähle geplante Gerichte aus; die Zutaten werden zusammengerechnet und nach Warengruppen sortiert.
+        </EmptyState>
+        <Button icon="calendar_month" title="Aus dem Plan erstellen" onPress={() => router.push('/shopping/entries')} />
+        <Button
+          variant="secondary"
+          title="Leere Liste"
+          onPress={() => write(createShoppingList(tables, [], today, Date.now(), createId).writes)}
+        />
       </ScrollView>
     );
   }
+
+  const open = view.sections.reduce((sum, section) => sum + section.items.length, 0) + view.pantry.length;
+  const total = open + view.done.length;
 
   const addItem = () => {
     if (!newItem.trim()) return;
@@ -72,7 +75,6 @@ export default function ShoppingScreen() {
     setNewItem('');
   };
   const finish = async () => {
-    const open = view.sections.reduce((sum, section) => sum + section.items.length, 0);
     const message = open > 0 ? `${open} Positionen sind noch nicht abgehakt.` : 'Die Liste wird abgeschlossen.';
     if (!(await confirm('Einkauf abschließen?', message, 'Abschließen'))) return;
     write(completeShoppingList(tables, view.id));
@@ -90,109 +92,134 @@ export default function ShoppingScreen() {
         </View>
       ) : null}
 
-      <View style={styles.addRow}>
-        <TextInput
-          accessibilityLabel="Artikel hinzufügen"
-          value={newItem}
-          onChangeText={setNewItem}
-          placeholder="Hinzufügen, z. B. 2 l Milch"
-          placeholderTextColor={colors.textMuted}
-          returnKeyType="done"
-          submitBehavior="submit"
-          onSubmitEditing={addItem}
-          style={styles.input}
-        />
-        <Button small title="+" accessibilityLabel="Hinzufügen" disabled={!newItem.trim()} onPress={addItem} />
-      </View>
-
-      <View style={styles.entries}>
+      <Card>
+        <View style={styles.progressRow}>
+          <Text style={styles.progressTitle}>
+            {total === 0 ? 'Noch leer' : open === 0 ? 'Alles erledigt' : `Noch ${open} von ${total}`}
+          </Text>
+          {total > 0 ? <Text style={styles.progressCount}>{Math.round((view.done.length / total) * 100)} %</Text> : null}
+        </View>
+        <ProgressBar value={total > 0 ? view.done.length / total : 0} />
         <Text style={styles.meta}>
           {view.entries.length > 0
             ? `Für ${view.entries.map((entry) => `${entry.title} (${formatShortDate(entry.date)})`).join(', ')}`
             : 'Noch keine Gerichte auf der Liste.'}
         </Text>
-        <Button
-          small
-          variant="ghost"
-          title="Gerichte wählen"
-          onPress={() => router.push({ pathname: '/shopping/entries', params: { list: view.id } })}
-        />
-      </View>
-
-      {view.sections.map((section) => (
-        <View key={section.category} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.label}</Text>
-          {section.items.map((item) => (
-            <ShoppingItemRow
-              key={item.id}
-              item={item}
-              onToggle={() => toggle(item.id, true)}
-              onRemove={item.origin === 'manual' ? () => write(removeShoppingItem(item.id, Date.now())) : undefined}
-            />
-          ))}
+        <View style={styles.cardActions}>
+          <Button
+            small
+            variant="secondary"
+            icon="restaurant"
+            title="Gerichte wählen"
+            onPress={() => router.push({ pathname: '/shopping/entries', params: { list: view.id } })}
+          />
         </View>
-      ))}
+      </Card>
+
+      <AddField
+        accessibilityLabel="Artikel hinzufügen"
+        value={newItem}
+        onChangeText={setNewItem}
+        onAdd={addItem}
+        placeholder="Hinzufügen, z. B. 2 l Milch"
+      />
+
+      {view.sections.map((section) => {
+        const style = CATEGORY_STYLES[section.category];
+        return (
+          <Card key={section.category} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <IconCircle icon={style.icon} tone={style.tone} size={34} square />
+              <Text style={styles.sectionTitle}>{section.label}</Text>
+              <Text style={styles.sectionCount}>{section.items.length}</Text>
+            </View>
+            <View>
+              {section.items.map((item, index) => (
+                <ShoppingItemRow
+                  key={item.id}
+                  item={item}
+                  divider={index > 0}
+                  onToggle={() => toggle(item.id, true)}
+                  onRemove={item.origin === 'manual' ? () => write(removeShoppingItem(item.id, Date.now())) : undefined}
+                />
+              ))}
+            </View>
+          </Card>
+        );
+      })}
       {view.sections.length === 0 && view.pantry.length === 0 ? (
-        <Hint>{view.done.length > 0 ? 'Alles abgehakt.' : 'Die Liste ist leer.'}</Hint>
+        view.done.length > 0 ? (
+          <EmptyState icon="task_alt" title="Alles abgehakt">
+            Fertig? Dann den Einkauf unten abschließen.
+          </EmptyState>
+        ) : (
+          <Hint>Die Liste ist leer.</Hint>
+        )
       ) : null}
 
       {view.pantry.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vorrat prüfen</Text>
+        <Card style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <IconCircle icon="inventory_2" tone={tones.ochre} size={34} square />
+            <Text style={styles.sectionTitle}>Vorrat prüfen</Text>
+            <Text style={styles.sectionCount}>{view.pantry.length}</Text>
+          </View>
           <Hint>Laut Vorrat da. Abhaken, wenn genug da ist, sonst „Kaufen“.</Hint>
-          {view.pantry.map((item) => (
-            <ShoppingItemRow
-              key={item.id}
-              item={item}
-              onToggle={() => toggle(item.id, true)}
-              action={{ title: 'Kaufen', onPress: () => write(updateFood(tables, item.foodId, { stock: 'buy' })) }}
-            />
-          ))}
-        </View>
+          <View>
+            {view.pantry.map((item, index) => (
+              <ShoppingItemRow
+                key={item.id}
+                item={item}
+                divider={index > 0}
+                onToggle={() => toggle(item.id, true)}
+                action={{ title: 'Kaufen', onPress: () => write(updateFood(tables, item.foodId, { stock: 'buy' })) }}
+              />
+            ))}
+          </View>
+        </Card>
       ) : null}
 
       {view.done.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Erledigt ({view.done.length})</Text>
-          {view.done.map((item) => (
-            <ShoppingItemRow key={item.id} item={item} onToggle={() => toggle(item.id, false)} />
-          ))}
-        </View>
+        <Card style={styles.section}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showDone }}
+            onPress={() => setShowDone((current) => !current)}
+            style={styles.sectionHeader}>
+            <IconCircle icon="task_alt" tone={tones.green} size={34} square />
+            <Text style={styles.sectionTitle}>Erledigt</Text>
+            <Text style={styles.sectionCount}>{view.done.length}</Text>
+            <Icon name={showDone ? 'expand_less' : 'expand_more'} size={22} color={colors.textMuted} />
+          </Pressable>
+          {showDone ? (
+            <View>
+              {view.done.map((item, index) => (
+                <ShoppingItemRow key={item.id} item={item} divider={index > 0} onToggle={() => toggle(item.id, false)} />
+              ))}
+            </View>
+          ) : null}
+        </Card>
       ) : null}
 
-      <SectionTitle>Fertig?</SectionTitle>
-      <Button variant="secondary" title="Einkauf abschließen" onPress={() => void finish()} />
-      <Hint>Danach gelten die Gerichte im Plan als eingekauft, und die nächste Liste fängt leer an.</Hint>
+      <View style={styles.finish}>
+        <Button variant="secondary" icon="task_alt" title="Einkauf abschließen" onPress={() => void finish()} />
+        <Hint>Danach gelten die Gerichte im Plan als eingekauft, und die nächste Liste fängt leer an.</Hint>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  body: { fontSize: 15, lineHeight: 21, color: colors.text },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  addRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
-  entries: { gap: spacing.xs, alignItems: 'flex-start' },
-  meta: { fontSize: 14, color: colors.textMuted },
-  section: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: colors.primary, marginTop: spacing.xs },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
+  progressRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  progressTitle: { fontFamily: fonts.display, fontSize: 20, lineHeight: 26, color: colors.text },
+  progressCount: { fontSize: 14, fontWeight: '700', color: colors.primary },
+  meta: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+  cardActions: { flexDirection: 'row' },
+  section: { paddingVertical: spacing.md, gap: spacing.xs },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingBottom: spacing.xs },
+  sectionTitle: { flex: 1, fontFamily: fonts.display, fontSize: 18, lineHeight: 24, color: colors.text },
+  sectionCount: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
+  finish: { gap: spacing.sm, marginTop: spacing.lg },
 });

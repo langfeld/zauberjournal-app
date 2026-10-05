@@ -1,14 +1,16 @@
 import { buildRecipeView, formatDuration, resizeDistribution, shiftServing, type Distribution } from '@zauberjournal/core';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { HeaderButton, HeaderRight } from '@/components/header';
+import { Icon } from '@/components/icon';
 import { NotFound } from '@/components/not-found';
 import { RecipeBody } from '@/components/recipe-body';
-import { RecipePhoto } from '@/components/recipe-photo';
-import { Button, Card, SectionTitle, Stepper } from '@/components/ui';
+import { RecipeCover } from '@/components/recipe-photo';
+import { Card, Stepper, Tag } from '@/components/ui';
 import { useRecipeTables } from '@/data/recipes';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, tones } from '@/theme';
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,83 +27,122 @@ export default function RecipeDetailScreen() {
     setServings(next);
     setDistribution(resizeDistribution(current, view.groups, next));
   };
-
-  const times = [
-    view.prepMinutes ? `Vorbereitung ${formatDuration(view.prepMinutes)}` : null,
-    view.cookMinutes ? `Koch-/Backzeit ${formatDuration(view.cookMinutes)}` : null,
-  ].filter(Boolean);
   const sourceIsLink = /^https?:\/\//i.test(view.source);
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.scroll}>
       <Stack.Screen
         options={{
           title: '',
           headerRight: () => (
-            <Button small variant="ghost" title="Bearbeiten" onPress={() => router.push(`/recipes/${view.id}/edit`)} />
+            <HeaderRight>
+              <HeaderButton icon="edit" title="Bearbeiten" onPress={() => router.push(`/recipes/${view.id}/edit`)} />
+            </HeaderRight>
           ),
         }}
       />
-      <RecipePhoto photoId={view.photo} style={styles.photo} alt={`Foto: ${view.title}`} />
-      <Text style={styles.title}>{view.title}</Text>
-      {times.length > 0 ? <Text style={styles.meta}>{times.join(' · ')}</Text> : null}
-      {view.description ? <Text style={styles.body}>{view.description}</Text> : null}
-
-      <Card>
-        <Stepper
-          label="Portionen"
-          value={total}
-          canDecrease={total > 1}
-          onDecrease={() => changeServings(total - 1)}
-          onIncrease={() => changeServings(total + 1)}
-        />
-        {view.groups.map((group) => (
-          <View key={group.id} style={styles.group}>
-            <Text style={styles.groupName}>{group.name}</Text>
-            {group.options.map((option) => {
-              const count = current[group.id]?.[option.id] ?? 0;
-              return (
-                <Stepper
-                  key={option.id}
-                  label={option.name}
-                  value={count}
-                  canDecrease={count > 0 && group.options.length > 1}
-                  canIncrease={count < total}
-                  onDecrease={() => setDistribution(shiftServing(current, group, option.id, -1))}
-                  onIncrease={() => setDistribution(shiftServing(current, group, option.id, 1))}
-                />
-              );
-            })}
+      {view.photo ? <RecipeCover photoId={view.photo} title={view.title} aspectRatio={4 / 3} /> : null}
+      <View style={[styles.content, view.photo ? styles.overlap : null]}>
+        <Text style={styles.title}>{view.title}</Text>
+        {view.prepMinutes || view.cookMinutes ? (
+          <View style={styles.tags}>
+            {view.prepMinutes ? (
+              <Tag icon="timer" label={`Vorbereitung ${formatDuration(view.prepMinutes)}`} tone={tones.wheat} />
+            ) : null}
+            {view.cookMinutes ? (
+              <Tag icon="skillet" label={`Koch-/Backzeit ${formatDuration(view.cookMinutes)}`} tone={tones.terracotta} />
+            ) : null}
           </View>
-        ))}
-      </Card>
+        ) : null}
+        {view.description ? <Text style={styles.description}>{view.description}</Text> : null}
 
-      <RecipeBody view={view} servings={total} distribution={current} />
+        <Card>
+          <Stepper
+            icon="group"
+            label="Portionen"
+            value={total}
+            canDecrease={total > 1}
+            onDecrease={() => changeServings(total - 1)}
+            onIncrease={() => changeServings(total + 1)}
+          />
+          {view.groups.map((group) => (
+            <View key={group.id} style={styles.group}>
+              <Text style={styles.groupName}>{group.name}</Text>
+              {group.options.map((option) => {
+                const count = current[group.id]?.[option.id] ?? 0;
+                return (
+                  <Stepper
+                    key={option.id}
+                    label={option.name}
+                    value={count}
+                    canDecrease={count > 0 && group.options.length > 1}
+                    canIncrease={count < total}
+                    onDecrease={() => setDistribution(shiftServing(current, group, option.id, -1))}
+                    onIncrease={() => setDistribution(shiftServing(current, group, option.id, 1))}
+                  />
+                );
+              })}
+            </View>
+          ))}
+        </Card>
 
-      {view.notes ? (
-        <>
-          <SectionTitle>Notizen</SectionTitle>
-          <Text style={styles.body}>{view.notes}</Text>
-        </>
-      ) : null}
-      {view.source ? (
-        <Text
-          style={[styles.meta, sourceIsLink && styles.link]}
-          onPress={sourceIsLink ? () => Linking.openURL(view.source) : undefined}>
-          Quelle: {view.source}
-        </Text>
-      ) : null}
+        <RecipeBody view={view} servings={total} distribution={current} />
+
+        {view.notes ? (
+          <View style={styles.notes}>
+            <View style={styles.notesTitle}>
+              <Icon name="sticky_note_2" size={20} color={tones.ochre.foreground} />
+              <Text style={styles.notesHeading}>Notizen</Text>
+            </View>
+            <Text style={styles.body}>{view.notes}</Text>
+          </View>
+        ) : null}
+        {view.source ? (
+          <Pressable
+            accessibilityRole={sourceIsLink ? 'link' : undefined}
+            disabled={!sourceIsLink}
+            onPress={() => Linking.openURL(view.source)}
+            style={styles.source}>
+            <Icon name={sourceIsLink ? 'link' : 'menu_book'} size={18} color={sourceIsLink ? colors.primary : colors.textMuted} />
+            <Text style={[styles.sourceText, sourceIsLink && styles.link]} numberOfLines={2}>
+              Quelle: {view.source}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
-  photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.md },
-  title: { fontSize: 26, fontWeight: '700', color: colors.text },
-  meta: { fontSize: 14, color: colors.textMuted },
+  scroll: { paddingBottom: spacing.xxl * 2 },
+  content: { padding: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
+  // Der Inhalt schiebt sich mit runden Ecken über das Foto.
+  overlap: {
+    marginTop: -radius.lg - 6,
+    paddingTop: spacing.lg + 2,
+    borderTopLeftRadius: radius.lg + 6,
+    borderTopRightRadius: radius.lg + 6,
+    backgroundColor: colors.background,
+  },
+  title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 37, color: colors.text },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  description: { fontFamily: fonts.displayItalic, fontSize: 17, lineHeight: 25, color: colors.textMuted },
+  body: { fontSize: 16, lineHeight: 24, color: colors.text },
+  group: { gap: spacing.sm, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  groupName: { fontSize: 12.5, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted },
+  notes: {
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.paper,
+    borderWidth: 1,
+    borderColor: colors.paperBorder,
+  },
+  notesTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  notesHeading: { fontFamily: fonts.display, fontSize: 18, lineHeight: 24, color: colors.text },
+  source: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+  sourceText: { flex: 1, fontSize: 14, color: colors.textMuted },
   link: { color: colors.primary, textDecorationLine: 'underline' },
-  body: { fontSize: 16, lineHeight: 23, color: colors.text },
-  group: { gap: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  groupName: { fontSize: 14, fontWeight: '700', color: colors.textMuted },
 });

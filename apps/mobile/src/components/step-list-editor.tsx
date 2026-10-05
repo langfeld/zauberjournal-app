@@ -1,12 +1,12 @@
 import { createId, type StepDraft } from '@zauberjournal/core';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { moveItem } from '@/lib/move-item';
-import { colors, radius, spacing } from '@/theme';
+import { colors, fonts, spacing } from '@/theme';
 
 import { RowActions } from './row-actions';
-import { Button, Chip } from './ui';
+import { Button, Chip, TextField } from './ui';
 
 type StepListEditorProps = {
   steps: StepDraft[];
@@ -33,7 +33,10 @@ export function StepListEditor({ steps, options, onChange }: StepListEditorProps
         return (
           <View key={step.id} style={styles.step}>
             <View style={styles.header}>
-              <Text style={styles.number}>Schritt {index + 1}</Text>
+              <View style={styles.number}>
+                <Text style={styles.numberText}>{index + 1}</Text>
+              </View>
+              <Text style={styles.title}>Schritt {index + 1}</Text>
               <RowActions
                 label={`Schritt ${index + 1}`}
                 index={index}
@@ -42,15 +45,13 @@ export function StepListEditor({ steps, options, onChange }: StepListEditorProps
                 onRemove={(i) => onChange(steps.filter((_, other) => other !== i))}
               />
             </View>
-            <TextInput
+            <TextField
               accessibilityLabel={`Schritt ${index + 1}`}
               multiline
               value={step.text}
               onChangeText={(text) => update(index, { text })}
               autoFocus={step.id === focusId}
               placeholder="Was ist zu tun?"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
             />
             {options.length > 0 ? (
               <View style={styles.chips}>
@@ -75,29 +76,26 @@ export function StepListEditor({ steps, options, onChange }: StepListEditorProps
         );
       })}
       <View style={styles.addRow}>
-        <Button small variant="secondary" title="+ Schritt" onPress={add} />
+        <Button small variant="secondary" icon="add" title="Schritt" accessibilityLabel="Schritt hinzufügen" onPress={add} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { gap: spacing.md },
-  step: { gap: spacing.xs },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  number: { fontSize: 15, fontWeight: '700', color: colors.text },
-  input: {
-    minHeight: 72,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-    textAlignVertical: 'top',
+  list: { gap: spacing.lg },
+  step: { gap: spacing.sm },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  number: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentSoft,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  numberText: { fontFamily: fonts.display, fontSize: 15, lineHeight: 20, color: colors.accent },
+  title: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
   addRow: { flexDirection: 'row' },
 });

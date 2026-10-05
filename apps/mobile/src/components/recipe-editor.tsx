@@ -7,27 +7,32 @@ import {
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useConnection } from '@/data/connection';
 import { applyWrites, useRecipeTables } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { confirm } from '@/lib/confirm';
-import { colors, radius, spacing } from '@/theme';
+import { spacing } from '@/theme';
 
 import { ChoiceGroupsEditor } from './choice-groups-editor';
+import { HeaderButton, HeaderRight } from './header';
+import type { IconName } from './icon';
 import { IngredientListEditor } from './ingredient-list-editor';
 import { PhotoField } from './photo-field';
 import { StepListEditor } from './step-list-editor';
-import { Button, Hint, SectionTitle, Stepper, TextField } from './ui';
+import { Button, Card, Hint, Notice, SectionTitle, Stepper, TextField } from './ui';
 import { useConfirmDiscard } from './use-confirm-discard';
 
-function MinutesField({ label, value, onChange }: { label: string; value: number | null; onChange: (value: number | null) => void }) {
+type MinutesFieldProps = { label: string; icon: IconName; value: number | null; onChange: (value: number | null) => void };
+
+function MinutesField({ label, icon, value, onChange }: MinutesFieldProps) {
   return (
     <View style={styles.half}>
       <TextField
         label={label}
+        icon={icon}
         keyboardType="number-pad"
         value={value === null ? '' : String(value)}
         placeholder="–"
@@ -96,54 +101,58 @@ export function RecipeEditor({ recipeId, initialDraft, title, notices = [], dirt
       <Stack.Screen
         options={{
           title: title ?? (recipeId ? 'Rezept bearbeiten' : 'Neues Rezept'),
-          headerRight: () => <Button small variant="ghost" title="Speichern" onPress={save} />,
+          headerRight: () => (
+            <HeaderRight>
+              <HeaderButton primary icon="check" title="Speichern" onPress={save} />
+            </HeaderRight>
+          ),
         }}
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {notices.length > 0 ? (
-          <View style={styles.notices}>
-            <Text style={styles.noticesTitle}>Bitte prüfen</Text>
-            {notices.map((notice, index) => (
-              <Text key={index} style={styles.noticeText}>
-                • {notice}
-              </Text>
-            ))}
-          </View>
+          <Notice tone="warning" title="Bitte prüfen">
+            {notices}
+          </Notice>
         ) : null}
-        {errors.length > 0 ? (
-          <View style={styles.errors} accessibilityRole="alert">
-            {errors.map((error) => (
-              <Text key={error} style={styles.errorText}>
-                {error}
-              </Text>
-            ))}
-          </View>
-        ) : null}
+        {errors.length > 0 ? <Notice tone="danger">{errors}</Notice> : null}
 
         <PhotoField photoId={draft.photo} onChange={(photo) => set('photo', photo)} />
-        <TextField
-          label="Titel"
-          value={draft.title}
-          placeholder="z. B. Sättigender Salat"
-          onChangeText={(title) => set('title', title)}
-        />
-        <Stepper
-          label="Portionen"
-          value={draft.servings}
-          canDecrease={draft.servings > 1}
-          onDecrease={() => set('servings', draft.servings - 1)}
-          onIncrease={() => set('servings', draft.servings + 1)}
-        />
-        <View style={styles.row}>
-          <MinutesField label="Vorbereitung (Min.)" value={draft.prepMinutes} onChange={(value) => set('prepMinutes', value)} />
-          <MinutesField label="Koch-/Backzeit (Min.)" value={draft.cookMinutes} onChange={(value) => set('cookMinutes', value)} />
-        </View>
-        <TextField
-          label="Beschreibung"
-          multiline
-          value={draft.description}
-          onChangeText={(description) => set('description', description)}
-        />
+        <Card>
+          <TextField
+            label="Titel"
+            value={draft.title}
+            placeholder="z. B. Sättigender Salat"
+            onChangeText={(title) => set('title', title)}
+          />
+          <Stepper
+            icon="group"
+            label="Portionen"
+            value={draft.servings}
+            canDecrease={draft.servings > 1}
+            onDecrease={() => set('servings', draft.servings - 1)}
+            onIncrease={() => set('servings', draft.servings + 1)}
+          />
+          <View style={styles.row}>
+            <MinutesField
+              label="Vorbereitung (Min.)"
+              icon="timer"
+              value={draft.prepMinutes}
+              onChange={(value) => set('prepMinutes', value)}
+            />
+            <MinutesField
+              label="Koch-/Backzeit (Min.)"
+              icon="skillet"
+              value={draft.cookMinutes}
+              onChange={(value) => set('cookMinutes', value)}
+            />
+          </View>
+          <TextField
+            label="Beschreibung"
+            multiline
+            value={draft.description}
+            onChangeText={(description) => set('description', description)}
+          />
+        </Card>
 
         <SectionTitle>Zutaten</SectionTitle>
         <Hint>
@@ -163,6 +172,7 @@ export function RecipeEditor({ recipeId, initialDraft, title, notices = [], dirt
         <TextField label="Notizen" multiline value={draft.notes} onChangeText={(notes) => set('notes', notes)} />
         <TextField
           label="Quelle"
+          icon="link"
           value={draft.source}
           placeholder="z. B. Kochbuch S. 42 oder ein Link"
           autoCapitalize="none"
@@ -170,8 +180,8 @@ export function RecipeEditor({ recipeId, initialDraft, title, notices = [], dirt
         />
 
         <SafeAreaView edges={['bottom']} style={styles.footer}>
-          <Button title="Speichern" onPress={save} />
-          {recipeId ? <Button variant="danger" title="Rezept löschen" onPress={remove} /> : null}
+          <Button icon="check" title="Speichern" onPress={save} />
+          {recipeId ? <Button variant="danger" icon="delete" title="Rezept löschen" onPress={remove} /> : null}
         </SafeAreaView>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -180,25 +190,8 @@ export function RecipeEditor({ recipeId, initialDraft, title, notices = [], dirt
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   row: { flexDirection: 'row', gap: spacing.md },
   half: { flex: 1 },
-  errors: {
-    gap: spacing.xs,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.dangerSoft,
-  },
-  errorText: { color: colors.danger, fontSize: 15 },
-  notices: {
-    gap: spacing.xs,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.warning,
-    backgroundColor: colors.warningSoft,
-  },
-  noticesTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
-  noticeText: { fontSize: 15, lineHeight: 21, color: colors.text },
-  footer: { gap: spacing.md, marginTop: spacing.lg },
+  footer: { gap: spacing.md, marginTop: spacing.xl },
 });

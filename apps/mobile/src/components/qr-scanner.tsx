@@ -23,7 +23,7 @@ export function QrScanner({ onScanned, onCancel }: QrScannerProps) {
       <View style={styles.box}>
         <Text style={styles.text}>Zum Scannen des QR-Codes braucht die App Zugriff auf die Kamera.</Text>
         {permission.canAskAgain ? (
-          <Button title="Kamera erlauben" onPress={requestPermission} />
+          <Button icon="photo_camera" title="Kamera erlauben" onPress={requestPermission} />
         ) : (
           <Text style={styles.text}>Bitte den Kamerazugriff in den Android-Einstellungen für Zauberjournal erlauben.</Text>
         )}
@@ -52,6 +52,6 @@ export function QrScanner({ onScanned, onCancel }: QrScannerProps) {
 
 const styles = StyleSheet.create({
   box: { gap: spacing.md },
-  camera: { width: '100%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
-  text: { fontSize: 15, color: colors.textMuted, textAlign: 'center' },
+  camera: { width: '100%', aspectRatio: 1, borderRadius: radius.lg, overflow: 'hidden' },
+  text: { fontSize: 15, lineHeight: 21, color: colors.textMuted, textAlign: 'center' },
 });

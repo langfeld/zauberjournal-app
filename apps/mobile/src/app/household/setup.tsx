@@ -1,14 +1,14 @@
 import { normalizeServerUrl } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
-import { Button, Hint, TextField } from '@/components/ui';
+import { Button, Hint, Notice, TextField } from '@/components/ui';
 import { setupHousehold } from '@/data/api';
 import { useConnection } from '@/data/connection';
 import { suggestedDeviceName } from '@/lib/device-name';
 import { errorMessage } from '@/lib/error-message';
-import { colors, spacing } from '@/theme';
+import { spacing } from '@/theme';
 
 export default function SetupScreen() {
   const { connect } = useConnection();
@@ -42,6 +42,7 @@ export default function SetupScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TextField
           label="Server-Adresse"
+          icon="dns"
           value={serverUrl}
           onChangeText={setServerUrl}
           placeholder="https://kochbuch.example.de"
@@ -51,6 +52,7 @@ export default function SetupScreen() {
         />
         <TextField
           label="Einrichtungscode"
+          icon="qr_code"
           value={setupCode}
           onChangeText={setSetupCode}
           placeholder="z. B. YGWT-FY6M-FS9T"
@@ -61,9 +63,14 @@ export default function SetupScreen() {
           Den Einrichtungscode schreibt der Server beim Start in sein Protokoll (TrueNAS: Apps → Zauberjournal → Logs).
           Er gilt nur für das erste Gerät.
         </Hint>
-        <TextField label="Name dieses Geräts" value={deviceName} onChangeText={setDeviceName} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button title={busy ? 'Verbinde …' : 'Haushalt einrichten'} disabled={busy} onPress={() => void submit()} />
+        <TextField label="Name dieses Geräts" icon="smartphone" value={deviceName} onChangeText={setDeviceName} />
+        {error ? <Notice tone="danger">{error}</Notice> : null}
+        <Button
+          icon="add_home"
+          title={busy ? 'Verbinde …' : 'Haushalt einrichten'}
+          disabled={busy}
+          onPress={() => void submit()}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -72,5 +79,4 @@ export default function SetupScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md },
-  error: { fontSize: 15, color: colors.danger },
 });

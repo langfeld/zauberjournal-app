@@ -1,11 +1,13 @@
 import { categoryLabel, FOOD_DIETS, listFoods } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Hint } from '@/components/ui';
+import { CATEGORY_STYLES } from '@/components/category-style';
+import { Icon } from '@/components/icon';
+import { EmptyState, Hint, IconCircle, SearchField } from '@/components/ui';
 import { useAppTables } from '@/data/tables';
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, shadows, spacing } from '@/theme';
 
 const STOCK_LABELS = { '': '', have: 'im Vorrat', buy: 'nachkaufen' } as const;
 
@@ -24,66 +26,66 @@ export default function FoodsScreen() {
       contentContainerStyle={styles.list}
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
-        <>
+        <View style={styles.header}>
           <Stack.Screen options={{ title: 'Lebensmittel' }} />
           <Hint>
             Lebensmittel entstehen von selbst aus den Zutaten der Rezepte. Hier lässt sich ändern, wo sie im Laden stehen,
             ob sie vegetarisch sind und welche Namen dasselbe meinen.
           </Hint>
-          <TextInput
-            accessibilityLabel="Lebensmittel suchen"
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Suchen"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-          />
-        </>
+          <SearchField accessibilityLabel="Lebensmittel suchen" value={query} onChangeText={setQuery} placeholder="Suchen" />
+        </View>
       }
-      renderItem={({ item }) => (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push(`/pantry/${encodeURIComponent(item.id)}`)}
-          style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.meta}>
-            {[
-              categoryLabel(item.category),
-              FOOD_DIETS.find((diet) => diet.id === item.diet)?.label,
-              STOCK_LABELS[item.stock],
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-        </Pressable>
-      )}
-      ListEmptyComponent={<Hint>{query ? 'Nichts gefunden.' : 'Noch keine Lebensmittel.'}</Hint>}
+      renderItem={({ item }) => {
+        const style = CATEGORY_STYLES[item.category];
+        return (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(`/pantry/${encodeURIComponent(item.id)}`)}
+            style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <IconCircle icon={style.icon} tone={style.tone} size={36} square />
+            <View style={styles.text}>
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.meta}>
+                {[
+                  categoryLabel(item.category),
+                  FOOD_DIETS.find((diet) => diet.id === item.diet)?.label,
+                  STOCK_LABELS[item.stock],
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            </View>
+            <Icon name="chevron_right" size={20} color={colors.borderStrong} />
+          </Pressable>
+        );
+      }}
+      ListEmptyComponent={
+        query ? (
+          <EmptyState icon="search" title="Nichts gefunden" />
+        ) : (
+          <EmptyState icon="category" title="Noch keine Lebensmittel" />
+        )
+      }
     />
   );
 }
 
 const styles = StyleSheet.create({
-  list: { padding: spacing.lg, gap: spacing.sm },
-  input: {
-    minHeight: 44,
-    marginVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
+  list: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl },
+  header: { gap: spacing.md, marginBottom: spacing.xs },
   row: {
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     padding: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     backgroundColor: colors.surface,
+    boxShadow: shadows.card,
   },
-  pressed: { opacity: 0.7 },
+  pressed: { opacity: 0.8 },
+  text: { flex: 1, gap: 2 },
   name: { fontSize: 16, fontWeight: '600', color: colors.text },
   meta: { fontSize: 13, color: colors.textMuted },
 });

@@ -5,27 +5,30 @@ import {
   listFoods,
   mergeFoods,
   updateFood,
+  type FoodCategory,
   type FoodDiet,
   type FoodStock,
   type RowWrite,
 } from '@zauberjournal/core';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { CATEGORY_STYLES } from '@/components/category-style';
+import { Icon } from '@/components/icon';
 import { NotFound } from '@/components/not-found';
-import { Chip, Hint, SectionTitle, TextField } from '@/components/ui';
+import { Card, Chip, Hint, IconCircle, SearchField, SectionTitle, Segmented, TextField, type SegmentOption } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { useAppTables } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, shadows, spacing } from '@/theme';
 
 const DIETS: { id: FoodDiet; label: string }[] = [{ id: '', label: 'unbekannt' }, ...FOOD_DIETS];
-const STOCKS: { id: FoodStock; label: string }[] = [
+const STOCKS: SegmentOption<FoodStock>[] = [
   { id: '', label: 'nicht im Vorrat' },
   { id: 'have', label: 'da' },
-  { id: 'buy', label: 'nachkaufen' },
+  { id: 'buy', label: 'nachkaufen', color: colors.accent },
 ];
 
 export default function FoodScreen() {
@@ -55,17 +58,27 @@ export default function FoodScreen() {
     write(mergeFoods(tables, id, intoId, now));
     router.back();
   };
+  const style = CATEGORY_STYLES[food.category as FoodCategory] ?? CATEGORY_STYLES.other;
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: food.name || 'Lebensmittel' }} />
-      <TextField label="Name" value={food.name} onChangeText={(name) => write(updateFood(tables, id, { name }))} />
+      <Card style={styles.nameCard}>
+        <IconCircle icon={style.icon} tone={style.tone} size={48} square />
+        <TextField
+          label="Name"
+          value={food.name}
+          onChangeText={(name) => write(updateFood(tables, id, { name }))}
+          containerStyle={styles.grow}
+        />
+      </Card>
 
       <SectionTitle>Warengruppe</SectionTitle>
       <View style={styles.chips}>
         {FOOD_CATEGORIES.map((category) => (
           <Chip
             key={category.id}
+            icon={CATEGORY_STYLES[category.id].icon}
             label={category.label}
             selected={food.category === category.id}
             onPress={() => write(updateFood(tables, id, { category: category.id }))}
@@ -79,6 +92,7 @@ export default function FoodScreen() {
         {DIETS.map((diet) => (
           <Chip
             key={diet.id || 'unknown'}
+            icon={diet.id === 'vegan' || diet.id === 'vegetarian' ? 'eco' : undefined}
             label={diet.label}
             selected={food.diet === diet.id}
             onPress={() => write(updateFood(tables, id, { diet: diet.id }))}
@@ -87,26 +101,15 @@ export default function FoodScreen() {
       </View>
 
       <SectionTitle>Vorrat</SectionTitle>
-      <View style={styles.chips}>
-        {STOCKS.map((stock) => (
-          <Chip
-            key={stock.id || 'none'}
-            label={stock.label}
-            selected={(food.stock ?? '') === stock.id}
-            onPress={() => write(updateFood(tables, id, { stock: stock.id }))}
-          />
-        ))}
-      </View>
+      <Segmented options={STOCKS} value={food.stock ?? ''} onChange={(stock) => write(updateFood(tables, id, { stock }))} />
 
       <SectionTitle>Dasselbe wie …</SectionTitle>
       <Hint>Wenn es dieses Lebensmittel doppelt gibt, z. B. „Lauchzwiebeln“ und „Frühlingszwiebeln“.</Hint>
-      <TextInput
+      <SearchField
         accessibilityLabel="Lebensmittel zum Zusammenführen suchen"
         value={query}
         onChangeText={setQuery}
         placeholder="Anderes Lebensmittel suchen"
-        placeholderTextColor={colors.textMuted}
-        style={styles.input}
       />
       {others.map((other) => (
         <Pressable
@@ -116,6 +119,7 @@ export default function FoodScreen() {
           onPress={() => void merge(other.id, other.name, Date.now())}
           style={({ pressed }) => [styles.option, pressed && styles.pressed]}>
           <Text style={styles.optionText}>{other.name}</Text>
+          <Icon name="merge" size={20} color={colors.primary} />
         </Pressable>
       ))}
     </ScrollView>
@@ -123,25 +127,21 @@ export default function FoodScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  input: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
+  nameCard: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md },
+  grow: { flex: 1 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
   option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     padding: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     backgroundColor: colors.surface,
+    boxShadow: shadows.card,
   },
-  pressed: { opacity: 0.7 },
-  optionText: { fontSize: 16, color: colors.text },
+  pressed: { opacity: 0.8 },
+  optionText: { flex: 1, fontSize: 16, color: colors.text },
 });

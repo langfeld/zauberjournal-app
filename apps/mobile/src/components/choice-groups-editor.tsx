@@ -1,10 +1,10 @@
 import { createId, type ChoiceGroupDraft, type ChoiceOptionDraft } from '@zauberjournal/core';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { colors, radius, spacing } from '@/theme';
 
 import { IngredientListEditor } from './ingredient-list-editor';
-import { Button, Card, TextField } from './ui';
+import { Button, Card, IconButton, TextField } from './ui';
 
 const OPTION_EXAMPLES = ['Hähnchen', 'Halloumi', 'Tofu'];
 
@@ -32,6 +32,7 @@ export function ChoiceGroupsEditor({ groups, onChange }: ChoiceGroupsEditorProps
         <Card key={group.id}>
           <TextField
             label="Wahlkomponente"
+            icon="alt_route"
             value={group.name}
             placeholder="z. B. Protein"
             onChangeText={(name) => updateGroup(group.id, (current) => ({ ...current, name }))}
@@ -39,18 +40,17 @@ export function ChoiceGroupsEditor({ groups, onChange }: ChoiceGroupsEditorProps
           {group.options.map((option, index) => (
             <View key={option.id} style={styles.option}>
               <View style={styles.optionHeader}>
-                <TextInput
+                <TextField
                   accessibilityLabel={`Option ${index + 1}`}
                   value={option.name}
                   onChangeText={(name) => updateOption(group.id, option.id, { name })}
                   placeholder={`Option ${index + 1}, z. B. ${OPTION_EXAMPLES[index % OPTION_EXAMPLES.length]}`}
-                  placeholderTextColor={colors.textMuted}
+                  containerStyle={styles.grow}
                   style={styles.optionName}
                 />
-                <Button
-                  small
-                  variant="ghost"
-                  title="✕"
+                <IconButton
+                  icon="close"
+                  variant="muted"
                   accessibilityLabel={`Option ${option.name || index + 1} entfernen`}
                   onPress={() =>
                     updateGroup(group.id, (current) => ({
@@ -72,12 +72,15 @@ export function ChoiceGroupsEditor({ groups, onChange }: ChoiceGroupsEditorProps
             <Button
               small
               variant="secondary"
-              title="+ Option"
+              icon="add"
+              title="Option"
+              accessibilityLabel="Option hinzufügen"
               onPress={() => updateGroup(group.id, (current) => ({ ...current, options: [...current.options, newOption()] }))}
             />
             <Button
               small
               variant="danger"
+              icon="delete"
               title="Wahlkomponente entfernen"
               onPress={() => onChange(groups.filter((other) => other.id !== group.id))}
             />
@@ -88,7 +91,9 @@ export function ChoiceGroupsEditor({ groups, onChange }: ChoiceGroupsEditorProps
         <Button
           small
           variant="secondary"
-          title="+ Wahlkomponente"
+          icon="add"
+          title="Wahlkomponente"
+          accessibilityLabel="Wahlkomponente hinzufügen"
           onPress={() => onChange([...groups, { id: createId(), name: '', options: [newOption(), newOption()] }])}
         />
       </View>
@@ -100,22 +105,12 @@ const styles = StyleSheet.create({
   list: { gap: spacing.md },
   option: {
     gap: spacing.sm,
-    padding: spacing.sm,
+    padding: spacing.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceSunken,
   },
   optionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  optionName: {
-    flex: 1,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  grow: { flex: 1 },
+  optionName: { fontWeight: '600' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 });
