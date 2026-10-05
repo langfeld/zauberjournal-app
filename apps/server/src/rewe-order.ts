@@ -10,6 +10,7 @@ import { REWE_ORDER_STATUSES, type ReweOrder, type ReweOrderRequest, type ReweOr
 
 const MAX_PRODUCTS = 150;
 const MAX_TEXT_LENGTH = 200;
+const MAX_URL_LENGTH = 500;
 const MAX_PACKS = 99;
 
 type JsonObject = Record<string, unknown>;
@@ -20,6 +21,11 @@ function isObject(value: unknown): value is JsonObject {
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.length <= MAX_TEXT_LENGTH ? value.trim() : null;
+}
+
+/** Produktbild, nur über HTTPS; ältere App-Versionen schicken keins, dann bleibt es leer. */
+function imageUrlOf(value: unknown): string {
+  return typeof value === 'string' && value.length <= MAX_URL_LENGTH && value.startsWith('https://') ? value : '';
 }
 
 /** Prüft den Auftrag der App; `null`, wenn etwas fehlt oder nicht passt. */
@@ -39,7 +45,7 @@ export function readOrderRequest(body: JsonObject): ReweOrderRequest | null {
     if (typeof packs !== 'number' || !Number.isInteger(packs) || packs < 1 || packs > MAX_PACKS) return null;
     if (typeof price !== 'number' || !Number.isFinite(price) || price < 0) return null;
     if (!Array.isArray(itemIds) || !itemIds.every((id) => typeof id === 'string' && id.length <= MAX_TEXT_LENGTH)) return null;
-    products.push({ productId, listingId, name, packs, price, itemIds: itemIds as string[] });
+    products.push({ productId, listingId, name, imageUrl: imageUrlOf(product.imageUrl), packs, price, itemIds: itemIds as string[] });
   }
   return { listId, listName, marketId, products };
 }

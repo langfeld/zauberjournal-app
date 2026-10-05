@@ -170,12 +170,27 @@ describe('API', () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
-    const product = { productId: '9578896', listingId: '8-RHN5TTNE-x', name: 'Zwiebeln 1,5kg', packs: 1, price: 159, itemIds: ['a'] };
+    const product = {
+      productId: '9578896',
+      listingId: '8-RHN5TTNE-x',
+      name: 'Zwiebeln 1,5kg',
+      imageUrl: 'https://img.rewe-static.de/9578896/50530242_digital-image.png',
+      packs: 1,
+      price: 159,
+      itemIds: ['a'],
+    };
     const request = { listId: 'l', listName: 'Einkauf Mo 5.10.', marketId: '1234567', products: [product] };
 
     expect((await get('/api/rewe/order')).status).toBe(401);
     expect(await (await get('/api/rewe/order', token)).json()).toEqual({ order: null });
     expect((await put({ ...request, products: [{ ...product, packs: 0 }] })).status).toBe(400);
+
+    // Ältere App-Versionen schicken kein Bild, und Bilder gehen nur über HTTPS.
+    const withoutImage = { ...product, imageUrl: undefined };
+    const old = (await (await put({ ...request, products: [withoutImage, { ...product, productId: '2', imageUrl: 'http://x' }] })).json()) as {
+      order: ReweOrder;
+    };
+    expect(old.order.products.map((entry) => entry.imageUrl)).toEqual(['', '']);
 
     const { order } = (await (await put(request)).json()) as { order: ReweOrder };
     expect(order).toMatchObject({ listName: 'Einkauf Mo 5.10.', createdAt: 1000 });

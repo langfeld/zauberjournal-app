@@ -271,6 +271,8 @@ export type ReweOrderProduct = {
   productId: string;
   listingId: string;
   name: string;
+  /** Produktbild für das Userscript; leer = keins (auch bei Aufträgen älterer App-Versionen). */
+  imageUrl: string;
   packs: number;
   /** Preis einer Packung in Cent. */
   price: number;
@@ -303,6 +305,7 @@ export function buildReweOrder(view: ShoppingListView, marketId: string): ReweOr
         productId: rewe.productId,
         listingId: rewe.listingId,
         name: rewe.name,
+        imageUrl: rewe.imageUrl,
         packs: rewe.packs,
         price: rewe.price,
         itemIds: [item.id],
