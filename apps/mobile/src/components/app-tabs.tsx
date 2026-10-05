@@ -15,7 +15,9 @@ export function AppTabs() {
       backgroundColor={colors.surface}
       tintColor={colors.primary}
       indicatorColor={colors.primarySoft}
-      labelStyle={{ color: colors.textMuted }}>
+      labelStyle={{ color: colors.textMuted }}
+      // Android zeigt bei fünf Tabs sonst nur die Beschriftung des gewählten.
+      labelVisibilityMode="labeled">
       {TABS.map((tab) => (
         <NativeTabs.Trigger key={tab.name} name={tab.name}>
           <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
