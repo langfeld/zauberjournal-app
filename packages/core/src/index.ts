@@ -13,6 +13,8 @@ export * from './foods.ts';
 export { createId } from './ids.ts';
 export { formatIngredientLine, parseIngredientLine, type ParsedIngredient } from './ingredient-line.ts';
 export * from './legacy-import.ts';
+export * from './pantry.ts';
+export * from './pantry-bookings.ts';
 export * from './meals.ts';
 export * from './members.ts';
 export {

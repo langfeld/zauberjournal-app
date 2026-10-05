@@ -1,4 +1,4 @@
-import { categoryLabel, FOOD_DIETS, listFoods } from '@zauberjournal/core';
+import { categoryLabel, FOOD_DIETS, formatStock, listFoods, stockLevels } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -18,6 +18,7 @@ export default function FoodsScreen() {
     const needle = query.trim().toLocaleLowerCase('de');
     return listFoods(tables).filter((food) => !needle || food.name.toLocaleLowerCase('de').includes(needle));
   }, [tables, query]);
+  const levels = useMemo(() => stockLevels(tables), [tables]);
 
   return (
     <FlatList
@@ -49,7 +50,7 @@ export default function FoodsScreen() {
                 {[
                   categoryLabel(item.category),
                   FOOD_DIETS.find((diet) => diet.id === item.diet)?.label,
-                  STOCK_LABELS[item.stock],
+                  item.stockUnit ? `${formatStock(Math.max(0, levels.get(item.id) ?? 0), item.stockUnit)} im Vorrat` : STOCK_LABELS[item.stock],
                 ]
                   .filter(Boolean)
                   .join(' · ')}

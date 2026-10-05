@@ -125,6 +125,8 @@ export function reweMatchItems(tables: ShoppingTables, listId: string): ReweMatc
     if (item.listId !== listId || !isActive(item) || item.checked || !item.foodId || items.has(item.foodId)) continue;
     const food = tables.foods[item.foodId];
     if (!food || !isActive(food) || (item.origin === 'plan' && food.stock === 'have')) continue;
+    // Deckt der Vorrat mit Menge alles, gibt es nichts zu kaufen.
+    if (food.stockUnit && typeof item.stockAmount === 'number' && !item.amount) continue;
     if (tables.reweProducts[item.foodId]?.state === 'skip') continue;
     items.set(item.foodId, {
       id: item.foodId,

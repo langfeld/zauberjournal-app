@@ -8,6 +8,7 @@ import {
   createShoppingList,
   formatShortDate,
   listOpenShoppingLists,
+  purchaseSuggestions,
   removeShoppingItem,
   syncShoppingList,
   updateFood,
@@ -106,6 +107,11 @@ export default function ShoppingScreen() {
     setNewItem('');
   };
   const finish = async () => {
+    // Genau geführte Lebensmittel kommen vor dem Abschließen in den Vorrat.
+    if (purchaseSuggestions(tables, view.id).length > 0) {
+      router.push({ pathname: '/shopping/book', params: { list: view.id } });
+      return;
+    }
     const message = open > 0 ? `${open} Positionen sind noch nicht abgehakt.` : 'Die Liste wird abgeschlossen.';
     if (!(await confirm('Einkauf abschließen?', message, 'Abschließen'))) return;
     write(completeShoppingList(tables, view.id));
@@ -238,7 +244,11 @@ export default function ShoppingScreen() {
                 item={item}
                 divider={index > 0}
                 onToggle={() => toggle(item.id, true)}
-                action={{ title: 'Kaufen', onPress: () => write(updateFood(tables, item.foodId, { stock: 'buy' })) }}
+                action={
+                  item.covered
+                    ? undefined
+                    : { title: 'Kaufen', onPress: () => write(updateFood(tables, item.foodId, { stock: 'buy' })) }
+                }
               />
             ))}
           </View>

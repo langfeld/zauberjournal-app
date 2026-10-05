@@ -35,7 +35,7 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; vegetarischer Vorschlag; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst ✅ (umgesetzt; siehe Abschnitt 9) |
 | **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE ✅ (umgesetzt; siehe Abschnitte 6, 7 und 12) |
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt (Markt, Abgleich, Auswahl und Userscript umgesetzt, siehe Abschnitt 8 und [BETRIEB.md](BETRIEB.md); Test auf rewe.de läuft) |
-| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat |
+| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat (Vorrat mit Mengen umgesetzt: Buchungen, Einbuchen nach dem Einkauf, Abbuchen beim Kochen; offen: Nährwerte, Vegetarisch-Prüfung) |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System ✅ (34 Rezepte und 78 REWE-Vorlieben am 5. Oktober 2026 übernommen; Werkzeug siehe [BETRIEB.md](BETRIEB.md)) |
 | **Später** | Kochmodus mit Timern, Planvorschläge, Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN | |
 
@@ -114,10 +114,10 @@ Die Feldnamen sind vorläufig. Was schon umgesetzt ist, steht in `packages/core/
 
 **Personen** (`members`): Name, Ernährungsform (`vegan` | `vegetarisch` | `alles`). Später: streng vegetarisch (schließt auch Lab und Gelatine aus), Abneigungen.
 
-**Lebensmittel** (`foods`): der zentrale Katalog, auf den alles verweist. Seit M4: Name, Warengruppe (für die Sortierung der Einkaufsliste), Ernährungsklasse (`vegan` | `vegetarisch` | `fleisch` | `fisch`) und der einfache Vorrat (siehe unten). Später kommen dazu:
-- Basiseinheit (`g` | `ml` | `Stk`), Gramm pro Stück, Gramm pro ml
+**Lebensmittel** (`foods`): der zentrale Katalog, auf den alles verweist. Seit M4: Name, Warengruppe (für die Sortierung der Einkaufsliste), Ernährungsklasse (`vegan` | `vegetarisch` | `fleisch` | `fisch`) und der einfache Vorrat (siehe unten). Seit M6 die Vorratseinheit (`g` | `ml` | `Stück`) für den Vorrat mit Menge. Später kommen dazu:
+- Gramm pro Stück, Gramm pro ml (für die Nährwerte)
 - BLS-Code, Hinweise (z. B. tierisches Lab)
-- Erfassungsstufe im Vorrat, REWE-Suchbegriff, REWE-Ausschlusswörter
+- REWE-Suchbegriff, REWE-Ausschlusswörter
 
 **Zuordnung der Zutaten** (`foodAliases`): Eine Zutat zeigt nicht selbst auf ein Lebensmittel. Ihr Name wird beim Planen und Einkaufen zugeordnet:
 1. eine gemerkte Zuordnung (Zeilen-ID = normalisierter Name),
@@ -140,12 +140,13 @@ Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten�
 
 **Einkauf**
 - `shoppingLists`: Name, Status (`offen` | `erledigt`, ab M5 auch `rewe`), erstellt am
-- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `vorrat` | `manuell`). Seit M5 außerdem die REWE-Packungen, falls von Hand geändert (leer = aus der Menge berechnet). Der Status im Warenkorb kommt mit dem Userscript dazu.
+- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `vorrat` | `manuell`). Seit M5 außerdem die REWE-Packungen, falls von Hand geändert (leer = aus der Menge berechnet). Der Status im Warenkorb kommt mit dem Userscript dazu. Seit M6 bei Lebensmitteln mit Menge, was der Vorrat deckt (`stockAmount`, in der Vorratseinheit); die Menge ist dann nur der Rest zum Kaufen.
 - Die Anzeige „für Lasagne (Mi 7.10.)“ wird aus den Planeinträgen der Liste berechnet; eine eigene Tabelle `shoppingItemSources` braucht es dafür nicht.
 
 **Vorrat**
 - Seit M4 der einfache Vorrat: pro Lebensmittel „da“ oder „nachkaufen“ (`foods.stock`), ohne Mengen.
-- Ab M6: `pantryStock` mit Lebensmittel, Lagerort, Füllstand (bei grober Erfassung), Mindesthaltbarkeit und „geöffnet am“, außerdem `pantryBookings` mit Lebensmittel, Menge (+/−), Grund (`einkauf` | `gekocht` | `korrektur` | `verdorben`), Zeitpunkt und Bezug (Planeintrag oder Liste).
+- Seit M6 wahlweise mit Menge: Das Lebensmittel hat dann eine Vorratseinheit (`foods.stockUnit`), und der Bestand ist die Summe seiner Buchungen. `pantryBookings` enthält Lebensmittel, Menge (+/−), Einheit, Grund (`purchase` | `cooked` | `correction`), Zeitpunkt und Bezug (Liste oder Planeintrag). Es zählen nur Buchungen in der aktuellen Vorratseinheit.
+- Vorerst nicht: Lagerort, grober Füllstand, Mindesthaltbarkeit und „geöffnet am“. Für Verdorbenes trägt man den Bestand neu ein.
 
 **REWE** (seit M5):
 - `reweProducts`: das Produkt für den Einkauf, eine Zeile je Lebensmittel (Zeilen-ID = Lebensmittel). Sie enthält Produkt-ID, Name, Bild, Preis und Packungsangabe vom letzten Abgleich oder der letzten Wahl sowie die Listing-ID. Dazu kommt der Zustand:
@@ -176,7 +177,10 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
 - **Einkaufsliste:** Den Bedarf je Lebensmittel summieren, dann den Vorrat abziehen. Das geht nur bei genauer Erfassung; bei grober Erfassung erscheint stattdessen der Hinweis „prüfen“. Danach kommen die Zusatzartikel dazu, und die Quellen jeder Position werden gemerkt.
   - Umgesetzt in M4: Summiert wird je Lebensmittel und Einheitengruppe. g/kg, ml/cl/dl/l, TL/EL und Stück werden umgerechnet, alles andere (Dose, Bund, Zehe …) bleibt getrennt. Bei Spannen zählt die Obergrenze. Zutaten ohne Menge („Salz“) erscheinen nur, wenn dasselbe Lebensmittel nicht schon mit Menge gebraucht wird.
   - Die Liste gleicht sich selbst mit dem Plan ab: Ändern sich Gerichte oder Portionen, passen sich die Positionen an. Abgehakte und von Hand eingetragene bleiben.
-  - Einfacher Vorrat: Was „da“ ist, steht unter „Vorrat prüfen“; was „nachkaufen“ heißt, kommt von selbst auf die Liste. Abhaken setzt es wieder auf „da“. Mengen im Vorrat kommen mit M6.
+  - Einfacher Vorrat: Was „da“ ist, steht unter „Vorrat prüfen“; was „nachkaufen“ heißt, kommt von selbst auf die Liste. Abhaken setzt es wieder auf „da“.
+  - Vorrat mit Menge (M6): Der Bestand wird vom Bedarf abgezogen, wenn sich die Einheit sicher umrechnen lässt (g/kg, ml/cl/dl/l, EL = 15 ml, TL = 5 ml; Dose, Glas, Packung usw. = 1 Stück). Deckt er alles, steht die Position unter „Vorrat prüfen“, sonst steht nur der Rest auf der Liste. Was leer ist, kommt von selbst auf die Liste.
+- **Einbuchen (M6):** Beim Abschließen der Liste schlägt die App die gekauften Mengen vor, aus den REWE-Packungen oder sonst aus der Liste. Vorausgewählt ist alles mit bekannter Menge. Wurden Lebensmittel mit Menge abgehakt, gilt das als Einkauf im Laden; dann ist nur Abgehaktes vorausgewählt.
+- **Abbuchen (M6):** „gekocht“ im Plan bucht den Bedarf des Eintrags ab, bei Stück auf ganze Stück aufgerundet (eine angebrochene Dose kommt nicht in den Vorrat zurück). Wer den Status zurücksetzt, nimmt die Abbuchung zurück. Für Gekochtes braucht eine offene Liste nichts mehr, sonst zählte der Bedarf doppelt.
 - **Nährwerte (M6):** Menge in Gramm × BLS-Wert pro 100 g, für jede Person passend zu ihren Optionen.
 
 ## 8. REWE
@@ -300,6 +304,11 @@ Entschieden bei der Umsetzung von M5:
 - **Gemerkte Produkte als Rangliste:** Je Lebensmittel kann sich der Haushalt mehrere Produkte merken. Der Abgleich nimmt das erste, das der Markt gerade hat. Fehlen alle, gilt der beste Vorschlag zum Prüfen; das fehlende Produkt kommt nicht in den Warenkorb.
 - **Abgleich auf dem Server, Auswahl in der App:** Der Server sucht und bewertet; die App sucht für die Auswahl selbst über den Server und bewertet mit derselben Logik aus `packages/core`.
 - **Ein Markt für den Haushalt,** gewählt per PLZ im Haushalt oder in der Einkaufsliste.
+
+Entschieden bei der Umsetzung von M6 (Vorrat mit Mengen, 5. Oktober 2026):
+- **Je Lebensmittel einfach oder mit Menge:** Nur ausgewählte Lebensmittel wie Reis, Nudeln oder Konserven bekommen Mengen. Grobe Füllstände und die Mindesthaltbarkeit kommen vorerst nicht.
+- **Bestand als Summe von Buchungen** in der Vorratseinheit. Wechselt die Einheit, fängt der Bestand bei null an; die alten Buchungen bleiben erhalten.
+- **Lieber nicht abziehen als falsch rechnen:** nur sichere Umrechnungen. Prise, Zehe, Bund usw. werden nicht gebucht.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.

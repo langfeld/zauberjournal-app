@@ -21,6 +21,7 @@ export function useAppTables(): ShoppingTables {
   const shoppingItems = useTable('shoppingItems');
   const reweProducts = useTable('reweProducts');
   const reweFavorites = useTable('reweFavorites');
+  const pantryBookings = useTable('pantryBookings');
   return useMemo(
     () => ({
       recipes,
@@ -38,6 +39,7 @@ export function useAppTables(): ShoppingTables {
       shoppingItems,
       reweProducts,
       reweFavorites,
+      pantryBookings,
     }),
     [
       recipes,
@@ -55,6 +57,7 @@ export function useAppTables(): ShoppingTables {
       shoppingItems,
       reweProducts,
       reweFavorites,
+      pantryBookings,
     ],
   );
 }

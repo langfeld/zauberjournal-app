@@ -1,7 +1,8 @@
 import { formatShortDate } from './dates.ts';
 import { FOOD_CATEGORIES, type FoodCategory } from './food-catalog.ts';
-import { createFoodResolver, type FoodResolver, type FoodStock } from './foods.ts';
+import { createFoodResolver, type FoodResolver, type FoodStock, type StockUnit } from './foods.ts';
 import { parseIngredientLine } from './ingredient-line.ts';
+import { stockLevels, toStockAmount, type PantryBookingRow } from './pantry.ts';
 import { buildPlanEntry, createDietLookup, type PlanTables } from './plan.ts';
 import { formatAmount, roundScaledAmount } from './quantity.ts';
 import type { IngredientItem } from './recipe.ts';
@@ -25,6 +26,8 @@ export type ShoppingItemRow = {
   origin: ShoppingItemOrigin;
   /** Packungen bei REWE, von Hand geändert; `null` = aus der Menge berechnet. */
   rewePacks: number | null;
+  /** Genau geführt: was der Vorrat deckt, in dessen Einheit; `amount` ist dann der Rest (0 = alles da). */
+  stockAmount: number | null;
   createdAt: number;
   deletedAt: number | null;
 };
@@ -34,6 +37,7 @@ export type ShoppingTables = PlanTables & {
   shoppingItems: Table<ShoppingItemRow>;
   reweProducts: Table<ReweProductRow>;
   reweFavorites: Table<ReweFavoriteRow>;
+  pantryBookings: Table<PantryBookingRow>;
 };
 
 // ─── Einheiten zusammenfassen ───
@@ -176,15 +180,41 @@ export function listEntryIds(tables: PlanTables, listId: string): string[] {
     .map(([id]) => id);
 }
 
+/** Planeinträge, für die noch eingekauft wird: Was schon gekocht ist, braucht nichts mehr. */
+function pendingEntryIds(tables: PlanTables, listId: string): string[] {
+  return listEntryIds(tables, listId).filter((id) => tables.planEntries[id]?.status !== 'cooked');
+}
+
 /** Positionen aus Plan und Vorrat haben feste IDs, damit zwei Geräte dieselbe Zeile pflegen. */
 function derivedItemId(listId: string, key: string): string {
   return `${listId}~${key}`;
 }
 
 /**
+ * Zieht bei genau geführten Lebensmitteln den Vorrat ab: `amount` ist der Rest zum Kaufen, `stockAmount`,
+ * was der Vorrat deckt. Ohne Menge („Salz“) genügt ein Bestand über 0. Was eine Position verbraucht,
+ * steht der nächsten nicht mehr zur Verfügung.
+ */
+function takeFromStock(
+  need: ShoppingNeed,
+  stockUnit: StockUnit | '',
+  available: Map<string, number>,
+): { amount: number | null; stockAmount: number | null } {
+  const level = available.get(need.foodId) ?? 0;
+  if (!stockUnit || level <= 0) return { amount: need.amount, stockAmount: null };
+  if (need.amount === null) return { amount: null, stockAmount: 0 };
+  const wanted = toStockAmount(need.amount, need.unit, stockUnit);
+  if (wanted === null || wanted <= 0) return { amount: need.amount, stockAmount: null };
+  const used = Math.min(wanted, level);
+  available.set(need.foodId, level - used);
+  return { amount: Math.round(need.amount * ((wanted - used) / wanted) * 1000) / 1000, stockAmount: used };
+}
+
+/**
  * Gleicht die Positionen einer Liste mit Plan und Vorrat ab und liefert nur echte Änderungen.
- * - Bedarf aus den Planeinträgen der Liste wird angelegt oder angepasst.
- * - Lebensmittel mit „nachkaufen“ im Vorrat kommen dazu, falls kein Rezept sie braucht.
+ * - Bedarf aus den Planeinträgen der Liste wird angelegt oder angepasst; genau geführter Vorrat wird abgezogen.
+ *   Gekochte Einträge zählen nicht mehr: Ihre Zutaten sind schon aus dem Vorrat abgebucht.
+ * - Lebensmittel mit „nachkaufen“ und genau geführte ohne Bestand kommen dazu, falls kein Rezept sie braucht.
  * - Was nicht mehr gebraucht wird, verschwindet, außer es ist schon abgehakt.
  * - Von Hand eingetragene Positionen bleiben, wie sie sind.
  */
@@ -192,29 +222,35 @@ export function syncShoppingList(tables: ShoppingTables, listId: string, now: nu
   const list = tables.shoppingLists[listId];
   if (!list || !isActive(list) || list.status !== 'open') return [];
   const resolver = createFoodResolver(tables);
-  const needs = computeShoppingNeeds(tables, listEntryIds(tables, listId), resolver);
+  const needs = computeShoppingNeeds(tables, pendingEntryIds(tables, listId), resolver);
+  const levels = stockLevels(tables);
+  const available = new Map(levels);
 
   const desired = new Map<string, Omit<ShoppingItemRow, 'checked' | 'rewePacks' | 'createdAt'>>();
   for (const need of needs) {
+    const stockUnit = tables.foods[need.foodId]?.stockUnit ?? '';
     desired.set(derivedItemId(listId, need.key), {
       listId,
       foodId: need.foodId,
       name: need.name,
-      amount: need.amount,
       unit: need.unit,
+      ...takeFromStock(need, stockUnit, available),
       origin: 'plan',
       deletedAt: null,
     });
   }
   const needed = new Set(needs.map((need) => need.foodId));
   for (const [foodId, food] of Object.entries(tables.foods)) {
-    if (!isActive(food) || food.stock !== 'buy' || needed.has(foodId)) continue;
+    if (!isActive(food) || needed.has(foodId)) continue;
+    const empty = food.stockUnit ? (levels.get(foodId) ?? 0) <= 0 : food.stock === 'buy';
+    if (!empty) continue;
     desired.set(derivedItemId(listId, `${foodId}~pantry`), {
       listId,
       foodId,
       name: food.name,
       amount: null,
       unit: '',
+      stockAmount: null,
       origin: 'pantry',
       deletedAt: null,
     });
@@ -250,6 +286,10 @@ export type ShoppingItemView = {
   /** Dasselbe als Text, z. B. „2× Curry, Lasagne“. */
   sources: string;
   stock: FoodStock;
+  /** Genau geführter Vorrat: was er beisteuert, z. B. „300 g aus dem Vorrat“; leer = nichts. */
+  fromStock: string;
+  /** Der genau geführte Vorrat deckt alles; die Position steht unter „Vorrat prüfen“. */
+  covered: boolean;
   category: FoodCategory;
   /** REWE-Produkt des Lebensmittels; `null`, solange es nicht abgeglichen ist. */
   rewe: ShoppingItemRewe | null;
@@ -395,13 +435,18 @@ export function listOpenShoppingLists(tables: ShoppingTables): { id: string; nam
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
+/** Steht unter „Vorrat prüfen“: Der Vorrat deckt es, gekauft wird es nur, wenn doch nichts da ist. */
+export function isPantryCheck(item: ShoppingItemView): boolean {
+  return item.covered || (item.origin === 'plan' && item.stock === 'have');
+}
+
 export function buildShoppingListView(tables: ShoppingTables, listId: string): ShoppingListView | undefined {
   const list = tables.shoppingLists[listId];
   if (!list || !isActive(list)) return undefined;
   const resolver = createFoodResolver(tables);
   const entryIds = listEntryIds(tables, listId);
   const needs = new Map(
-    computeShoppingNeeds(tables, entryIds, resolver).map((need) => [derivedItemId(listId, need.key), need]),
+    computeShoppingNeeds(tables, pendingEntryIds(tables, listId), resolver).map((need) => [derivedItemId(listId, need.key), need]),
   );
   const dietOf = createDietLookup(tables);
   const entries = entryIds
@@ -420,16 +465,22 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
       const food = tables.foods[item.foodId];
       const dishes = item.origin === 'plan' ? groupDishes(needs.get(id)?.sources ?? [], photoOf) : [];
       const category = food && isActive(food) ? food.category : 'other';
+      const stockUnit = food && isActive(food) ? (food.stockUnit ?? '') : '';
+      const stockAmount = stockUnit && typeof item.stockAmount === 'number' ? item.stockAmount : null;
+      const covered = stockAmount !== null && !item.amount;
+      const stockText = stockAmount ? formatItemAmount(stockAmount, stockUnit) : '';
       return {
         id,
         foodId: item.foodId,
         name: item.name,
-        amount: formatItemAmount(item.amount, item.unit),
+        amount: covered ? stockText : formatItemAmount(item.amount, item.unit),
         checked: item.checked,
         origin: item.origin,
         dishes,
         sources: describeDishes(dishes),
         stock: food && isActive(food) ? (food.stock ?? '') : '',
+        fromStock: stockAmount === null ? '' : covered || !stockText ? 'aus dem Vorrat' : `${stockText} aus dem Vorrat`,
+        covered,
         category,
         rewe: item.foodId
           ? itemRewe(item, category, tables.reweProducts[item.foodId], favorites.get(item.foodId) ?? [])
@@ -439,7 +490,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
     .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
 
   const open = items.filter((item) => !item.checked);
-  const toBuy = open.filter((item) => !(item.origin === 'plan' && item.stock === 'have'));
+  const toBuy = open.filter((item) => !isPantryCheck(item));
   return {
     id: listId,
     name: list.name,
@@ -451,7 +502,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
       label: category.label,
       items: toBuy.filter((item) => item.category === category.id),
     })).filter((section) => section.items.length > 0),
-    pantry: open.filter((item) => item.origin === 'plan' && item.stock === 'have'),
+    pantry: open.filter(isPantryCheck),
     done: items.filter((item) => item.checked),
     rewe: summarizeRewe(toBuy),
   };

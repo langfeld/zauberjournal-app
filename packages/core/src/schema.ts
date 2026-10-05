@@ -1,7 +1,9 @@
 import type { TablesSchema, ValuesSchema } from 'tinybase';
 
 import { FOOD_CATEGORY_IDS, FOOD_DIET_IDS } from './food-catalog.ts';
+import { STOCK_UNITS } from './foods.ts';
 import { MEAL_IDS } from './meals.ts';
+import { PANTRY_REASONS } from './pantry.ts';
 import { REWE_STATES } from './rewe.ts';
 
 const optionalNumber = { type: 'number', allowNull: true, default: null } as const;
@@ -80,6 +82,8 @@ export const tablesSchema = {
     diet: { enum: FOOD_DIET_IDS, default: '' },
     /** Einfacher Vorrat: leer = nicht geführt, `have` = da, `buy` = nachkaufen. */
     stock: { enum: ['', 'have', 'buy'], default: '' },
+    /** Genauer Vorrat (seit M6): Einheit des Bestands, der Bestand selbst steht in `pantryBookings`; leer = nicht genau. */
+    stockUnit: { enum: ['', ...STOCK_UNITS], default: '' },
     deletedAt: optionalNumber,
   },
   /** Gemerkte Zuordnung eines Zutatennamens; die Zeilen-ID ist der normalisierte Name. */
@@ -129,6 +133,11 @@ export const tablesSchema = {
     origin: { enum: ['plan', 'pantry', 'manual'], default: 'manual' },
     /** Packungen bei REWE, wenn von Hand geändert; leer = aus der Menge berechnet. */
     rewePacks: optionalNumber,
+    /**
+     * Genau geführte Lebensmittel: was der Vorrat abdeckt, in dessen Einheit; `amount` ist dann nur der Rest
+     * zum Kaufen (0 = alles da). Leer = kein Abzug.
+     */
+    stockAmount: optionalNumber,
     createdAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,
   },
@@ -145,6 +154,21 @@ export const tablesSchema = {
     grammage: { type: 'string', default: '' },
     listingId: { type: 'string', default: '' },
     updatedAt: { type: 'number', default: 0 },
+  },
+  /**
+   * Vorratsbuchungen genau geführter Lebensmittel (seit M6): Zugang positiv, Abgang negativ. Der Bestand ist
+   * die Summe der Buchungen in der aktuellen Vorratseinheit des Lebensmittels.
+   */
+  pantryBookings: {
+    foodId: { type: 'string', default: '' },
+    amount: { type: 'number', default: 0 },
+    unit: { enum: STOCK_UNITS, default: 'g' },
+    reason: { enum: PANTRY_REASONS, default: 'correction' },
+    /** Einkaufsliste bzw. Planeintrag, auf den sich die Buchung bezieht; leer = keiner. */
+    listId: { type: 'string', default: '' },
+    entryId: { type: 'string', default: '' },
+    createdAt: { type: 'number', default: 0 },
+    deletedAt: optionalNumber,
   },
   /**
    * Gemerkte REWE-Produkte je Lebensmittel, ID `<Lebensmittel>~<Produkt>`. Beim Abgleich gilt das erste,

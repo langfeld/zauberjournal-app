@@ -4,11 +4,18 @@ import { changedCells, isActive, type RowWrite, type Table } from './rows.ts';
 /** Einfacher Vorrat: leer = nicht geführt, `have` = da, `buy` = nachkaufen. */
 export type FoodStock = '' | 'have' | 'buy';
 
+/** Einheit, in der ein genau geführtes Lebensmittel im Vorrat gezählt wird. */
+export const STOCK_UNITS = ['g', 'ml', 'Stück'] as const;
+
+export type StockUnit = (typeof STOCK_UNITS)[number];
+
 export type FoodRow = {
   name: string;
   category: FoodCategory;
   diet: FoodDiet;
   stock: FoodStock;
+  /** Genau geführt: Bestand in dieser Einheit, als Summe der Buchungen; leer = einfach oder gar nicht geführt. */
+  stockUnit: StockUnit | '';
   deletedAt: number | null;
 };
 
@@ -158,13 +165,27 @@ export function createFoodResolver(tables: FoodTables): FoodResolver {
 
 // ─── Katalog bearbeiten ───
 
-export type FoodView = { id: string; name: string; category: FoodCategory; diet: FoodDiet; stock: FoodStock };
+export type FoodView = {
+  id: string;
+  name: string;
+  category: FoodCategory;
+  diet: FoodDiet;
+  stock: FoodStock;
+  stockUnit: StockUnit | '';
+};
 
 /** Aktive Lebensmittel, alphabetisch. */
 export function listFoods(tables: FoodTables): FoodView[] {
   return Object.entries(tables.foods)
     .filter(([, food]) => isActive(food))
-    .map(([id, food]) => ({ id, name: food.name, category: food.category, diet: food.diet, stock: food.stock ?? '' }))
+    .map(([id, food]) => ({
+      id,
+      name: food.name,
+      category: food.category,
+      diet: food.diet,
+      stock: food.stock ?? '',
+      stockUnit: food.stockUnit ?? '',
+    }))
     .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
 }
 

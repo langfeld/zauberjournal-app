@@ -41,7 +41,7 @@ type ShoppingItemRowProps = {
 
 /** Eine Position der Einkaufsliste; Antippen hakt sie ab. */
 export function ShoppingItemRow({ item, onToggle, action, onRemove, divider, onOpenProduct, cart }: ShoppingItemRowProps) {
-  const note = item.origin === 'pantry' ? 'Vorrat: nachkaufen' : item.sources;
+  const note = item.origin === 'pantry' ? 'Vorrat: nachkaufen' : [item.fromStock, item.sources].filter(Boolean).join(' · ');
   const rewe = onOpenProduct && !item.checked ? item.rewe : null;
   return (
     <View style={divider && styles.divider}>

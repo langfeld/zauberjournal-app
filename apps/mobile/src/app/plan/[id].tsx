@@ -2,6 +2,7 @@ import {
   addDays,
   buildPlanEntry,
   createDietLookup,
+  createId,
   formatDate,
   listMembers,
   mealLabel,
@@ -9,6 +10,7 @@ import {
   planChoose,
   planRemoveEntry,
   planSetServings,
+  planSetStatus,
   planUpdateEntry,
   type EaterView,
   type PlanEntryView,
@@ -138,7 +140,13 @@ export default function PlanEntryScreen() {
             ))}
           </View>
         ) : null}
-        <Segmented options={STATUSES} value={entry.status} onChange={(status) => update({ status })} small />
+        {/* „Gekocht“ bucht genau geführte Zutaten aus dem Vorrat ab; zurück nimmt die Abbuchung zurück. */}
+        <Segmented
+          options={STATUSES}
+          value={entry.status}
+          onChange={(status) => write(planSetStatus(tables, entry.id, status, Date.now(), createId))}
+          small
+        />
       </Card>
 
       {entry.recipe ? (

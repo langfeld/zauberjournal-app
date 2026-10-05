@@ -1,10 +1,21 @@
-import { ensureFood, FOOD_CATEGORIES, listFoods, updateFood, type FoodStock, type RowWrite } from '@zauberjournal/core';
+import {
+  ensureFood,
+  FOOD_CATEGORIES,
+  formatStock,
+  listFoods,
+  stockLevels,
+  updateFood,
+  type FoodStock,
+  type RowWrite,
+  type StockUnit,
+} from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
 import { HeaderButton, HeaderRight } from '@/components/header';
+import { Icon } from '@/components/icon';
 import { SyncBadge } from '@/components/sync-status';
 import { AddField, Card, EmptyState, Hint, IconCircle, Segmented, Tag, type SegmentOption } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
@@ -21,8 +32,11 @@ export default function PantryScreen() {
   const store = useStore();
   const tables = useAppTables();
   const [name, setName] = useState('');
-  const stocked = useMemo(() => listFoods(tables).filter((food) => food.stock !== ''), [tables]);
-  const toBuy = stocked.filter((food) => food.stock === 'buy').length;
+  const stocked = useMemo(() => listFoods(tables).filter((food) => food.stock !== '' || food.stockUnit !== ''), [tables]);
+  const levels = useMemo(() => stockLevels(tables), [tables]);
+  const isEmpty = (foodId: string) => (levels.get(foodId) ?? 0) <= 0;
+  const levelLabel = (foodId: string, unit: StockUnit) => (isEmpty(foodId) ? 'leer' : formatStock(levels.get(foodId) ?? 0, unit));
+  const toBuy = stocked.filter((food) => (food.stockUnit ? isEmpty(food.id) : food.stock === 'buy')).length;
 
   const write = (writes: RowWrite[]) => {
     if (store && writes.length > 0) applyWrites(store, writes);
@@ -51,7 +65,8 @@ export default function PantryScreen() {
       />
       <Hint>
         Was ihr meistens daheim habt. Auf der Einkaufsliste stehen diese Dinge unter „Vorrat prüfen“; was auf
-        „Nachkaufen“ steht, kommt von selbst auf die nächste Liste.
+        „Nachkaufen“ steht oder leer ist, kommt von selbst auf die nächste Liste. Beim Lebensmittel lässt sich
+        einstellen, dass die App die Menge mitzählt.
       </Hint>
       <AddField
         accessibilityLabel="Lebensmittel zum Vorrat hinzufügen"
@@ -85,13 +100,25 @@ export default function PantryScreen() {
                   style={styles.name}>
                   <Text style={styles.foodName}>{food.name}</Text>
                 </Pressable>
-                <Segmented
-                  small
-                  options={STOCK_OPTIONS}
-                  value={food.stock}
-                  labelPrefix={`${food.name}: `}
-                  onChange={(stock) => setStock(food.id, stock)}
-                />
+                {food.stockUnit ? (
+                  // Mit Menge geführt: Der Bestand ändert sich über Einkauf, Kochen oder die Seite des Lebensmittels.
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${food.name}: ${levelLabel(food.id, food.stockUnit)}`}
+                    onPress={() => router.push(`/pantry/${encodeURIComponent(food.id)}`)}
+                    style={styles.level}>
+                    <Text style={[styles.levelText, isEmpty(food.id) && styles.levelEmpty]}>{levelLabel(food.id, food.stockUnit)}</Text>
+                    <Icon name="chevron_right" size={18} color={colors.borderStrong} />
+                  </Pressable>
+                ) : (
+                  <Segmented
+                    small
+                    options={STOCK_OPTIONS}
+                    value={food.stock}
+                    labelPrefix={`${food.name}: `}
+                    onChange={(stock) => setStock(food.id, stock)}
+                  />
+                )}
               </View>
             ))}
           </Card>
@@ -110,4 +137,7 @@ const styles = StyleSheet.create({
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   name: { flex: 1, paddingVertical: spacing.sm },
   foodName: { fontSize: 16, color: colors.text },
+  level: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: spacing.sm, paddingLeft: spacing.sm },
+  levelText: { fontSize: 15, fontWeight: '600', color: colors.text, fontVariant: ['tabular-nums'] },
+  levelEmpty: { color: colors.accent },
 });
