@@ -7,6 +7,7 @@ import { createMiddleware } from 'hono/factory';
 import type { Device, Household } from './household.ts';
 import { ImportError, readImportRequest, type Importer } from './importer.ts';
 import { isJpeg, isPhotoId, type PhotoStore } from './photos.ts';
+import { isMarketId, matchItems, readMatchRequest, ReweError, type ReweClient } from './rewe.ts';
 
 type Env = { Variables: { device: Device } };
 
@@ -36,12 +37,13 @@ export type AppOptions = {
   household: Household;
   photos: PhotoStore;
   importer: Importer;
+  rewe: ReweClient;
   /** Wird aufgerufen, nachdem ein Gerät abgemeldet wurde (z. B. um offene Sync-Verbindungen zu trennen). */
   onDeviceRevoked?: (deviceId: string) => void;
 };
 
 /** HTTP-API des Servers. */
-export function createApp({ household, photos, importer, onDeviceRevoked = () => {} }: AppOptions) {
+export function createApp({ household, photos, importer, rewe, onDeviceRevoked = () => {} }: AppOptions) {
   const app = new Hono<Env>();
   app.use('/api/*', cors());
 
@@ -134,6 +136,37 @@ export function createApp({ household, photos, importer, onDeviceRevoked = () =>
     if (!data) return c.json({ error: 'Dieses Foto gibt es nicht.' }, 404);
     // Ein Foto ändert sich nie; die App darf es dauerhaft zwischenspeichern.
     return c.body(data, 200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=31536000, immutable' });
+  });
+
+  /** Gibt Fehler von REWE als Meldung an die App weiter. */
+  const askRewe = async <T extends object>(c: Context<Env>, ask: () => Promise<T>) => {
+    try {
+      return c.json(await ask());
+    } catch (error) {
+      if (error instanceof ReweError) return c.json({ error: error.message }, error.status);
+      throw error;
+    }
+  };
+
+  app.get('/api/rewe/markets', requireDevice, (c) => {
+    const zipCode = c.req.query('zip') ?? '';
+    if (!/^\d{5}$/.test(zipCode)) return c.json({ error: 'Bitte eine Postleitzahl mit fünf Ziffern angeben.' }, 400);
+    return askRewe(c, async () => ({ markets: await rewe.markets(zipCode) }));
+  });
+
+  app.get('/api/rewe/products', requireDevice, (c) => {
+    const query = c.req.query('q')?.trim() ?? '';
+    const market = c.req.query('market') ?? '';
+    if (!query || query.length > 80 || !isMarketId(market)) {
+      return c.json({ error: 'Bitte einen Suchbegriff und den Markt angeben.' }, 400);
+    }
+    return askRewe(c, async () => ({ products: await rewe.search(query, market) }));
+  });
+
+  app.post('/api/rewe/match', requireDevice, async (c) => {
+    const request = readMatchRequest(await readBody(c));
+    if (!request) return c.json({ error: 'Die Positionen für den Abgleich sind unvollständig.' }, 400);
+    return askRewe(c, async () => ({ results: await matchItems(rewe, request) }));
   });
 
   return app;

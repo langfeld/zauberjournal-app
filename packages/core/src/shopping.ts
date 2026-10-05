@@ -5,6 +5,7 @@ import { parseIngredientLine } from './ingredient-line.ts';
 import { buildPlanEntry, createDietLookup, type PlanTables } from './plan.ts';
 import { formatAmount, roundScaledAmount } from './quantity.ts';
 import type { IngredientItem } from './recipe.ts';
+import { packsFor, parsePackSize, type ReweProductRow, type ReweState } from './rewe.ts';
 import { changedCells, isActive, type RowWrite, type Table } from './rows.ts';
 import { unitLabel } from './units.ts';
 
@@ -22,6 +23,8 @@ export type ShoppingItemRow = {
   unit: string;
   checked: boolean;
   origin: ShoppingItemOrigin;
+  /** Packungen bei REWE, von Hand geändert; `null` = aus der Menge berechnet. */
+  rewePacks: number | null;
   createdAt: number;
   deletedAt: number | null;
 };
@@ -29,6 +32,7 @@ export type ShoppingItemRow = {
 export type ShoppingTables = PlanTables & {
   shoppingLists: Table<ShoppingListRow>;
   shoppingItems: Table<ShoppingItemRow>;
+  reweProducts: Table<ReweProductRow>;
 };
 
 // ─── Einheiten zusammenfassen ───
@@ -189,7 +193,7 @@ export function syncShoppingList(tables: ShoppingTables, listId: string, now: nu
   const resolver = createFoodResolver(tables);
   const needs = computeShoppingNeeds(tables, listEntryIds(tables, listId), resolver);
 
-  const desired = new Map<string, Omit<ShoppingItemRow, 'checked' | 'createdAt'>>();
+  const desired = new Map<string, Omit<ShoppingItemRow, 'checked' | 'rewePacks' | 'createdAt'>>();
   for (const need of needs) {
     desired.set(derivedItemId(listId, need.key), {
       listId,
@@ -246,6 +250,33 @@ export type ShoppingItemView = {
   sources: string;
   stock: FoodStock;
   category: FoodCategory;
+  /** REWE-Produkt des Lebensmittels; `null`, solange es nicht abgeglichen ist. */
+  rewe: ShoppingItemRewe | null;
+};
+
+/** REWE-Produkt einer Position, mit den Packungen für ihre Menge. */
+export type ShoppingItemRewe = {
+  state: ReweState;
+  productId: string;
+  name: string;
+  imageUrl: string;
+  grammage: string;
+  /** Preis einer Packung in Cent. */
+  price: number;
+  packs: number;
+  /** Packungen von Hand geändert. */
+  manualPacks: boolean;
+};
+
+/** Stand des REWE-Abgleichs für alles, was noch zu kaufen ist. */
+export type ShoppingListRewe = {
+  /** Positionen mit Produkt und ihr Preis zusammen, in Cent. */
+  products: number;
+  total: number;
+  /** Bitte prüfen: unsichere Vorschläge, nicht gefundene und solche ohne Treffer. */
+  toCheck: number;
+  /** Noch nicht abgeglichen, z. B. neu hinzugekommen. */
+  pending: number;
 };
 
 /** Ein Gericht, für das eine Zutat gebraucht wird; `count` zählt, wie oft es auf der Liste steht. */
@@ -268,7 +299,42 @@ export type ShoppingListView = {
   pantry: ShoppingItemView[];
   /** Abgehakt. */
   done: ShoppingItemView[];
+  rewe: ShoppingListRewe;
 };
+
+function itemRewe(item: ShoppingItemRow, category: FoodCategory, product: ReweProductRow | undefined): ShoppingItemRewe | null {
+  if (!product) return null;
+  const manualPacks = item.rewePacks !== null && item.rewePacks !== undefined;
+  return {
+    state: product.state,
+    productId: product.productId,
+    name: product.name,
+    imageUrl: product.imageUrl,
+    grammage: product.grammage,
+    price: product.price,
+    packs: manualPacks
+      ? item.rewePacks!
+      : packsFor(item.amount, item.unit, parsePackSize(product.grammage, product.name), category),
+    manualPacks,
+  };
+}
+
+/** Zählt Produkte, Preis und Offenes des Abgleichs. */
+function summarizeRewe(items: readonly ShoppingItemView[]): ShoppingListRewe {
+  const summary: ShoppingListRewe = { products: 0, total: 0, toCheck: 0, pending: 0 };
+  for (const { foodId, rewe } of items) {
+    if (!rewe) {
+      if (foodId) summary.pending += 1;
+      continue;
+    }
+    if (rewe.state === 'unsure' || rewe.state === 'missing' || rewe.state === 'none') summary.toCheck += 1;
+    if (rewe.state !== 'none' && rewe.state !== 'skip' && rewe.productId) {
+      summary.products += 1;
+      summary.total += rewe.packs * rewe.price;
+    }
+  }
+  return summary;
+}
 
 /** Fasst die Planeinträge einer Zutat zu Gerichten zusammen: jedes einmal, mehrfach geplante mit Anzahl. */
 export function groupDishes(sources: readonly NeedSource[], photoOf: (entryId: string) => string): ShoppingItemDish[] {
@@ -323,6 +389,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
     .map(([id, item]): ShoppingItemView => {
       const food = tables.foods[item.foodId];
       const dishes = item.origin === 'plan' ? groupDishes(needs.get(id)?.sources ?? [], photoOf) : [];
+      const category = food && isActive(food) ? food.category : 'other';
       return {
         id,
         foodId: item.foodId,
@@ -333,7 +400,8 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
         dishes,
         sources: describeDishes(dishes),
         stock: food && isActive(food) ? (food.stock ?? '') : '',
-        category: food && isActive(food) ? food.category : 'other',
+        category,
+        rewe: item.foodId ? itemRewe(item, category, tables.reweProducts[item.foodId]) : null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
@@ -353,6 +421,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
     })).filter((section) => section.items.length > 0),
     pantry: open.filter((item) => item.origin === 'plan' && item.stock === 'have'),
     done: items.filter((item) => item.checked),
+    rewe: summarizeRewe(toBuy),
   };
 }
 

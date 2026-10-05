@@ -19,6 +19,7 @@ export function useAppTables(): ShoppingTables {
   const planChoices = useTable('planChoices');
   const shoppingLists = useTable('shoppingLists');
   const shoppingItems = useTable('shoppingItems');
+  const reweProducts = useTable('reweProducts');
   return useMemo(
     () => ({
       recipes,
@@ -34,6 +35,7 @@ export function useAppTables(): ShoppingTables {
       planChoices,
       shoppingLists,
       shoppingItems,
+      reweProducts,
     }),
     [
       recipes,
@@ -49,6 +51,7 @@ export function useAppTables(): ShoppingTables {
       planChoices,
       shoppingLists,
       shoppingItems,
+      reweProducts,
     ],
   );
 }
@@ -62,6 +65,20 @@ export function useActiveMeals(): Meal[] {
   return useMemo(
     () => activeMeals({ mealBreakfast, mealLunch, mealDinner, mealSnack }),
     [mealBreakfast, mealLunch, mealDinner, mealSnack],
+  );
+}
+
+export type ReweSettings = { marketId: string; marketName: string; marketAddress: string; organic: boolean };
+
+/** REWE-Markt des Haushalts; ohne Markt gibt es keinen Abgleich. */
+export function useReweSettings(): ReweSettings {
+  const marketId = useValue('reweMarketId');
+  const marketName = useValue('reweMarketName');
+  const marketAddress = useValue('reweMarketAddress');
+  const organic = useValue('reweOrganic');
+  return useMemo(
+    () => ({ marketId, marketName, marketAddress, organic }),
+    [marketId, marketName, marketAddress, organic],
   );
 }
 

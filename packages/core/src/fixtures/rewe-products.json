@@ -1,0 +1,3389 @@
+{
+ "Zwiebeln": [
+  {
+   "id": "9578896",
+   "name": "Zwiebeln 1,5kg",
+   "brand": "",
+   "imageUrl": "img:9578896",
+   "price": 159,
+   "basePrice": 106,
+   "grammage": "1,50kg (1 kg = 1,06 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [],
+   "listingId": "8-RHN5TTNE-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8919738",
+   "name": "REWE Bio Zwiebeln rot 500g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:8919738",
+   "price": 175,
+   "basePrice": 350,
+   "grammage": "500g (1 kg = 3,50 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-Q9M5LX65-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1041251",
+   "name": "Zwiebel gelb ca. 100g",
+   "brand": "",
+   "imageUrl": "img:1041251",
+   "price": 14,
+   "basePrice": 135,
+   "grammage": "1 Stück ca. 100 g (1 kg = 1,35 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [],
+   "listingId": "8-22610645-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1041143",
+   "name": "Zwiebel rot 500g im Netz",
+   "brand": "",
+   "imageUrl": "img:1041143",
+   "price": 129,
+   "basePrice": 258,
+   "grammage": "500g (1 kg = 2,58 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [],
+   "listingId": "8-22609816-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8471277",
+   "name": "Bio Zwiebeln gelb 750g im Netz",
+   "brand": "",
+   "imageUrl": "img:8471277",
+   "price": 169,
+   "basePrice": 225,
+   "grammage": "750g (1 kg = 2,25 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-20307356-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8838163",
+   "name": "Gemüsezwiebeln 750g im Netz",
+   "brand": "",
+   "imageUrl": "img:8838163",
+   "price": 179,
+   "basePrice": 239,
+   "grammage": "750g (1 kg = 2,39 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [],
+   "listingId": "8-NL4JHK3Y-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1209186",
+   "name": "REWE Beste Wahl Röstzwiebeln 150g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:1209186",
+   "price": 119,
+   "basePrice": 793,
+   "grammage": "150g (1 kg = 7,93 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Gewürze/Zwiebel-Gewürz/",
+   "tags": [],
+   "listingId": "13-4337256119818-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8810450",
+   "name": "Pringles Cheese & Onion 185g",
+   "brand": "Pringles",
+   "imageUrl": "img:8810450",
+   "price": 279,
+   "basePrice": 1508,
+   "grammage": "185g (1 kg = 15,08 €)",
+   "categoryPath": "Süßes & Salziges/Chips & Knabbereien/Chips/",
+   "tags": [],
+   "listingId": "8-VIMAQ3BQ-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4266315",
+   "name": "Ostmann Zwiebeln granuliert 40g",
+   "brand": "Ostmann",
+   "imageUrl": "img:4266315",
+   "price": 249,
+   "basePrice": 6225,
+   "grammage": "40g (1 kg = 62,25 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Gewürze/Zwiebel-Gewürz/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4002674046359-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7701104",
+   "name": "Top Taste Röstzwiebeln 100g",
+   "brand": "",
+   "imageUrl": "img:7701104",
+   "price": 149,
+   "basePrice": 1490,
+   "grammage": "100g (1 kg = 14,90 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Gewürze/Zwiebel-Gewürz/",
+   "tags": [],
+   "listingId": "8-PS2BM4T7-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Tomaten": [
+  {
+   "id": "1033906",
+   "name": "Cherry Romatomaten 250g",
+   "brand": "REWE",
+   "imageUrl": "img:1033906",
+   "price": 119,
+   "basePrice": 476,
+   "grammage": "250g (1 kg = 4,76 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "13-8714467001556-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "475360",
+   "name": "Rispentomaten ca. 100g",
+   "brand": "",
+   "imageUrl": "img:475360",
+   "price": 25,
+   "basePrice": 249,
+   "grammage": "1 Stück ca. 100 g (1 kg = 2,49 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-20475369-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1041188",
+   "name": "REWE Beste Wahl Rispentomaten 650g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:1041188",
+   "price": 279,
+   "basePrice": 429,
+   "grammage": "650g (1 kg = 4,29 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "13-4030847109235-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7224651",
+   "name": "Divino-Imperial Tomaten 200g",
+   "brand": "",
+   "imageUrl": "img:7224651",
+   "price": 259,
+   "basePrice": 1295,
+   "grammage": "200g (1 kg = 12,95 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-WJD88S92-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1033904",
+   "name": "Cherry Rispentomate 350g",
+   "brand": "",
+   "imageUrl": "img:1033904",
+   "price": 229,
+   "basePrice": 654,
+   "grammage": "350g (1 kg = 6,54 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "13-4030847103981-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8737758",
+   "name": "REWE Beste Wahl Delizioso Mini Cherry Rispentomaten 200g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8737758",
+   "price": 249,
+   "basePrice": 1245,
+   "grammage": "200g (1 kg = 12,45 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-G1NH82TN-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8964169",
+   "name": "Tomaten Honig Schatz 200g",
+   "brand": "",
+   "imageUrl": "img:8964169",
+   "price": 249,
+   "basePrice": 1245,
+   "grammage": "200g (1 kg = 12,45 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-UUCYNOGW-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7180089",
+   "name": "REWE Bio Appetita Mini-Rispen Tomaten 300g",
+   "brand": "",
+   "imageUrl": "img:7180089",
+   "price": 329,
+   "basePrice": 1097,
+   "grammage": "300g (1 kg = 10,97 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-TTE2RKC6-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "475556",
+   "name": "Fleischtomaten ca. 250g",
+   "brand": "",
+   "imageUrl": "img:475556",
+   "price": 100,
+   "basePrice": 399,
+   "grammage": "1 Stück ca. 250 g (1 kg = 3,99 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-20475550-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3029089",
+   "name": "Cherrytomaten 400g",
+   "brand": "",
+   "imageUrl": "img:3029089",
+   "price": 299,
+   "basePrice": 748,
+   "grammage": "400g (1 kg = 7,48 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-27079911-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9056569",
+   "name": "Tomaten Snack Mix 300g",
+   "brand": "",
+   "imageUrl": "img:9056569",
+   "price": 229,
+   "basePrice": 763,
+   "grammage": "300g (1 kg = 7,63 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-UK6I1RX3-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1041191",
+   "name": "REWE Rispentomaten Aromatico 250g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:1041191",
+   "price": 249,
+   "basePrice": 996,
+   "grammage": "250g (1 kg = 9,96 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-22610287-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2885813",
+   "name": "REWE Bio Mini Cherry Rispentomaten 200g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:2885813",
+   "price": 249,
+   "basePrice": 1245,
+   "grammage": "200g (1 kg = 12,45 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-27274460-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8892909",
+   "name": "Tomaten Süße Versuchung 200g",
+   "brand": "",
+   "imageUrl": "img:8892909",
+   "price": 319,
+   "basePrice": 1595,
+   "grammage": "200g (1 kg = 15,95 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-BUFYXK4K-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2224358",
+   "name": "REWE Bio Cherry Romatomaten 250g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:2224358",
+   "price": 399,
+   "basePrice": 1596,
+   "grammage": "250g (1 kg = 15,96 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-23826137-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8394061",
+   "name": "REWE Feine Welt Schwarze Cherry Rispentomaten 250g",
+   "brand": "",
+   "imageUrl": "img:8394061",
+   "price": 399,
+   "basePrice": 1596,
+   "grammage": "250g (1 kg = 15,96 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-0J6WYEZO-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8159827",
+   "name": "Tomate Honigschätze 200g",
+   "brand": "",
+   "imageUrl": "img:8159827",
+   "price": 249,
+   "basePrice": 1245,
+   "grammage": "200g (1 kg = 12,45 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-W4WRVISS-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9913655",
+   "name": "REWE Feine Welt Mini-Cherry-Rispentomaten Coloré 200g",
+   "brand": "REWE Feine Welt",
+   "imageUrl": "img:9913655",
+   "price": 329,
+   "basePrice": 1645,
+   "grammage": "200g (1 kg = 16,45 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "8-BNWWHHWE-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7257103",
+   "name": "Looye Honigtomaten 180g",
+   "brand": "",
+   "imageUrl": "img:7257103",
+   "price": 469,
+   "basePrice": 2606,
+   "grammage": "180g (1 kg = 26,06 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Tomaten/",
+   "tags": [],
+   "listingId": "13-8716062000101-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7211940",
+   "name": "REWE Beste Wahl stückige Tomaten 400g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:7211940",
+   "price": 119,
+   "basePrice": 298,
+   "grammage": "400g (1 kg = 2,98 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Tomaten-Konserven/",
+   "tags": [],
+   "listingId": "8-FXHFD0I9-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Hähnchenbrust": [
+  {
+   "id": "7931170",
+   "name": "Wilhelm Brandenburg Hähnchen Brustfilet ca. 420g",
+   "brand": "Wilhelm Brandenburg",
+   "imageUrl": "img:7931170",
+   "price": 626,
+   "basePrice": 1490,
+   "grammage": "1 Stück ca. 420 g (1 kg = 14,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "cool",
+    "regional"
+   ],
+   "listingId": "8-AAI8W8F4-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8162943",
+   "name": "Butcher's Barbecue Hähnchen Minuten-Schnitzel Johurt Knoblauch 4 Stück",
+   "brand": "Butchers",
+   "imageUrl": "img:8162943",
+   "price": 560,
+   "basePrice": 1399,
+   "grammage": "1 Stück ca. 400 g (1 kg = 13,99 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-QX0QKFD6-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2327613",
+   "name": "Herta Finesse Hähnchenbrust ofengebacken 100g",
+   "brand": "Herta",
+   "imageUrl": "img:2327613",
+   "price": 259,
+   "basePrice": 2590,
+   "grammage": "100g (1 kg = 25,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Kochschinken & Braten/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "13-4000582370597-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "72773",
+   "name": "Wilhelm Brandenburg Akti-Fit Hähnchenbrust 100g",
+   "brand": "Wilhelm Brandenburg",
+   "imageUrl": "img:72773",
+   "price": 199,
+   "basePrice": 1990,
+   "grammage": "100g (1 kg = 19,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Corned Beef, Sülze & Rotwurst/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-X8SZ3HLF-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9923258",
+   "name": "Butcher's Hähnchen Minuten-Schnitzel 3 Stück",
+   "brand": "Butchers",
+   "imageUrl": "img:9923258",
+   "price": 560,
+   "basePrice": 1399,
+   "grammage": "1 Stück ca. 400 g (1 kg = 13,99 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-M57OCRJQ-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2169985",
+   "name": "Wilhelm Brandenburg Hähnchenbrustfilet 100g",
+   "brand": "Wilhelm Brandenburg",
+   "imageUrl": "img:2169985",
+   "price": 199,
+   "basePrice": 1990,
+   "grammage": "100g (1 kg = 19,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Kochschinken & Braten/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-EL26PT5X-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2082319",
+   "name": "REWE Feine Welt Goldene Brustfilets 2 Stück",
+   "brand": "REWE Feine Welt",
+   "imageUrl": "img:2082319",
+   "price": 570,
+   "basePrice": 1899,
+   "grammage": "1 Stück ca. 300 g (1 kg = 18,99 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-2727540000007-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8342820",
+   "name": "Hähnchenbrustfilet",
+   "brand": "",
+   "imageUrl": "img:8342820",
+   "price": 761,
+   "basePrice": 1690,
+   "grammage": "1 Stück ca. 450 g (1 kg = 16,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-2748710000009-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2762933",
+   "name": "Herta Finesse Hähnchenbrust mit Curry 100g",
+   "brand": "Herta",
+   "imageUrl": "img:2762933",
+   "price": 259,
+   "basePrice": 2590,
+   "grammage": "100g (1 kg = 25,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Kochschinken & Braten/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-2Y2XOKSB-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "433704",
+   "name": "Tillman's Toasty Hähnchenbrustfilet 4x70g",
+   "brand": "Tillman's",
+   "imageUrl": "img:433704",
+   "price": 399,
+   "basePrice": 1425,
+   "grammage": "4x70g (1 kg = 14,25 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch Convenience/Geflügel-Filetstücke/",
+   "tags": [
+    "frozen"
+   ],
+   "listingId": "13-4043362621748-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8695302",
+   "name": "ZooRoyal Hühnerbrustfilets 125g",
+   "brand": "ZooRoyal",
+   "imageUrl": "img:8695302",
+   "price": 209,
+   "basePrice": 1672,
+   "grammage": "125g (1 kg = 16,72 €)",
+   "categoryPath": "Tierbedarf/Hundebedarf/Hundefutter/Hundesnacks/",
+   "tags": [],
+   "listingId": "8-4LB4XPUI-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8108648",
+   "name": "Gutfried Hähnchenbrust gebraten 80g",
+   "brand": "Gutfried",
+   "imageUrl": "img:8108648",
+   "price": 219,
+   "basePrice": 2738,
+   "grammage": "80g (1 kg = 27,38 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Kochschinken & Braten/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4003171020057-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1267719",
+   "name": "REWE Bio Hähnchenbrustfilet ca. 320g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:1267719",
+   "price": 1117,
+   "basePrice": 3490,
+   "grammage": "1 Stück ca. 320 g (1 kg = 34,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "organic",
+    "cool"
+   ],
+   "listingId": "13-2160780000008-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7523540",
+   "name": "Einfach Bio Hähnchenbrustfilet ca. 400g",
+   "brand": "",
+   "imageUrl": "img:7523540",
+   "price": 1000,
+   "basePrice": 2499,
+   "grammage": "1 Stück ca. 400 g (1 kg = 24,99 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "organic",
+    "cool"
+   ],
+   "listingId": "8-F1ZMOEB4-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9507782",
+   "name": "REWE Bio Hähnchenbrustfilet gepökelt gebacken 100g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9507782",
+   "price": 379,
+   "basePrice": 3790,
+   "grammage": "100g (1 kg = 37,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Kochschinken & Braten/",
+   "tags": [
+    "organic",
+    "cool"
+   ],
+   "listingId": "8-QMVTW5PO-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8754567",
+   "name": "ZooRoyal Lieblingsdrink mit Hühnerbrustfilet 140g",
+   "brand": "ZooRoyal",
+   "imageUrl": "img:8754567",
+   "price": 99,
+   "basePrice": 707,
+   "grammage": "140g (1 kg = 7,07 €)",
+   "categoryPath": "Tierbedarf/Hundebedarf/Hundefutter/Hunde-Nassfutter/",
+   "tags": [],
+   "listingId": "8-ESYH3GLR-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "987710",
+   "name": "Wiltmann Hähnchenbrustfilet mit Chili süß-sauer 50g",
+   "brand": "Wiltmann",
+   "imageUrl": "img:987710",
+   "price": 139,
+   "basePrice": 2780,
+   "grammage": "50g (1 kg = 27,80 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Corned Beef, Sülze & Rotwurst/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4001956451119-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2324086",
+   "name": "Original Wagner Rustipani Helles Ofenbrot Hähnchenbrust 180g",
+   "brand": "Original Wagner",
+   "imageUrl": "img:2324086",
+   "price": 219,
+   "basePrice": 1217,
+   "grammage": "180g (1 kg = 12,17 €)",
+   "categoryPath": "Tiefkühlkost/Pizza & Baguettes/Pizzabaguettes & Ofenbrote/",
+   "tags": [
+    "frozen"
+   ],
+   "listingId": "13-7613034854957-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7284528",
+   "name": "ZooRoyal Delikate Suppe Hühnerbrustfilet & Karotte 40g",
+   "brand": "ZooRoyal",
+   "imageUrl": "img:7284528",
+   "price": 65,
+   "basePrice": 1625,
+   "grammage": "40g (1 kg = 16,25 €)",
+   "categoryPath": "Tierbedarf/Katzenbedarf/Katzenfutter/Katzen-Milch & -Pasten/",
+   "tags": [],
+   "listingId": "13-4388860729405-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7034166",
+   "name": "REWE Bio Hähnchen Brustfilet Joghurt Paprika 320g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:7034166",
+   "price": 1117,
+   "basePrice": 3490,
+   "grammage": "1 Stück ca. 320 g (1 kg = 34,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Grillfleisch/Filets/",
+   "tags": [
+    "organic",
+    "cool"
+   ],
+   "listingId": "13-2793810000008-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Eier": [
+  {
+   "id": "8470640",
+   "name": "REWE Beste Wahl Respeggt Eier Freilandhaltung 10 Stück",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8470640",
+   "price": 329,
+   "basePrice": 0,
+   "grammage": "10 Stück",
+   "categoryPath": "Käse, Eier & Molkerei/Eier & Ei-Ersatz/Freiland-Eier/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4337256067508-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8209143",
+   "name": "REWE Beste Wahl Eier Freilandhaltung 6 Stück",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8209143",
+   "price": 229,
+   "basePrice": 0,
+   "grammage": "6 Stück",
+   "categoryPath": "Käse, Eier & Molkerei/Eier & Ei-Ersatz/Freiland-Eier/",
+   "tags": [],
+   "listingId": "13-4388860559743-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9952769",
+   "name": "REWE Beste Wahl Frische Eier aus Freilandhaltung 6 Stück",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9952769",
+   "price": 239,
+   "basePrice": 0,
+   "grammage": "6 Stück",
+   "categoryPath": "Käse, Eier & Molkerei/Eier & Ei-Ersatz/Freiland-Eier/",
+   "tags": [],
+   "listingId": "8-CYRSKYLW-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1991655",
+   "name": "Beelitzer Eier aus Bodenhaltung 10 Stück",
+   "brand": "",
+   "imageUrl": "img:1991655",
+   "price": 339,
+   "basePrice": 0,
+   "grammage": "10 Stück",
+   "categoryPath": "Käse, Eier & Molkerei/Eier & Ei-Ersatz/Eier aus Bodenhaltung/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4022834110034-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9142970",
+   "name": "REWE Beste Wahl Eier Bodenhaltung 6 Stück",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9142970",
+   "price": 189,
+   "basePrice": 0,
+   "grammage": "6 Stück",
+   "categoryPath": "Käse, Eier & Molkerei/Eier & Ei-Ersatz/Eier aus Bodenhaltung/",
+   "tags": [],
+   "listingId": "8-91Z1HU0N-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2016494",
+   "name": "Beelitzer Freilandhaltung 10 Stück",
+   "brand": "Beelitzer",
+   "imageUrl": "img:2016494",
+   "price": 399,
+   "basePrice": 0,
+   "grammage": "10 Stück",
+   "categoryPath": "Käse, Eier & Molkerei/Eier & Ei-Ersatz/Freiland-Eier/",
+   "tags": [],
+   "listingId": "13-4022834110836-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8718645",
+   "name": "Eierhof Hennes Bunte Eier Bodenhaltung 4 Stück",
+   "brand": "Eierhof Hennes",
+   "imageUrl": "img:8718645",
+   "price": 189,
+   "basePrice": 0,
+   "grammage": "4 Stück",
+   "categoryPath": "Käse, Eier & Molkerei/Eier & Ei-Ersatz/Gekochte Eier/",
+   "tags": [],
+   "listingId": "8-F7O9UNQJ-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "274542",
+   "name": "Kinder Überraschungs-Ei 20g",
+   "brand": "Kinder",
+   "imageUrl": "img:274542",
+   "price": 119,
+   "basePrice": 5950,
+   "grammage": "20g (1 kg = 59,50 €)",
+   "categoryPath": "Süßes & Salziges/Schokolade/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "8-40084107-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1185547",
+   "name": "Kinder Überraschungseier 4x20g",
+   "brand": "Kinder",
+   "imageUrl": "img:1185547",
+   "price": 419,
+   "basePrice": 5238,
+   "grammage": "4x20g (1 kg = 52,38 €)",
+   "categoryPath": "Weihnachtswelt/Nikolaus & Adventskalender/24 Türchen bis Weihnachten/",
+   "tags": [],
+   "listingId": "13-4008400244624-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2641238",
+   "name": "Kinder Überraschungseier 3x20g",
+   "brand": "Kinder",
+   "imageUrl": "img:2641238",
+   "price": 329,
+   "basePrice": 5483,
+   "grammage": "3x20g (1 kg = 54,83 €)",
+   "categoryPath": "Süßes & Salziges/Schokolade/",
+   "tags": [],
+   "listingId": "8-RSJ5E72X-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3299546",
+   "name": "Kinder Joy Überraschungsei 20g",
+   "brand": "Kinder",
+   "imageUrl": "img:3299546",
+   "price": 149,
+   "basePrice": 7450,
+   "grammage": "20g (1 kg = 74,50 €)",
+   "categoryPath": "Süßes & Salziges/Schokolade/Schoko-Snacks/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "8-80310891-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3967905",
+   "name": "Kinder Überraschungs-Ei rosa 4x20g",
+   "brand": "Kinder",
+   "imageUrl": "img:3967905",
+   "price": 419,
+   "basePrice": 5238,
+   "grammage": "4x20g (1 kg = 52,38 €)",
+   "categoryPath": "Weihnachtswelt/Nikolaus & Adventskalender/24 Türchen bis Weihnachten/",
+   "tags": [],
+   "listingId": "13-4008400480428-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "209124",
+   "name": "Kinder Überraschungsei Anhänger 20g",
+   "brand": "Kinder",
+   "imageUrl": "img:209124",
+   "price": 119,
+   "basePrice": 5950,
+   "grammage": "20g (1 kg = 59,50 €)",
+   "categoryPath": "Süßes & Salziges/Schokolade/Schoko-Snacks/",
+   "tags": [],
+   "listingId": "8-42216483-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8422434",
+   "name": "Kinder Überraschung Schokoladenherz 53g",
+   "brand": "Kinder",
+   "imageUrl": "img:8422434",
+   "price": 269,
+   "basePrice": 5075,
+   "grammage": "53g (1 kg = 50,75 €)",
+   "categoryPath": "Süßes & Salziges/Schokolade/Schoko-Snacks/",
+   "tags": [],
+   "listingId": "8-V41ARU43-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "379974",
+   "name": "Kinder Überraschung Maxi Santa 100g",
+   "brand": "Kinder",
+   "imageUrl": "img:379974",
+   "price": 399,
+   "basePrice": 3990,
+   "grammage": "100g (1 kg = 39,90 €)",
+   "categoryPath": "Süßes & Salziges/Weihnachten/Weihnachtsschokolade/",
+   "tags": [],
+   "listingId": "13-4008400230726-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2158025",
+   "name": "Kinder Überraschung Maxi Weihnachtspinguin 100g",
+   "brand": "Kinder",
+   "imageUrl": "img:2158025",
+   "price": 399,
+   "basePrice": 3950,
+   "grammage": "101g (1 kg = 39,50 €)",
+   "categoryPath": "Süßes & Salziges/Schokolade/Schoko-Snacks/",
+   "tags": [],
+   "listingId": "13-4008400231723-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7586259",
+   "name": "Bamboo Garden Eier Mie Nudeln 250g",
+   "brand": "Bamboo Garden",
+   "imageUrl": "img:7586259",
+   "price": 189,
+   "basePrice": 756,
+   "grammage": "250g (1 kg = 7,56 €)",
+   "categoryPath": "Kochen & Backen/Nudeln/Bandnudeln/",
+   "tags": [],
+   "listingId": "8-IPDKEJZI-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8738879",
+   "name": "Maggi Fix Senf-Eier 41g",
+   "brand": "Maggi",
+   "imageUrl": "img:8738879",
+   "price": 109,
+   "basePrice": 2659,
+   "grammage": "41g (1 kg = 26,59 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fixprodukte/Fix für Gemüsegerichte/",
+   "tags": [],
+   "listingId": "8-P2XPNDCF-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7056609",
+   "name": "REWE Feine Welt Wachteleier Auslaufhaltung 12 Stück",
+   "brand": "REWE Feine Welt",
+   "imageUrl": "img:7056609",
+   "price": 299,
+   "basePrice": 0,
+   "grammage": "12 Stück",
+   "categoryPath": "Monats-Highlights/Genuss in Premiumqualität/Brotzeit-Delikatessen/",
+   "tags": [],
+   "listingId": "13-4388844300279-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2744786",
+   "name": "Maggi Kräuter Rahmsauce 2er Pack ergibt 2x250ml",
+   "brand": "Maggi",
+   "imageUrl": "img:2744786",
+   "price": 159,
+   "basePrice": 318,
+   "grammage": "2x0,25l (1 l = 3,18 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Soßen/Bratensoße/Dunkle Soße/",
+   "tags": [],
+   "listingId": "13-7613035448759-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Knoblauch": [
+  {
+   "id": "1041139",
+   "name": "Knoblauch 200g im Netz",
+   "brand": "",
+   "imageUrl": "img:1041139",
+   "price": 125,
+   "basePrice": 625,
+   "grammage": "200g (1 kg = 6,25 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [],
+   "listingId": "8-22609786-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8953642",
+   "name": "Bio Knoblauch 100g",
+   "brand": "",
+   "imageUrl": "img:8953642",
+   "price": 88,
+   "basePrice": 880,
+   "grammage": "100g (1 kg = 8,80 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [
+    "discounted",
+    "organic"
+   ],
+   "listingId": "8-ZJ7ONKGM-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3363970",
+   "name": "Knoblauch 1 Stück",
+   "brand": "",
+   "imageUrl": "img:3363970",
+   "price": 125,
+   "basePrice": 0,
+   "grammage": "1 Stück",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [],
+   "listingId": "8-23363977-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "466247",
+   "name": "Frischer Knoblauch ca. 60g",
+   "brand": "",
+   "imageUrl": "img:466247",
+   "price": 77,
+   "basePrice": 1290,
+   "grammage": "1 Stück ca. 60 g (1 kg = 12,90 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/",
+   "tags": [],
+   "listingId": "8-20466244-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2953035",
+   "name": "REWE Beste Wahl Knoblauch nach toskanischer Art 180g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:2953035",
+   "price": 199,
+   "basePrice": 1047,
+   "grammage": "190g (1 kg = 10,47 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Feinkost & Antipasti/Eingelegter Knoblauch/",
+   "tags": [],
+   "listingId": "13-4337256048422-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8575942",
+   "name": "REWE Beste Wahl Knoblauch granuliert 52g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8575942",
+   "price": 199,
+   "basePrice": 3827,
+   "grammage": "52g (1 kg = 38,27 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Gewürze/Knoblauchpulver/",
+   "tags": [],
+   "listingId": "8-NGFDGU07-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4248180",
+   "name": "Ostmann Knoblauch granuliert 50g",
+   "brand": "Ostmann",
+   "imageUrl": "img:4248180",
+   "price": 219,
+   "basePrice": 4380,
+   "grammage": "50g (1 kg = 43,80 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Gewürze/Knoblauchpulver/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4002674043136-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2953026",
+   "name": "REWE Beste Wahl Knoblauch Siziliana 180g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:2953026",
+   "price": 199,
+   "basePrice": 1047,
+   "grammage": "190g (1 kg = 10,47 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Feinkost & Antipasti/Eingelegter Knoblauch/",
+   "tags": [],
+   "listingId": "8-TGWSW12E-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7074279",
+   "name": "Ostmann Knoblauch geröstet 40g",
+   "brand": "Ostmann",
+   "imageUrl": "img:7074279",
+   "price": 259,
+   "basePrice": 6475,
+   "grammage": "40g (1 kg = 64,75 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Gewürze/Knoblauchpulver/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4002674043082-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4202031",
+   "name": "Ostmann Knoblauch Granuliert 60g",
+   "brand": "Ostmann",
+   "imageUrl": "img:4202031",
+   "price": 259,
+   "basePrice": 4317,
+   "grammage": "60g (1 kg = 43,17 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Gewürze/Knoblauchpulver/",
+   "tags": [],
+   "listingId": "13-4002674053135-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1475705",
+   "name": "REWE Beste Wahl Aglio Olio & Peperoncino 100g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:1475705",
+   "price": 169,
+   "basePrice": 1690,
+   "grammage": "100g (1 kg = 16,90 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Feinkost & Antipasti/Eingelegter Knoblauch/",
+   "tags": [],
+   "listingId": "8-D7VNLUDO-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8880203",
+   "name": "Tuc Bake Rolls Knoblauch 150g",
+   "brand": "Tuc",
+   "imageUrl": "img:8880203",
+   "price": 219,
+   "basePrice": 1460,
+   "grammage": "150g (1 kg = 14,60 €)",
+   "categoryPath": "Süßes & Salziges/Chips & Knabbereien/Cracker/",
+   "tags": [],
+   "listingId": "8-OZG6BHQK-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4584171",
+   "name": "Knorr Grillsauce Knoblauch Soße 250 ml",
+   "brand": "Knorr",
+   "imageUrl": "img:4584171",
+   "price": 179,
+   "basePrice": 716,
+   "grammage": "250ml (1 l = 7,16 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Soßen/Grillsaucen/Burgersoßen/",
+   "tags": [],
+   "listingId": "13-4013300031236-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "969689",
+   "name": "Probsteier Grobe Streichmettwurst mit Knoblauch am Stück",
+   "brand": "",
+   "imageUrl": "img:969689",
+   "price": 175,
+   "basePrice": 2190,
+   "grammage": "1 Stück ca. 80 g (1 kg = 21,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst & Aufschnitt/Streichwurst/Mettwurst/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-P53NIFXU-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7179394",
+   "name": "Knorr Salatkrönung Gartenkräuter Knoblauch Dressing 5er-Pack 40g",
+   "brand": "Knorr",
+   "imageUrl": "img:7179394",
+   "price": 159,
+   "basePrice": 353,
+   "grammage": "5x90ml (1 l = 3,53 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salat-Dressings & Toppings/Instant-Dressings/",
+   "tags": [
+    "lowestprice",
+    "vegetarian"
+   ],
+   "listingId": "13-8714100823576-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7096850",
+   "name": "Heinz Knoblauch Sauce 220ml",
+   "brand": "Heinz",
+   "imageUrl": "img:7096850",
+   "price": 229,
+   "basePrice": 1041,
+   "grammage": "220ml (1 l = 10,41 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Soßen/Grillsaucen/Burgersoßen/",
+   "tags": [],
+   "listingId": "13-8715700115801-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8162943",
+   "name": "Butcher's Barbecue Hähnchen Minuten-Schnitzel Johurt Knoblauch 4 Stück",
+   "brand": "Butchers",
+   "imageUrl": "img:8162943",
+   "price": 560,
+   "basePrice": 1399,
+   "grammage": "1 Stück ca. 400 g (1 kg = 13,99 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fleisch/Geflügelfleisch/Hähnchenfleisch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-QX0QKFD6-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2293927",
+   "name": "Tannenhof Knoblauchwurst Ring",
+   "brand": "",
+   "imageUrl": "img:2293927",
+   "price": 249,
+   "basePrice": 2490,
+   "grammage": "1 Stück ca. 100 g (1 kg = 24,90 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Wurst-Theke/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-QXUSAUOE-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9592161",
+   "name": "Maggi Fix Airfryer Knusper Hähnchen Paprika & Knoblauch 39g",
+   "brand": "Maggi",
+   "imageUrl": "img:9592161",
+   "price": 109,
+   "basePrice": 2795,
+   "grammage": "39g (1 kg = 27,95 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fixprodukte/Fix für Fleischgerichte/",
+   "tags": [],
+   "listingId": "8-Q0LMW38L-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4840917",
+   "name": "Kühne Knoblauch-Sauce 250ml",
+   "brand": "Kühne",
+   "imageUrl": "img:4840917",
+   "price": 169,
+   "basePrice": 676,
+   "grammage": "250ml (1 l = 6,76 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Soßen/Grillsaucen/Burgersoßen/",
+   "tags": [],
+   "listingId": "8-40804972-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Kokosmilch": [
+  {
+   "id": "7018956",
+   "name": "REWE Beste Wahl Kokosmilch fettreduziert 400ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:7018956",
+   "price": 149,
+   "basePrice": 373,
+   "grammage": "400ml (1 l = 3,73 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Obstkonserven/Kokosmilch/",
+   "tags": [],
+   "listingId": "8-XW5EKT2X-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "792132",
+   "name": "REWE Beste Wahl Kokosmilch cremig 400ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:792132",
+   "price": 149,
+   "basePrice": 373,
+   "grammage": "400ml (1 l = 3,73 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Obstkonserven/Kokosmilch/",
+   "tags": [],
+   "listingId": "8-MLS5EF32-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9097569",
+   "name": "REWE Bio Kokosmilch fettreduziert 400ml",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9097569",
+   "price": 159,
+   "basePrice": 398,
+   "grammage": "400ml (1 l = 3,98 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-0CCOYS4O-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9102262",
+   "name": "REWE Beste Wahl Kokosmilch fettreduziert 250ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9102262",
+   "price": 119,
+   "basePrice": 476,
+   "grammage": "250ml (1 l = 4,76 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Obstkonserven/Kokosmilch/",
+   "tags": [],
+   "listingId": "8-HYUQZMLH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9980627",
+   "name": "Fairtrade Original Bio Kokosmilch light 200ml",
+   "brand": "Fairtrade Original",
+   "imageUrl": "img:9980627",
+   "price": 159,
+   "basePrice": 795,
+   "grammage": "200g (1 kg = 7,95 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Obstkonserven/Kokosmilch/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-0VCTFKXH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3274843",
+   "name": "REWE Bio Kokosmilch 400ml",
+   "brand": "REWE Bio",
+   "imageUrl": "img:3274843",
+   "price": 159,
+   "basePrice": 398,
+   "grammage": "400ml (1 l = 3,98 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-DZ2QPGXJ-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9106275",
+   "name": "REWE Bio Kokosmilch 200ml",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9106275",
+   "price": 119,
+   "basePrice": 595,
+   "grammage": "200ml (1 l = 5,95 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-OIWCZTYW-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2268790",
+   "name": "Biozentrale Bio Kokosmilch 400ml",
+   "brand": "biozentrale",
+   "imageUrl": "img:2268790",
+   "price": 279,
+   "basePrice": 698,
+   "grammage": "400ml (1 l = 6,98 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "13-4005009101310-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7570089",
+   "name": "REWE Bio Kokosmilch gelbes Curry 400g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:7570089",
+   "price": 199,
+   "basePrice": 498,
+   "grammage": "400g (1 kg = 4,98 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Obstkonserven/Kokosmilch/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-FRMW2QTH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9105591",
+   "name": "REWE Bio Kokosmilch mit rotem Curry 400g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9105591",
+   "price": 199,
+   "basePrice": 498,
+   "grammage": "400g (1 kg = 4,98 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Obstkonserven/Kokosmilch/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-HLUSPEHT-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3449428",
+   "name": "Fairtrade Original Biologische Kokosmilch 400ml",
+   "brand": "Fairtrade Original",
+   "imageUrl": "img:3449428",
+   "price": 299,
+   "basePrice": 748,
+   "grammage": "400ml (1 l = 7,48 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "13-8711741355893-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8778407",
+   "name": "REWE Bio pflanzlich Kokos Reis Drink 1l",
+   "brand": "REWE Bio",
+   "imageUrl": "img:8778407",
+   "price": 145,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milchalternativen/Reisdrinks/",
+   "tags": [
+    "organic",
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-JSMTHLX4-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8489592",
+   "name": "Alpro Kokosnuss-Drink Barista mit Soja vegan 1l",
+   "brand": "Alpro",
+   "imageUrl": "img:8489592",
+   "price": 299,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milchalternativen/Kokosdrinks/",
+   "tags": [
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-ZQ3NJYHO-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8270917",
+   "name": "Campo Verde Bio Demeter Kokosmilch Natur 400g",
+   "brand": "Campo Verde",
+   "imageUrl": "img:8270917",
+   "price": 289,
+   "basePrice": 723,
+   "grammage": "400ml (1 l = 7,23 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "organic",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4045178007327-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7357118",
+   "name": "Mølk Kokosdrink Barista 1l",
+   "brand": "",
+   "imageUrl": "img:7357118",
+   "price": 199,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milchalternativen/Kokosdrinks/",
+   "tags": [],
+   "listingId": "8-ATERGLLA-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9891369",
+   "name": "Ombar Bio Kokosmilch 55% Kakao vegan 70g",
+   "brand": "Ombar",
+   "imageUrl": "img:9891369",
+   "price": 499,
+   "basePrice": 0,
+   "grammage": "70g",
+   "categoryPath": "Süßes & Salziges/Trockenfrüchte & Kerne/Trockenobst/Kokos/",
+   "tags": [
+    "organic",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-VIMKZBUY-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7623691",
+   "name": "Müller Müllermilch Pistazien-Kokos 400ml",
+   "brand": "Müller",
+   "imageUrl": "img:7623691",
+   "price": 149,
+   "basePrice": 373,
+   "grammage": "400ml (1 l = 3,73 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Milchgetränke/Milchdrinks/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-3GP1W6Y0-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9437480",
+   "name": "Oatly Haferdrink Barista Edition Coconut Flavour 1l",
+   "brand": "Oatly",
+   "imageUrl": "img:9437480",
+   "price": 199,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milchalternativen/Haferdrinks/",
+   "tags": [
+    "discounted",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-XCVBCDOI-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8716160",
+   "name": "FOCO Bio Kokosnussmilch 330ml",
+   "brand": "FOCO",
+   "imageUrl": "img:8716160",
+   "price": 199,
+   "basePrice": 603,
+   "grammage": "330ml (1 l = 6,03 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Milchalternativen/Kokosdrinks/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-OHBGYK8Y-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "567931",
+   "name": "Aroy-D Kokosnussmilch 500ml",
+   "brand": "Aroy-D",
+   "imageUrl": "img:567931",
+   "price": 349,
+   "basePrice": 698,
+   "grammage": "500ml (1 l = 6,98 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Obstkonserven/Kokosmilch/",
+   "tags": [],
+   "listingId": "13-8851613101385-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Milch": [
+  {
+   "id": "9520058",
+   "name": "Thüringer Land Frische Fettarme Milch 1,5% 1l",
+   "brand": "Thüringer Land",
+   "imageUrl": "img:9520058",
+   "price": 169,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Frischmilch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-ZRPKHBYP-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1252238",
+   "name": "REWE frei von H-Vollmilch laktosefrei 3,5% 1l",
+   "brand": "REWE frei von",
+   "imageUrl": "img:1252238",
+   "price": 119,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [
+    "lactosefree"
+   ],
+   "listingId": "8-UZGVCU4F-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8676563",
+   "name": "Schwarzwaldmilch Haltbare Protein Milch 0,9% 1l",
+   "brand": "Schwarzwaldmilch",
+   "imageUrl": "img:8676563",
+   "price": 189,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [],
+   "listingId": "8-Z38B9Q6V-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1252410",
+   "name": "Bärenmarke Die Alpenfrische Vollmilch 1l",
+   "brand": "Bärenmarke",
+   "imageUrl": "img:1252410",
+   "price": 99,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Frischmilch/",
+   "tags": [
+    "discounted",
+    "hasLoyaltyBonus",
+    "cool"
+   ],
+   "listingId": "8-V74IZ0R7-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "197889",
+   "name": "REWE Bio H-Vollmilch 3,8% 1l",
+   "brand": "REWE Bio",
+   "imageUrl": "img:197889",
+   "price": 125,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [
+    "organic",
+    "lowestprice"
+   ],
+   "listingId": "8-O61EG0SH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4561767",
+   "name": "Bärenmarke Alpenfrische Milch 1,8% 1l",
+   "brand": "Bärenmarke",
+   "imageUrl": "img:4561767",
+   "price": 99,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Frischmilch/",
+   "tags": [
+    "discounted",
+    "hasLoyaltyBonus",
+    "cool"
+   ],
+   "listingId": "8-DGG3A90U-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "197872",
+   "name": "REWE Bio Frische Weidemilch 3,8% 1l",
+   "brand": "REWE Bio",
+   "imageUrl": "img:197872",
+   "price": 135,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Frischmilch/",
+   "tags": [
+    "organic",
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-BKD3O4YM-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "197877",
+   "name": "REWE Bio Fettarme H-Milch 1,5% 1l",
+   "brand": "REWE Bio",
+   "imageUrl": "img:197877",
+   "price": 115,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [
+    "organic",
+    "lowestprice"
+   ],
+   "listingId": "8-7PQ7EFOW-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1252234",
+   "name": "REWE Frei von Fettarme H-Milch laktosefrei 1,5% 1l",
+   "brand": "REWE frei von",
+   "imageUrl": "img:1252234",
+   "price": 109,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [
+    "lactosefree"
+   ],
+   "listingId": "13-4337256176330-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8597787",
+   "name": "Alpro Not Mlk Haferdrink 3,5% vegan 1l",
+   "brand": "Alpro",
+   "imageUrl": "img:8597787",
+   "price": 249,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milchalternativen/Haferdrinks/",
+   "tags": [
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-5MRF4JXM-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "677067",
+   "name": "Weihenstephan H-Milch 3,5% 1l",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:677067",
+   "price": 159,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [],
+   "listingId": "13-4008452027602-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2374151",
+   "name": "Weihenstephan H-Milch 3,5% 0,5l",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:2374151",
+   "price": 105,
+   "basePrice": 210,
+   "grammage": "500ml (1 l = 2,10 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [],
+   "listingId": "13-4008452033986-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "677063",
+   "name": "Weihenstephan Haltbare Milch 1,5% 1l",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:677063",
+   "price": 149,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [],
+   "listingId": "13-4008452027589-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1042422",
+   "name": "Hemme Milch Frische Vollmilch 3,7% 1l",
+   "brand": "Hemme Milch",
+   "imageUrl": "img:1042422",
+   "price": 159,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Frischmilch/",
+   "tags": [
+    "cool",
+    "regional"
+   ],
+   "listingId": "13-4260055880033-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "993578",
+   "name": "Bärenmarke Haltbare Milch 3,5% 1l",
+   "brand": "Bärenmarke",
+   "imageUrl": "img:993578",
+   "price": 99,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [
+    "discounted",
+    "hasLoyaltyBonus"
+   ],
+   "listingId": "8-XU7SZUYN-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2374148",
+   "name": "Weihenstephan H-Milch 1,5% 0,5l",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:2374148",
+   "price": 99,
+   "basePrice": 198,
+   "grammage": "500ml (1 l = 1,98 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [],
+   "listingId": "13-4008452033962-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "993577",
+   "name": "Bärenmarke Die haltbare Alpenmilch 1,5% 1l",
+   "brand": "Bärenmarke",
+   "imageUrl": "img:993577",
+   "price": 99,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [
+    "discounted",
+    "hasLoyaltyBonus"
+   ],
+   "listingId": "8-84ZIHYSM-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "197862",
+   "name": "REWE Bio Frische Weidemilch 1,5% 1l",
+   "brand": "REWE Bio",
+   "imageUrl": "img:197862",
+   "price": 125,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Frischmilch/",
+   "tags": [
+    "organic",
+    "cool",
+    "lowestprice",
+    "vegetarian"
+   ],
+   "listingId": "8-8GR4LPBT-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "711167",
+   "name": "Weihenstephan Haltbare entrahmte Milch 0,1% 1l",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:711167",
+   "price": 111,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/H-Milch/",
+   "tags": [],
+   "listingId": "13-4008452027565-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2058036",
+   "name": "Arla Bio Frische Weidemilch 3,8% 1l",
+   "brand": "Arla",
+   "imageUrl": "img:2058036",
+   "price": 189,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Käse, Eier & Molkerei/Milch/Frischmilch/",
+   "tags": [
+    "organic",
+    "cool"
+   ],
+   "listingId": "13-4016241015228-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Butter": [
+  {
+   "id": "9558571",
+   "name": "Deutsche Markenbutter Mildgesäuerte Butter 250g",
+   "brand": "",
+   "imageUrl": "img:9558571",
+   "price": 199,
+   "basePrice": 796,
+   "grammage": "250g (1 kg = 7,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-DS3JAX8K-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4529316",
+   "name": "Kerrygold Original Irische Butter 250g",
+   "brand": "Kerrygold",
+   "imageUrl": "img:4529316",
+   "price": 329,
+   "basePrice": 1316,
+   "grammage": "250g (1 kg = 13,16 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4001954161010-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "5005051",
+   "name": "Weihenstephan Butter 250g",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:5005051",
+   "price": 299,
+   "basePrice": 1196,
+   "grammage": "250g (1 kg = 11,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4008452010222-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "6656935",
+   "name": "Meggle Feine Butter 250g",
+   "brand": "Meggle",
+   "imageUrl": "img:6656935",
+   "price": 259,
+   "basePrice": 1036,
+   "grammage": "250g (1 kg = 10,36 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-40349558-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2798545",
+   "name": "Kerrygold Original Irische Butter 200g",
+   "brand": "Kerrygold",
+   "imageUrl": "img:2798545",
+   "price": 329,
+   "basePrice": 1645,
+   "grammage": "200g (1 kg = 16,45 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4001954161904-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1362018",
+   "name": "Paysan Breton Butter mit Meersalz 250g",
+   "brand": "Paysan Breton",
+   "imageUrl": "img:1362018",
+   "price": 439,
+   "basePrice": 1756,
+   "grammage": "250g (1 kg = 17,56 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-3412290016185-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "559003",
+   "name": "REWE Bio Süßrahmbutter 250g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:559003",
+   "price": 269,
+   "basePrice": 1076,
+   "grammage": "250g (1 kg = 10,76 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "organic",
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-SKVRQKLG-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7077819",
+   "name": "REWE Beste Wahl Weidebutter Süßrahm 250g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:7077819",
+   "price": 199,
+   "basePrice": 796,
+   "grammage": "250g (1 kg = 7,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-9UGQURA2-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7655435",
+   "name": "Arla Kaergarden Gesalzen aus Butter & Rapsöl 200g",
+   "brand": "Arla",
+   "imageUrl": "img:7655435",
+   "price": 269,
+   "basePrice": 1345,
+   "grammage": "200g (1 kg = 13,45 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-DYGEMRLW-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7654438",
+   "name": "Arla Kaergarden Ungesalzen aus Butter & Rapsöl 200g",
+   "brand": "Arla",
+   "imageUrl": "img:7654438",
+   "price": 269,
+   "basePrice": 1345,
+   "grammage": "200g (1 kg = 13,45 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-NALR06XF-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7070717",
+   "name": "Gläserne Molkerei Bio Fassbutter gesalzen 250g",
+   "brand": "Gläserne Molkerei",
+   "imageUrl": "img:7070717",
+   "price": 449,
+   "basePrice": 1796,
+   "grammage": "250g (1 kg = 17,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Butter/",
+   "tags": [
+    "organic",
+    "cool"
+   ],
+   "listingId": "13-4250017300921-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3070718",
+   "name": "Rama Streichfett mit Butter gesalzen 225g",
+   "brand": "Rama",
+   "imageUrl": "img:3070718",
+   "price": 179,
+   "basePrice": 796,
+   "grammage": "225g (1 kg = 7,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-NO2GCRDP-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1464289",
+   "name": "Kerrygold extra mit Rapsöl ungesalzen 400g",
+   "brand": "Kerrygold",
+   "imageUrl": "img:1464289",
+   "price": 259,
+   "basePrice": 648,
+   "grammage": "400g (1 kg = 6,48 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "discounted",
+    "cool"
+   ],
+   "listingId": "13-4001954165803-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3070709",
+   "name": "Rama Streichfett mit Butter ungesalzen 225g",
+   "brand": "Rama",
+   "imageUrl": "img:3070709",
+   "price": 179,
+   "basePrice": 796,
+   "grammage": "225g (1 kg = 7,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-JH8RO26P-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2471323",
+   "name": "Arla Kaergarden Ungesalzen aus Butter & Rapsöl 350g",
+   "brand": "Arla",
+   "imageUrl": "img:2471323",
+   "price": 399,
+   "basePrice": 1140,
+   "grammage": "350g (1 kg = 11,40 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-J2SGRCHH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3195835",
+   "name": "Weihenstephan Die Streichzarte ungesalzen 250g",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:3195835",
+   "price": 299,
+   "basePrice": 1196,
+   "grammage": "250g (1 kg = 11,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4008452036130-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "793853",
+   "name": "Kerrygold extra ungesalzen mit Rapsöl 250g",
+   "brand": "Kerrygold",
+   "imageUrl": "img:793853",
+   "price": 329,
+   "basePrice": 1316,
+   "grammage": "250g (1 kg = 13,16 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4001954165018-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "793834",
+   "name": "Kerrygold extra gesalzen mit Rapsöl 250g",
+   "brand": "Kerrygold",
+   "imageUrl": "img:793834",
+   "price": 329,
+   "basePrice": 1316,
+   "grammage": "250g (1 kg = 13,16 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4001954165513-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3195836",
+   "name": "Weihenstephan Die Streichzarte gesalzen 250g",
+   "brand": "Weihenstephan",
+   "imageUrl": "img:3195836",
+   "price": 299,
+   "basePrice": 1196,
+   "grammage": "250g (1 kg = 11,96 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4008452036154-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2214515",
+   "name": "Kerrygold extra gesalzen mit Rapsöl 400g",
+   "brand": "Kerrygold",
+   "imageUrl": "img:2214515",
+   "price": 259,
+   "basePrice": 648,
+   "grammage": "400g (1 kg = 6,48 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Butter & Margarine/Margarine & Streichfette/",
+   "tags": [
+    "discounted",
+    "cool"
+   ],
+   "listingId": "13-4001954165834-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "passierte Tomaten": [
+  {
+   "id": "9503708",
+   "name": "REWE Bio Passierte Tomaten 500g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9503708",
+   "price": 69,
+   "basePrice": 138,
+   "grammage": "500g (1 kg = 1,38 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [
+    "organic",
+    "lowestprice"
+   ],
+   "listingId": "8-EZSHEA39-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "294936",
+   "name": "REWE Bio Passata passierte Tomaten 700g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:294936",
+   "price": 159,
+   "basePrice": 227,
+   "grammage": "700g (1 kg = 2,27 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Soßen/Fertigsoßen/Pastasoßen/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-TFZFB86L-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7573579",
+   "name": "Oro di Parma Tomaten passiert 700g",
+   "brand": "Oro di Parma",
+   "imageUrl": "img:7573579",
+   "price": 259,
+   "basePrice": 370,
+   "grammage": "700g (1 kg = 3,70 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-IIGSVDZF-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "346740",
+   "name": "Mutti Passierte Tomaten 700g",
+   "brand": "MUTTI",
+   "imageUrl": "img:346740",
+   "price": 269,
+   "basePrice": 384,
+   "grammage": "700g (1 kg = 3,84 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-80042563-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8280040",
+   "name": "Pomito Passierte Tomaten 500g",
+   "brand": "Pomito",
+   "imageUrl": "img:8280040",
+   "price": 179,
+   "basePrice": 358,
+   "grammage": "500g (1 kg = 3,58 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "13-8032793343264-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1060727",
+   "name": "REWE Beste Wahl Passierte Tomaten 500g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:1060727",
+   "price": 119,
+   "basePrice": 238,
+   "grammage": "500g (1 kg = 2,38 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-DCVBPHWD-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "517611",
+   "name": "Oro di Parma Passierte Tomaten 400g",
+   "brand": "Oro di Parma",
+   "imageUrl": "img:517611",
+   "price": 199,
+   "basePrice": 498,
+   "grammage": "400g (1 kg = 4,98 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "13-4008100168046-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8334091",
+   "name": "Mutti Bio passierte Tomaten 560g",
+   "brand": "MUTTI",
+   "imageUrl": "img:8334091",
+   "price": 269,
+   "basePrice": 480,
+   "grammage": "560g (1 kg = 4,80 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "13-8005110171710-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3684175",
+   "name": "Mutti Passierte Tomaten Toscana 400g",
+   "brand": "MUTTI",
+   "imageUrl": "img:3684175",
+   "price": 269,
+   "basePrice": 673,
+   "grammage": "400g (1 kg = 6,73 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "13-8005110002083-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "5521084",
+   "name": "Oro di Parma Passierte Tomaten 400g",
+   "brand": "Oro di Parma",
+   "imageUrl": "img:5521084",
+   "price": 199,
+   "basePrice": 498,
+   "grammage": "400g (1 kg = 4,98 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-40081243-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8168895",
+   "name": "ORO di Parma passierte Tomaten mit Basilikum 700g",
+   "brand": "Oro di Parma",
+   "imageUrl": "img:8168895",
+   "price": 259,
+   "basePrice": 370,
+   "grammage": "700g (1 kg = 3,70 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-7EO1TLM5-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8269975",
+   "name": "Pomito Passierte Tomaten 1kg",
+   "brand": "Pomito",
+   "imageUrl": "img:8269975",
+   "price": 329,
+   "basePrice": 0,
+   "grammage": "1000g",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "13-8032793343301-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8506047",
+   "name": "Oro di Parma Bio Tomaten passiert 720ml",
+   "brand": "Oro di Parma",
+   "imageUrl": "img:8506047",
+   "price": 289,
+   "basePrice": 413,
+   "grammage": "700g (1 kg = 4,13 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-T88EEUS0-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7671916",
+   "name": "Heinz Tomato passiert 350g",
+   "brand": "Heinz",
+   "imageUrl": "img:7671916",
+   "price": 159,
+   "basePrice": 454,
+   "grammage": "350g (1 kg = 4,54 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-735349RN-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9893190",
+   "name": "Oro di Parma Tomaten Passata Rustica 700g",
+   "brand": "Oro di Parma",
+   "imageUrl": "img:9893190",
+   "price": 259,
+   "basePrice": 370,
+   "grammage": "700g (1 kg = 3,70 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-GOUXRIC0-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "938089",
+   "name": "Biozentrale Bio Tomaten-Passata 690g",
+   "brand": "biozentrale",
+   "imageUrl": "img:938089",
+   "price": 279,
+   "basePrice": 404,
+   "grammage": "690g (1 kg = 4,04 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "13-4005009100337-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9151340",
+   "name": "REWE Beste Wahl Kräuter Saucenbasis 380ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9151340",
+   "price": 179,
+   "basePrice": 471,
+   "grammage": "380ml (1 l = 4,71 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-FRDRHNEH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9055338",
+   "name": "REWE Beste Wahl Kräuter-Knoblauch Saucenbasis 380ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9055338",
+   "price": 179,
+   "basePrice": 471,
+   "grammage": "380ml (1 l = 4,71 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-PVD7VD58-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9850477",
+   "name": "Heinz Tomato Frito Chili 350g",
+   "brand": "Heinz",
+   "imageUrl": "img:9850477",
+   "price": 199,
+   "basePrice": 569,
+   "grammage": "350g (1 kg = 5,69 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [],
+   "listingId": "8-IYSWQC4G-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "5636442",
+   "name": "ja! Tomaten passiert 500g",
+   "brand": "ja!",
+   "imageUrl": "img:5636442",
+   "price": 65,
+   "basePrice": 130,
+   "grammage": "500g (1 kg = 1,30 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Passierte Tomaten/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "8-I85FWQ8L-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "rote Linsen": [
+  {
+   "id": "7547310",
+   "name": "REWE Bio Rote Linsen 500g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:7547310",
+   "price": 165,
+   "basePrice": 330,
+   "grammage": "500g (1 kg = 3,30 €)",
+   "categoryPath": "Kochen & Backen/Getrocknete Hülsenfrüchte/Getrocknete Linsen/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-88SOULR8-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9899469",
+   "name": "REWE Bio Fusilli Rote Linse 250g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9899469",
+   "price": 159,
+   "basePrice": 636,
+   "grammage": "250g (1 kg = 6,36 €)",
+   "categoryPath": "Kochen & Backen/Nudeln/Spiralnudeln/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-4SDHXVDV-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3577287",
+   "name": "Müller's Mühle Rote Linsen 500g",
+   "brand": "Müller's Mühle",
+   "imageUrl": "img:3577287",
+   "price": 199,
+   "basePrice": 398,
+   "grammage": "500g (1 kg = 3,98 €)",
+   "categoryPath": "Kochen & Backen/Getrocknete Hülsenfrüchte/Getrocknete Linsen/",
+   "tags": [],
+   "listingId": "13-4000286221126-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "6040934",
+   "name": "Suntat Rote Linsen 500g",
+   "brand": "Suntat",
+   "imageUrl": "img:6040934",
+   "price": 199,
+   "basePrice": 398,
+   "grammage": "500g (1 kg = 3,98 €)",
+   "categoryPath": "Kochen & Backen/Getrocknete Hülsenfrüchte/Getrocknete Linsen/",
+   "tags": [],
+   "listingId": "13-8690804000041-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1123370",
+   "name": "Palatina Rote Linsen 500g",
+   "brand": "Palatina",
+   "imageUrl": "img:1123370",
+   "price": 279,
+   "basePrice": 558,
+   "grammage": "500g (1 kg = 5,58 €)",
+   "categoryPath": "Kochen & Backen/Getrocknete Hülsenfrüchte/Getrocknete Linsen/",
+   "tags": [],
+   "listingId": "8-ZL3NTZSG-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9422022",
+   "name": "REWE Beste Wahl High Protein Rotes Linsen Dal mit Gemüse & Reis 400g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9422022",
+   "price": 349,
+   "basePrice": 873,
+   "grammage": "400g (1 kg = 8,73 €)",
+   "categoryPath": "Tiefkühlkost/Tiefkühl-Fertiggerichte/Tiefkühl-Mikrowellengerichte/",
+   "tags": [
+    "cool",
+    "frozen"
+   ],
+   "listingId": "8-4XSECS6T-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2871255",
+   "name": "Noa Brotaufstrich Linse Curry 175g",
+   "brand": "NOA",
+   "imageUrl": "img:2871255",
+   "price": 239,
+   "basePrice": 1366,
+   "grammage": "175g (1 kg = 13,66 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzliche Brotzeit/",
+   "tags": [
+    "cool",
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4058094310013-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9478722",
+   "name": "REWE to go Orzo Hähnchensalat 310g",
+   "brand": "REWE to go",
+   "imageUrl": "img:9478722",
+   "price": 299,
+   "basePrice": 965,
+   "grammage": "310g (1 kg = 9,65 €)",
+   "categoryPath": "Obst & Gemüse/Frisches Gemüse/Salat/Salate To Go/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-JRMGCOZC-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Kichererbsen": [
+  {
+   "id": "8382114",
+   "name": "Delikatessa Kichererbsen 400g",
+   "brand": "",
+   "imageUrl": "img:8382114",
+   "price": 149,
+   "basePrice": 621,
+   "grammage": "240g (1 kg = 6,21 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Kichererbsen-Konserven/",
+   "tags": [],
+   "listingId": "8-5SSKLGOS-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7762557",
+   "name": "REWE Beste Wahl Kichererbsen 140g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:7762557",
+   "price": 69,
+   "basePrice": 0,
+   "grammage": "140g",
+   "categoryPath": "Fertiggerichte & Konserven/Gemüsekonserven/Kichererbsen-Konserven/",
+   "tags": [],
+   "listingId": "8-K23XR0CG-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8687506",
+   "name": "Bonduelle Kichererbsen Bohnen Mix 125g",
+   "brand": "Bonduelle",
+   "imageUrl": "img:8687506",
+   "price": 139,
+   "basePrice": 1112,
+   "grammage": "125g (1 kg = 11,12 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-IABEZ91A-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1082265",
+   "name": "Bonduelle Kichererbsen 265g",
+   "brand": "Bonduelle",
+   "imageUrl": "img:1082265",
+   "price": 111,
+   "basePrice": 419,
+   "grammage": "265g (1 kg = 4,19 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "discounted",
+    "hasLoyaltyBonus",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-3083681003949-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "6177476",
+   "name": "Suntat Kichererbsen 240g",
+   "brand": "Suntat",
+   "imageUrl": "img:6177476",
+   "price": 119,
+   "basePrice": 496,
+   "grammage": "240g (1 kg = 4,96 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-8690804406614-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7055914",
+   "name": "REWE Bio Kichererbsen 215g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:7055914",
+   "price": 85,
+   "basePrice": 395,
+   "grammage": "215g (1 kg = 3,95 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Biologisch Kochen & Genießen/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "13-4337256179447-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7064965",
+   "name": "Hak Kichererbsen 215g",
+   "brand": "HAK",
+   "imageUrl": "img:7064965",
+   "price": 185,
+   "basePrice": 860,
+   "grammage": "215g (1 kg = 8,60 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-8720600614385-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9067761",
+   "name": "REWE Bio Kichererbsen 500g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9067761",
+   "price": 179,
+   "basePrice": 358,
+   "grammage": "500g (1 kg = 3,58 €)",
+   "categoryPath": "Kochen & Backen/Getrocknete Hülsenfrüchte/Getrocknete Kichererbsen/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-QUX57I28-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7065054",
+   "name": "Hak Kichererbsen 200g",
+   "brand": "HAK",
+   "imageUrl": "img:7065054",
+   "price": 219,
+   "basePrice": 1095,
+   "grammage": "200g (1 kg = 10,95 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-8720600613746-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1930622",
+   "name": "Campo Verde Bio Demeter Kichererbsen kochfertig 230g",
+   "brand": "Campo Verde",
+   "imageUrl": "img:1930622",
+   "price": 199,
+   "basePrice": 865,
+   "grammage": "230g (1 kg = 8,65 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "organic",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4045178003855-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3068492",
+   "name": "Bonduelle Bio Kichererbsen 265g",
+   "brand": "Bonduelle",
+   "imageUrl": "img:3068492",
+   "price": 229,
+   "basePrice": 864,
+   "grammage": "265g (1 kg = 8,64 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzlich Kochen & Genießen/",
+   "tags": [
+    "organic",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-3083681052848-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7866789",
+   "name": "Saupiquet Thunfisch Salat Kichererbsen 160g",
+   "brand": "Saupiquet",
+   "imageUrl": "img:7866789",
+   "price": 299,
+   "basePrice": 1869,
+   "grammage": "160g (1 kg = 18,69 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fischkonserven/Thunfisch-Salat/",
+   "tags": [],
+   "listingId": "8-9V0UF0VH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7667229",
+   "name": "REWE Bio Kichererbsenchips Meersalz 75g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:7667229",
+   "price": 179,
+   "basePrice": 2387,
+   "grammage": "75g (1 kg = 23,87 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio-Snacks/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-Q1ZAIT7F-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8376350",
+   "name": "Reis-fit Kichererbsen mit Quinoa & Gemüse 250g",
+   "brand": "",
+   "imageUrl": "img:8376350",
+   "price": 99,
+   "basePrice": 396,
+   "grammage": "250g (1 kg = 3,96 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Mikrowellenfertiggerichte/",
+   "tags": [
+    "discounted",
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4006237642095-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8090852",
+   "name": "Noa Brotaufstrich Kichererbse-Avocado 175g",
+   "brand": "NOA",
+   "imageUrl": "img:8090852",
+   "price": 239,
+   "basePrice": 1366,
+   "grammage": "175g (1 kg = 13,66 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Herzhafte Aufstriche & Dips/Hummus/",
+   "tags": [
+    "cool",
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4058094310099-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9472954",
+   "name": "Milupa Bio Knabberstangen Kichererbse 20g",
+   "brand": "Milupa",
+   "imageUrl": "img:9472954",
+   "price": 119,
+   "basePrice": 5950,
+   "grammage": "20g (1 kg = 59,50 €)",
+   "categoryPath": "Baby & Kind/Baby - & Kindernahrung/Baby - & Kindersnacks/Herzhafte Baby- & Kindersnacks/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-NUQGXDXF-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3235642",
+   "name": "REWE Bio Kichererbsen-Kokos-Eintopf 400ml",
+   "brand": "REWE Bio",
+   "imageUrl": "img:3235642",
+   "price": 229,
+   "basePrice": 573,
+   "grammage": "400ml (1 l = 5,73 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzliche Fertiggerichte/",
+   "tags": [
+    "organic",
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-8SYZZUYN-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8215577",
+   "name": "REWE Bio pflanzlich Streichcreme Paprika, Kichererbse & Chili 180g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:8215577",
+   "price": 125,
+   "basePrice": 694,
+   "grammage": "180g (1 kg = 6,94 €)",
+   "categoryPath": "Bewusste Ernährung/100% Pflanzlich/Pflanzliche Brotzeit/",
+   "tags": [
+    "organic",
+    "lactosefree",
+    "lowestprice",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-MM0OTCLT-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7814109",
+   "name": "ja! Kichererbsen 265g",
+   "brand": "ja!",
+   "imageUrl": "img:7814109",
+   "price": 59,
+   "basePrice": 223,
+   "grammage": "265g (1 kg = 2,23 €)",
+   "categoryPath": "Bewusste Ernährung/Ballaststoffreich/Ballaststoffreich Kochen/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "8-RFPB4FYS-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9266130",
+   "name": "REWE Beste Wahl Hummus Avocado mit Paprika-Topping 200g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9266130",
+   "price": 169,
+   "basePrice": 845,
+   "grammage": "200g (1 kg = 8,45 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Herzhafte Aufstriche & Dips/Hummus/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-7ZYTP76S-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Olivenöl": [
+  {
+   "id": "8104730",
+   "name": "De Cecco Natives Olivenöl extra Classico 500ml",
+   "brand": "De Cecco",
+   "imageUrl": "img:8104730",
+   "price": 679,
+   "basePrice": 1358,
+   "grammage": "500ml (1 l = 13,58 €)",
+   "categoryPath": "Monats-Highlights/Genuss in Premiumqualität/Frische Feinkostküche/",
+   "tags": [],
+   "listingId": "13-8001250012968-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "4874854",
+   "name": "Bertolli Cucina Olivenöl 500ml",
+   "brand": "Bertolli",
+   "imageUrl": "img:4874854",
+   "price": 799,
+   "basePrice": 1598,
+   "grammage": "500ml (1 l = 15,98 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "8-Y66NWE5S-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7635153",
+   "name": "REWE Beste Wahl Marinierter Oliven-Mix 150g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:7635153",
+   "price": 179,
+   "basePrice": 1193,
+   "grammage": "150g (1 kg = 11,93 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Feinkost & Antipasti/Oliven/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-HE8N2TFP-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "6551025",
+   "name": "Bertolli Originale Natives Olivenöl Extra 500ml",
+   "brand": "Bertolli",
+   "imageUrl": "img:6551025",
+   "price": 799,
+   "basePrice": 1598,
+   "grammage": "500ml (1 l = 15,98 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "8-FNI0UXN9-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2178952",
+   "name": "REWE Feine Welt Natives Olivenöl extra Lesvos g.g.A. 500ml",
+   "brand": "REWE Feine Welt",
+   "imageUrl": "img:2178952",
+   "price": 879,
+   "basePrice": 1758,
+   "grammage": "500ml (1 l = 17,58 €)",
+   "categoryPath": "Monats-Highlights/Genuss in Premiumqualität/Frische Feinkostküche/",
+   "tags": [],
+   "listingId": "8-GAW2NP0C-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2372767",
+   "name": "Fiore Natives Olivenöl extra 750ml",
+   "brand": "Fiore",
+   "imageUrl": "img:2372767",
+   "price": 879,
+   "basePrice": 1172,
+   "grammage": "750ml (1 l = 11,72 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "13-8008460004332-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "5475872",
+   "name": "La Espanola Natives Olivenöl extra 500ml",
+   "brand": "La Espanola",
+   "imageUrl": "img:5475872",
+   "price": 699,
+   "basePrice": 1398,
+   "grammage": "500ml (1 l = 13,98 €)",
+   "categoryPath": "Monats-Highlights/Genuss in Premiumqualität/Frische Feinkostküche/",
+   "tags": [],
+   "listingId": "13-8410660101153-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9492525",
+   "name": "REWE Beste Wahl Olive & Knoblauch Würzöl 250ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9492525",
+   "price": 349,
+   "basePrice": 1396,
+   "grammage": "250ml (1 l = 13,96 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "8-TOGY34RH-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9489221",
+   "name": "REWE Beste Wahl Griechisches Natives Olivenöl 500ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9489221",
+   "price": 629,
+   "basePrice": 1258,
+   "grammage": "500ml (1 l = 12,58 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "8-T1YZJE3Y-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8043592",
+   "name": "Oliveira Da Serra Olivenöl Gourmet 500ml",
+   "brand": "Oliveira da Serra",
+   "imageUrl": "img:8043592",
+   "price": 769,
+   "basePrice": 1538,
+   "grammage": "500ml (1 l = 15,38 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "13-5601024122522-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9854156",
+   "name": "REWE Bio Natives Olivenöl extra 500ml",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9854156",
+   "price": 849,
+   "basePrice": 0,
+   "grammage": "500ml",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "8-DJIHZSDW-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2018420",
+   "name": "Brändle vita Natives Olivenöl 100ml",
+   "brand": "Brändle",
+   "imageUrl": "img:2018420",
+   "price": 259,
+   "basePrice": 2590,
+   "grammage": "100ml (1 l = 25,90 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "8-8NJLPDT9-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8425181",
+   "name": "Rewe Beste Wahl Italienisches Natives Olivenöl 500ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8425181",
+   "price": 929,
+   "basePrice": 1858,
+   "grammage": "500ml (1 l = 18,58 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "13-4337256021654-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7288865",
+   "name": "REWE Beste Wahl Olivenöl raffiniert 500ml",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:7288865",
+   "price": 699,
+   "basePrice": 1398,
+   "grammage": "500ml (1 l = 13,98 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "13-4337256079792-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "672893",
+   "name": "Corovita Bio natürliches Olivenöl extra 500ml",
+   "brand": "Corovita",
+   "imageUrl": "img:672893",
+   "price": 889,
+   "basePrice": 1778,
+   "grammage": "500ml (1 l = 17,78 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "13-4260039350002-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "394440",
+   "name": "Bertolli Gentile Natives Olivenöl Extra 500ml",
+   "brand": "Bertolli",
+   "imageUrl": "img:394440",
+   "price": 799,
+   "basePrice": 1598,
+   "grammage": "500ml (1 l = 15,98 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "8-OO62PHS2-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1964504",
+   "name": "Bertolli Originale Spray Natives Olivenöl Extra 200ml",
+   "brand": "Bertolli",
+   "imageUrl": "img:1964504",
+   "price": 449,
+   "basePrice": 2245,
+   "grammage": "200ml (1 l = 22,45 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "13-8002470017702-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7251096",
+   "name": "Bertolli Bio Natives Olivenöl Extra 500ml",
+   "brand": "Bertolli",
+   "imageUrl": "img:7251096",
+   "price": 929,
+   "basePrice": 1858,
+   "grammage": "500ml (1 l = 18,58 €)",
+   "categoryPath": "Bewusste Ernährung/Biologisch/Bio Küchenbasics/",
+   "tags": [
+    "organic"
+   ],
+   "listingId": "13-8002470024595-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8253727",
+   "name": "De Cecco Natives Olivenöl extra Fruttato 500ml",
+   "brand": "De Cecco",
+   "imageUrl": "img:8253727",
+   "price": 679,
+   "basePrice": 1358,
+   "grammage": "500ml (1 l = 13,58 €)",
+   "categoryPath": "Monats-Highlights/Genuss in Premiumqualität/Frische Feinkostküche/",
+   "tags": [],
+   "listingId": "13-8001250012623-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7633122",
+   "name": "Bertolli Originale Natives Olivenöl Extra 1l",
+   "brand": "Bertolli",
+   "imageUrl": "img:7633122",
+   "price": 1549,
+   "basePrice": 0,
+   "grammage": "1l",
+   "categoryPath": "Öle, Soßen & Gewürze/Öle/Olivenöl/",
+   "tags": [],
+   "listingId": "8-GK9HI3M9-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Salz": [
+  {
+   "id": "614817",
+   "name": "REWE Beste Wahl Jodsalz 500g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:614817",
+   "price": 69,
+   "basePrice": 138,
+   "grammage": "500g (1 kg = 1,38 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Jodsalz/",
+   "tags": [],
+   "listingId": "13-4337256064880-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3919102",
+   "name": "Aquasale Meersalz mit Jod 500g",
+   "brand": "Aquasale",
+   "imageUrl": "img:3919102",
+   "price": 119,
+   "basePrice": 238,
+   "grammage": "500g (1 kg = 2,38 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Jodsalz/",
+   "tags": [],
+   "listingId": "13-4001475112607-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8269717",
+   "name": "Ostmann Knoblauch Salz 70g",
+   "brand": "Ostmann",
+   "imageUrl": "img:8269717",
+   "price": 249,
+   "basePrice": 3557,
+   "grammage": "70g (1 kg = 35,57 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [],
+   "listingId": "13-4002674043112-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "6674208",
+   "name": "Disal Leicht Salz jodiert 250g",
+   "brand": "",
+   "imageUrl": "img:6674208",
+   "price": 199,
+   "basePrice": 796,
+   "grammage": "250g (1 kg = 7,96 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Speisesalz/",
+   "tags": [],
+   "listingId": "8-YZ5WMWQR-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "685622",
+   "name": "REWE Feine Welt Rosa Salzkristall 300g",
+   "brand": "REWE Feine Welt",
+   "imageUrl": "img:685622",
+   "price": 349,
+   "basePrice": 1163,
+   "grammage": "300g (1 kg = 11,63 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Steinsalz/",
+   "tags": [],
+   "listingId": "13-4388860137316-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7084498",
+   "name": "Bad Reichenhaller Marken-Jodsalz mit Fluorid 500g",
+   "brand": "Bad Reichenhaller",
+   "imageUrl": "img:7084498",
+   "price": 85,
+   "basePrice": 170,
+   "grammage": "500g (1 kg = 1,70 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Jodsalz/",
+   "tags": [],
+   "listingId": "13-4001475104602-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2191019",
+   "name": "REWE Feine Welt Fleur de Sel 130g",
+   "brand": "REWE Feine Welt",
+   "imageUrl": "img:2191019",
+   "price": 299,
+   "basePrice": 2300,
+   "grammage": "130g (1 kg = 23 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Meersalz/",
+   "tags": [],
+   "listingId": "13-4388844151178-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7677866",
+   "name": "Bad Reichenhaller Alpen JodSalz + Selen 500g",
+   "brand": "Bad Reichenhaller",
+   "imageUrl": "img:7677866",
+   "price": 129,
+   "basePrice": 258,
+   "grammage": "500g (1 kg = 2,58 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Jodsalz/",
+   "tags": [],
+   "listingId": "8-QGXBD8Z5-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7074929",
+   "name": "Ostmann Steak & Grill Gewürzsalz 60g",
+   "brand": "Ostmann",
+   "imageUrl": "img:7074929",
+   "price": 229,
+   "basePrice": 3817,
+   "grammage": "60g (1 kg = 38,17 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4002674045550-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8270212",
+   "name": "Ostmann Brathähnchen Gewürzsalz 50g",
+   "brand": "Ostmann",
+   "imageUrl": "img:8270212",
+   "price": 229,
+   "basePrice": 4580,
+   "grammage": "50g (1 kg = 45,80 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [],
+   "listingId": "13-4002674042696-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7074935",
+   "name": "Ostmann Fleisch & Gyros Gewürzsalz 50g",
+   "brand": "Ostmann",
+   "imageUrl": "img:7074935",
+   "price": 229,
+   "basePrice": 4580,
+   "grammage": "50g (1 kg = 45,80 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [],
+   "listingId": "13-4002674042382-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7081110",
+   "name": "Ostmann Pommes Gewürzsalz klassisch 70g",
+   "brand": "Ostmann",
+   "imageUrl": "img:7081110",
+   "price": 229,
+   "basePrice": 3271,
+   "grammage": "70g (1 kg = 32,71 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4002674044713-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "3112195",
+   "name": "Bad Reichenhaller Jodsalz mit Fluorid+Folsäure 500g",
+   "brand": "Bad Reichenhaller",
+   "imageUrl": "img:3112195",
+   "price": 85,
+   "basePrice": 170,
+   "grammage": "500g (1 kg = 1,70 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Jodsalz/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "13-4001475105609-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7075038",
+   "name": "Ostmann Tomaten Mozzarella Gewürzsalz 60g",
+   "brand": "Ostmann",
+   "imageUrl": "img:7075038",
+   "price": 229,
+   "basePrice": 3817,
+   "grammage": "60g (1 kg = 38,17 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-4002674045888-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8268737",
+   "name": "Ostmann Brathähnchen Gewürzsalz 125g",
+   "brand": "Ostmann",
+   "imageUrl": "img:8268737",
+   "price": 299,
+   "basePrice": 2392,
+   "grammage": "125g (1 kg = 23,92 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [],
+   "listingId": "13-4002674072693-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7281496",
+   "name": "REWE Feine Welt Persiens Edelsteine Nachfüller 82g",
+   "brand": "REWE Feine Welt",
+   "imageUrl": "img:7281496",
+   "price": 299,
+   "basePrice": 3646,
+   "grammage": "82g (1 kg = 36,46 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Steinsalz/",
+   "tags": [],
+   "listingId": "13-4388860020311-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8944071",
+   "name": "REWE Beste Wahl Pommes Gewürzsalz 70g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8944071",
+   "price": 179,
+   "basePrice": 2557,
+   "grammage": "70g (1 kg = 25,57 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [],
+   "listingId": "8-IQ47XU9I-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2678482",
+   "name": "Aquasale Meersalz fein 500g",
+   "brand": "Aquasale",
+   "imageUrl": "img:2678482",
+   "price": 139,
+   "basePrice": 278,
+   "grammage": "500g (1 kg = 2,78 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Meersalz/",
+   "tags": [],
+   "listingId": "13-4001475211621-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8013725",
+   "name": "REWE Beste Wahl Meersalz grob 500g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8013725",
+   "price": 129,
+   "basePrice": 258,
+   "grammage": "500g (1 kg = 2,58 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Meersalz/",
+   "tags": [],
+   "listingId": "13-4337256009591-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8961254",
+   "name": "REWE Beste Wahl Tomatengewürzsalz 65g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8961254",
+   "price": 199,
+   "basePrice": 0,
+   "grammage": "65g",
+   "categoryPath": "Öle, Soßen & Gewürze/Salz/Gewürzsalz/",
+   "tags": [],
+   "listingId": "8-HZAWY4CV-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Halloumi": [
+  {
+   "id": "8967097",
+   "name": "Marka Hellas Halloumi 225g",
+   "brand": "Marka Hellas",
+   "imageUrl": "img:8967097",
+   "price": 279,
+   "basePrice": 1240,
+   "grammage": "225g (1 kg = 12,40 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Käse & Käseersatz/Grill- & Ofenkäse/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-PFKKA1PT-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9507625",
+   "name": "REWE Bio Halloumi Grillkäse aus Zypern 200g",
+   "brand": "REWE Bio",
+   "imageUrl": "img:9507625",
+   "price": 389,
+   "basePrice": 0,
+   "grammage": "200g",
+   "categoryPath": "Käse, Eier & Molkerei/Käse & Käseersatz/Grill- & Ofenkäse/",
+   "tags": [
+    "organic",
+    "cool"
+   ],
+   "listingId": "8-H2R5EP3M-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "575540",
+   "name": "Gazi Grill- & Pfannenkäse Kräuter 200g",
+   "brand": "Gazi",
+   "imageUrl": "img:575540",
+   "price": 299,
+   "basePrice": 1495,
+   "grammage": "200g (1 kg = 14,95 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Käse & Käseersatz/Grill- & Ofenkäse/",
+   "tags": [
+    "cool",
+    "vegetarian"
+   ],
+   "listingId": "13-4002566010703-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "940141",
+   "name": "Gazi Grill- & Pfannenkäse Chili 200g",
+   "brand": "Gazi",
+   "imageUrl": "img:940141",
+   "price": 299,
+   "basePrice": 1495,
+   "grammage": "200g (1 kg = 14,95 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Käse & Käseersatz/Grill- & Ofenkäse/",
+   "tags": [
+    "cool",
+    "vegetarian"
+   ],
+   "listingId": "13-4002566010727-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "2380672",
+   "name": "ROUGETTE marinierter Back- und Grillkäse Paprika-Kräuter 180g",
+   "brand": "Rougette",
+   "imageUrl": "img:2380672",
+   "price": 249,
+   "basePrice": 1383,
+   "grammage": "180g (1 kg = 13,83 €)",
+   "categoryPath": "Käse, Eier & Molkerei/Käse & Käseersatz/Grill- & Ofenkäse/",
+   "tags": [
+    "cool",
+    "vegetarian"
+   ],
+   "listingId": "13-4000504174739-00000000-0000-4000-8000-000000000000"
+  }
+ ],
+ "Lachs": [
+  {
+   "id": "8314067",
+   "name": "REWE Beste Wahl Norwegisches Lachsfilet ohne Haut 300g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:8314067",
+   "price": 759,
+   "basePrice": 2530,
+   "grammage": "2x150g (1 kg = 25,30 €)",
+   "categoryPath": "Tiefkühlkost/Tiefkühl-Fisch/Tiefkühl-Fischfilets/",
+   "tags": [
+    "frozen"
+   ],
+   "listingId": "8-YZP18SS2-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "1014916",
+   "name": "Knorr Fix Lachs auf Blattspinat 28g",
+   "brand": "Knorr",
+   "imageUrl": "img:1014916",
+   "price": 119,
+   "basePrice": 4250,
+   "grammage": "28g (1 kg = 42,50 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fixprodukte/Fix für Fischgerichte/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "13-8718114827698-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8021695",
+   "name": "Frosta Tagliatelle Wildlachs 450g",
+   "brand": "Frosta",
+   "imageUrl": "img:8021695",
+   "price": 479,
+   "basePrice": 1064,
+   "grammage": "450g (1 kg = 10,64 €)",
+   "categoryPath": "Tiefkühlkost/Tiefkühl-Fertiggerichte/Tiefkühl-Pfannengerichte/",
+   "tags": [
+    "frozen"
+   ],
+   "listingId": "13-4008366015498-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "9464019",
+   "name": "Purina Gourmet Revelations Mousse mit Lachs 4x57g",
+   "brand": "Purina Gourmet",
+   "imageUrl": "img:9464019",
+   "price": 329,
+   "basePrice": 1443,
+   "grammage": "4x57g (1 kg = 14,43 €)",
+   "categoryPath": "Tierbedarf/Katzenbedarf/Katzenfutter/Katzen-Nassfutter/",
+   "tags": [],
+   "listingId": "8-3EQIS6JV-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8437260",
+   "name": "Deutsche See Lachsfilet 250g",
+   "brand": "Deutsche See",
+   "imageUrl": "img:8437260",
+   "price": 639,
+   "basePrice": 2556,
+   "grammage": "250g (1 kg = 25,56 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fisch & Meeresfrüchte/Frischer Fisch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "13-4009239512298-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8411672",
+   "name": "Deutsche See Lachsstremel 120g",
+   "brand": "Deutsche See",
+   "imageUrl": "img:8411672",
+   "price": 549,
+   "basePrice": 4575,
+   "grammage": "120g (1 kg = 45,75 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Fisch & Meeresfrüchte/Lachs & Räucherfisch/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-NI7PRAD5-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "8276582",
+   "name": "ZooRoyal Mousse Lachs 85g",
+   "brand": "ZooRoyal",
+   "imageUrl": "img:8276582",
+   "price": 49,
+   "basePrice": 576,
+   "grammage": "85g (1 kg = 5,76 €)",
+   "categoryPath": "Tierbedarf/Katzenbedarf/Katzenfutter/Katzen-Nassfutter/",
+   "tags": [],
+   "listingId": "8-T1L77FEL-00000000-0000-4000-8000-000000000000"
+  },
+  {
+   "id": "7764060",
+   "name": "Vivera Lachs vegan 200g",
+   "brand": "Vivera",
+   "imageUrl": "img:7764060",
+   "price": 289,
+   "basePrice": 1445,
+   "grammage": "200g (1 kg = 14,45 €)",
+   "categoryPath": "Fleisch, Wurst & Fisch/Pflanzliche Fleischalternativen/Veggie-Fisch/",
+   "tags": [
+    "discounted",
+    "cool",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-2J8PH6AS-00000000-0000-4000-8000-000000000000"
+  }
+ ]
+}

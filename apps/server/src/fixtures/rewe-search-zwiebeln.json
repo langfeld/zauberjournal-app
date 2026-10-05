@@ -1,0 +1,137 @@
+{
+ "pagination": {
+  "page": 1,
+  "totalPages": 13,
+  "objectsPerPage": 10,
+  "totalResultCount": 129
+ },
+ "_embedded": {
+  "products": [
+   {
+    "id": "9578896",
+    "productName": "Zwiebeln 1,5kg",
+    "brand": {},
+    "attributes": {},
+    "media": {
+     "images": [
+      {
+       "_links": {
+        "self": {
+         "href": "https://img.rewe-static.de/9578896/50530242_digital-image.png"
+        }
+       }
+      }
+     ]
+    },
+    "_embedded": {
+     "articles": [
+      {
+       "id": "RHN5TTNE",
+       "_embedded": {
+        "listing": {
+         "id": "8-RHN5TTNE-00000000-0000-4000-8000-000000000000",
+         "pricing": {
+          "currentRetailPrice": 159,
+          "currency": "EUR",
+          "basePrice": 106,
+          "baseUnit": {
+           "KG": 1
+          },
+          "grammage": "1,50kg (1 kg = 1,06 €)"
+         }
+        }
+       }
+      }
+     ],
+     "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/"
+    }
+   },
+   {
+    "id": "8919738",
+    "productName": "REWE Bio Zwiebeln rot 500g",
+    "brand": {
+     "name": "REWE Bio"
+    },
+    "attributes": {
+     "tags": {
+      "organic": {
+       "label": "Bio"
+      }
+     }
+    },
+    "media": {
+     "images": [
+      {
+       "_links": {
+        "self": {
+         "href": "https://img.rewe-static.de/8919738/39069992_digital-image.png"
+        }
+       }
+      }
+     ]
+    },
+    "_embedded": {
+     "articles": [
+      {
+       "id": "Q9M5LX65",
+       "_embedded": {
+        "listing": {
+         "id": "8-Q9M5LX65-00000000-0000-4000-8000-000000000000",
+         "pricing": {
+          "currentRetailPrice": 175,
+          "currency": "EUR",
+          "basePrice": 350,
+          "baseUnit": {
+           "KG": 1
+          },
+          "grammage": "500g (1 kg = 3,50 €)"
+         }
+        }
+       }
+      }
+     ],
+     "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/"
+    }
+   },
+   {
+    "id": "1041251",
+    "productName": "Zwiebel gelb ca. 100g",
+    "brand": {},
+    "attributes": {},
+    "media": {
+     "images": [
+      {
+       "_links": {
+        "self": {
+         "href": "https://img.rewe-static.de/1041251/27939028_digital-image.png"
+        }
+       }
+      }
+     ]
+    },
+    "_embedded": {
+     "articles": [
+      {
+       "id": "22610645",
+       "_embedded": {
+        "listing": {
+         "id": "8-22610645-00000000-0000-4000-8000-000000000000",
+         "pricing": {
+          "currentRetailPrice": 14,
+          "currency": "EUR",
+          "basePrice": 135,
+          "baseUnit": {
+           "KG": 1
+          },
+          "grammage": "1 Stück ca. 100 g (1 kg = 1,35 €)"
+         }
+        }
+       }
+      }
+     ],
+     "categoryPath": "Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/"
+    }
+   }
+  ]
+ }
+}

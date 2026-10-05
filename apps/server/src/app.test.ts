@@ -10,6 +10,7 @@ import { openDatabase } from './database.ts';
 import { createHousehold } from './household.ts';
 import { createImporter } from './importer.ts';
 import { createPhotoStore } from './photos.ts';
+import { ReweError, type ReweClient } from './rewe.ts';
 
 const temporaryDirs: string[] = [];
 afterEach(() => {
@@ -21,10 +22,19 @@ function setUp() {
   const dir = mkdtempSync(join(tmpdir(), 'zauberjournal-test-'));
   temporaryDirs.push(dir);
   const revoked: string[] = [];
+  // REWE kennt nur einen Markt in 12345; die Suche ist gesperrt.
+  const rewe: ReweClient = {
+    markets: async (zipCode) =>
+      zipCode === '12345' ? [{ id: '1234567', name: 'REWE Markt', street: 'Hauptstr. 1', zipCode, city: 'Musterstadt', distance: 0 }] : [],
+    search: async () => {
+      throw new ReweError('REWE lässt gerade keine Anfragen zu.');
+    },
+  };
   const app = createApp({
     household,
     photos: createPhotoStore(dir),
     importer: createImporter({ apiKey: '', models: [], log: () => {} }),
+    rewe,
     onDeviceRevoked: (deviceId) => revoked.push(deviceId),
   });
   const post = (path: string, body: unknown, token?: string) =>
@@ -127,5 +137,24 @@ describe('API', () => {
 
     const withoutKey = await post('/api/import', { text: 'Rezept' }, token);
     expect(withoutKey.status).toBe(503);
+  });
+
+  it('sucht REWE-Märkte und -Produkte nur für angemeldete Geräte', async () => {
+    const { household, get, post } = setUp();
+    const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;
+
+    expect((await get('/api/rewe/markets?zip=12345')).status).toBe(401);
+    expect((await get('/api/rewe/markets?zip=1464', token)).status).toBe(400);
+    const markets = (await (await get('/api/rewe/markets?zip=12345', token)).json()) as { markets: { id: string }[] };
+    expect(markets.markets.map((market) => market.id)).toEqual(['1234567']);
+
+    expect((await get('/api/rewe/products?q=Milch', token)).status).toBe(400);
+    const blocked = await get('/api/rewe/products?q=Milch&market=1234567', token);
+    expect(blocked.status).toBe(502);
+    expect(await blocked.json()).toEqual({ error: 'REWE lässt gerade keine Anfragen zu.' });
+
+    expect((await post('/api/rewe/match', { market: '1234567', items: [{ id: 'a' }] }, token)).status).toBe(400);
+    const emptyMatch = await post('/api/rewe/match', { market: '1234567', items: [] }, token);
+    expect(await emptyMatch.json()).toEqual({ results: [] });
   });
 });

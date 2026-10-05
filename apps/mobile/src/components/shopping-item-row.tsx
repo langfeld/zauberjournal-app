@@ -5,6 +5,7 @@ import { colors, radius, spacing } from '@/theme';
 
 import { Icon } from './icon';
 import { RecipeThumbnail } from './recipe-photo';
+import { ReweProductLine } from './rewe-product';
 import { Button, IconButton } from './ui';
 
 /** So viele Gerichte zeigen ihr Foto; die Namen stehen trotzdem alle im Text daneben. */
@@ -32,47 +33,61 @@ type ShoppingItemRowProps = {
   onRemove?: () => void;
   /** Trennlinie über der Zeile, außer bei der ersten eines Abschnitts. */
   divider?: boolean;
+  /** Zeigt das REWE-Produkt der Position; Antippen öffnet die Auswahl. */
+  onOpenProduct?: () => void;
 };
 
 /** Eine Position der Einkaufsliste; Antippen hakt sie ab. */
-export function ShoppingItemRow({ item, onToggle, action, onRemove, divider }: ShoppingItemRowProps) {
+export function ShoppingItemRow({ item, onToggle, action, onRemove, divider, onOpenProduct }: ShoppingItemRowProps) {
   const note = item.origin === 'pantry' ? 'Vorrat: nachkaufen' : item.sources;
+  const rewe = onOpenProduct && !item.checked ? item.rewe : null;
   return (
-    <View style={[styles.row, divider && styles.divider]}>
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: item.checked }}
-        accessibilityLabel={[item.amount, item.name].filter(Boolean).join(' ')}
-        onPress={onToggle}
-        style={({ pressed }) => [styles.main, pressed && styles.pressed]}>
-        <View style={[styles.box, item.checked && styles.boxChecked]}>
-          {item.checked ? <Icon name="check" size={16} color={colors.primaryText} /> : null}
-        </View>
-        <View style={styles.text}>
-          <Text style={[styles.name, item.checked && styles.checked]}>{item.name}</Text>
-          {note ? (
-            <View style={styles.noteRow}>
-              {item.dishes.length > 0 ? <DishPhotos dishes={item.dishes} dimmed={item.checked} /> : null}
-              <Text style={styles.note} numberOfLines={1}>
-                {note}
-              </Text>
-            </View>
+    <View style={divider && styles.divider}>
+      <View style={styles.row}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: item.checked }}
+          accessibilityLabel={[item.amount, item.name].filter(Boolean).join(' ')}
+          onPress={onToggle}
+          style={({ pressed }) => [styles.main, pressed && styles.pressed]}>
+          <View style={[styles.box, item.checked && styles.boxChecked]}>
+            {item.checked ? <Icon name="check" size={16} color={colors.primaryText} /> : null}
+          </View>
+          <View style={styles.text}>
+            <Text style={[styles.name, item.checked && styles.checked]}>{item.name}</Text>
+            {note ? (
+              <View style={styles.noteRow}>
+                {item.dishes.length > 0 ? <DishPhotos dishes={item.dishes} dimmed={item.checked} /> : null}
+                <Text style={styles.note} numberOfLines={1}>
+                  {note}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          {item.amount ? (
+            <Text style={[styles.amount, item.checked && styles.amountChecked]}>{item.amount}</Text>
           ) : null}
-        </View>
-        {item.amount ? (
-          <Text style={[styles.amount, item.checked && styles.amountChecked]}>{item.amount}</Text>
+        </Pressable>
+        {action ? <Button small variant="secondary" icon="add_shopping_cart" title={action.title} onPress={action.onPress} /> : null}
+        {onRemove ? (
+          <IconButton icon="close" variant="muted" size={34} accessibilityLabel={`${item.name} entfernen`} onPress={onRemove} />
         ) : null}
-      </Pressable>
-      {action ? <Button small variant="secondary" icon="add_shopping_cart" title={action.title} onPress={action.onPress} /> : null}
-      {onRemove ? (
-        <IconButton icon="close" variant="muted" size={34} accessibilityLabel={`${item.name} entfernen`} onPress={onRemove} />
+      </View>
+      {rewe && onOpenProduct ? (
+        <View style={styles.product}>
+          <ReweProductLine rewe={rewe} onPress={onOpenProduct} />
+        </View>
       ) : null}
     </View>
   );
 }
 
+/** Abstand vom Rand bis zum Namen: Kreis zum Abhaken und Lücke. */
+const TEXT_INSET = 26 + spacing.md;
+
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  product: { marginLeft: TEXT_INSET, marginTop: -2, marginBottom: spacing.sm + 2 },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm + 2 },
   pressed: { opacity: 0.6 },

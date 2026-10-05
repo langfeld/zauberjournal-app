@@ -34,7 +34,7 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M2 Haushalt & Sync** | Sync-Server als Docker-Container auf TrueNAS, Pairing per QR-Code, Gerätetokens, Zugang über Pangolin, APK-Build per GitHub Actions | beide Handys synchron, App fest installiert ✅ (umgesetzt; Inbetriebnahme siehe [BETRIEB.md](BETRIEB.md)) |
 | **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; vegetarischer Vorschlag; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst ✅ (umgesetzt; siehe Abschnitt 9) |
 | **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE ✅ (umgesetzt; siehe Abschnitte 6, 7 und 12) |
-| **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt |
+| **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt (Markt, Abgleich und Auswahl umgesetzt, siehe Abschnitt 8; das Userscript folgt) |
 | **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System |
 | **Später** | Kochmodus mit Timern, Planvorschläge, Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN | |
@@ -140,16 +140,16 @@ Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten�
 
 **Einkauf**
 - `shoppingLists`: Name, Status (`offen` | `erledigt`, ab M5 auch `rewe`), erstellt am
-- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `vorrat` | `manuell`). Ab M5 kommen REWE-Produkt, REWE-Anzahl, REWE-Status (`offen` | `vorgeschlagen` | `bestaetigt` | `im_warenkorb` | `fehler`) und Preis dazu.
+- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `vorrat` | `manuell`). Seit M5 außerdem die REWE-Packungen, falls von Hand geändert (leer = aus der Menge berechnet). Der Status im Warenkorb kommt mit dem Userscript dazu.
 - Die Anzeige „für Lasagne (Mi 7.10.)“ wird aus den Planeinträgen der Liste berechnet; eine eigene Tabelle `shoppingItemSources` braucht es dafür nicht.
 
 **Vorrat**
 - Seit M4 der einfache Vorrat: pro Lebensmittel „da“ oder „nachkaufen“ (`foods.stock`), ohne Mengen.
 - Ab M6: `pantryStock` mit Lebensmittel, Lagerort, Füllstand (bei grober Erfassung), Mindesthaltbarkeit und „geöffnet am“, außerdem `pantryBookings` mit Lebensmittel, Menge (+/−), Grund (`einkauf` | `gekocht` | `korrektur` | `verdorben`), Zeitpunkt und Bezug (Planeintrag oder Liste).
 
-**REWE** (`reweProducts`, gelernte Zuordnungen): Lebensmittel, REWE-Produkt-ID, Name, Packungsgröße und Einheit, letzter Preis, bevorzugt, wie oft und wann zuletzt gewählt.
+**REWE** (`reweProducts`, seit M5): eine Zeile je Lebensmittel (Zeilen-ID = Lebensmittel) mit Produkt-ID, Name, Bild, Preis und Packungsangabe vom letzten Abgleich, Listing-ID und Zustand: `sure` und `unsure` (Vorschlag, passend bzw. bitte prüfen), `none` (nichts gefunden), `chosen` (vom Haushalt gewählt, gilt als Stammprodukt), `missing` (gewählt, beim letzten Abgleich aber nicht gefunden) und `skip` (nicht bei REWE kaufen).
 
-**Einstellungen** (TinyBase-Values): aktive Mahlzeiten (seit M4, je ein Schalter; Standard: nur Abendessen), später REWE-Markt-ID und PLZ. Standardportionen braucht es nicht: Die Portionen ergeben sich aus den Personen.
+**Einstellungen** (TinyBase-Values): aktive Mahlzeiten (seit M4, je ein Schalter; Standard: nur Abendessen), seit M5 der REWE-Markt (ID, Name, Adresse) und „Bio bevorzugen“. Standardportionen braucht es nicht: Die Portionen ergeben sich aus den Personen.
 
 **Nur auf dem Server, nicht im Store:** Haushalte, Geräte und Tokens, Einladungen, Zwischenspeicher für REWE-Produkte, KI-Protokoll.
 
@@ -192,6 +192,15 @@ Ablauf pro Position:
 
 Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen getestet, etwa dem Tomaten-Fall.
 
+**Umgesetzt in M5** (`packages/core/src/rewe.ts`, getestet mit echten Suchergebnissen eines REWE-Marktes):
+- **Name:** Im Deutschen bestimmt der letzte Wortteil, was es ist: „Rispentomaten“ sind Tomaten, „Tomatenmark“ nicht. Wortteile für die Form zählen nicht („Lachsfilet“, „Knoblauchzehen“), getrennt Geschriebenes schon („Hähnchen Brustfilet“, „Cherry Romatomaten“). Was nach „mit“ steht, ist nur eine Zutat („Streichfett mit Butter“).
+- **Warengruppe:** aus dem Kategoriepfad von REWE. Querverweise wie „Bewusste Ernährung“ zählen fast wie eine passende Gruppe; Tierbedarf und Babynahrung kommen nie infrage.
+- **Preis:** für alle nötigen Packungen. Bei Bedarf ohne Menge und bei kleinem Bedarf an Vorratsdingen (Gewürze, Öl, Konserven …) zählt der Grundpreis. Viele kleine Packungen und Wörter, die nicht zum Lebensmittel gehören, kosten Punkte; auf Wunsch hat Bio Vorrang.
+- **Packungen:** aus Menge und Packungsangabe; g und ml gelten als gleich, eine Dose als etwa 240 g Abtropfgewicht. EL, Zehe oder Prise brauchen eine Packung. Stück abgepackter Ware sind Packungen („2 Butter“), bei Obst, Gemüse, Fleisch und Fisch reicht eine Packung nach Gewicht.
+- **Unsicher** ist ein Treffer ohne klaren Namen oder mit falscher Warengruppe. „Salz und Pfeffer“ sind zwei Lebensmittel: Gesucht wird das erste, sicher ist der Treffer nie. Passt gar kein Name, gilt die Reihenfolge der REWE-Suche.
+- **Lernen:** Das Produkt gilt je Lebensmittel, die Packungen je Position. Was der Haushalt wählt oder bestätigt, wird beim nächsten Abgleich zuerst gesucht.
+- **Noch nicht umgesetzt:** eigener Suchbegriff und Ausschlusswörter je Lebensmittel, die KI-Prüfung unsicherer Treffer und „schon einmal gekauft“.
+
 ### 8.2 Produktquelle
 
 **Entscheidung:** Der Server nutzt die Produktsuche der REWE-Website. So hat es das bisherige System gemacht, und das lief stabil. Die Suche wird als austauschbarer Adapter umgesetzt. Falls REWE Anfragen vom Server künftig blockiert, ist die Rückfallebene eine Suche im Userscript direkt im Browser auf rewe.de. Die App-Schnittstelle mit extrahiertem Zertifikat (vgl. rewerse-engineering) wird nicht gebraucht.
@@ -200,10 +209,11 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
 - **Produktsuche:** `GET https://www.rewe.de/shop/api/products?search=…&storeId=<Markt>&market=<Markt>&objectsPerPage=…&page=…&serviceTypes=PICKUP`
   - `storeId` und `market` werden beide gebraucht, sonst fehlen Preise und Verfügbarkeit.
   - Mit `Accept: */*` kommt eine flache Liste: `products[]` mit `productId`, `title`, `listing.currentRetailPrice` (in Cent), `listing.grammage` und `imageURL`.
-  - Mit `Accept: application/json` kommt stattdessen das verschachtelte HAL-Format.
+  - Mit `Accept: application/json` kommt stattdessen das verschachtelte HAL-Format; das nutzt der Server. Je Produkt: `_embedded.articles[0]._embedded.listing` mit Listing-ID und `pricing` (Preis und Grundpreis in Cent, Packungsangabe wie „500g (1 kg = 3,50 €)“), `_embedded.categoryPath` und Merkmale in `attributes.tags` (`organic`, `discounted`, `regional` …).
+  - Bilder sind PNGs mit 1200 × 1200 Pixeln; `?resize=120px:120px&output-format=jpg` liefert kleine JPEGs.
 - **Märkte zu einer PLZ:** `GET https://www.rewe.de/shop/api/marketselection/zipcodes/<PLZ>/services/pickup` liefert eine Liste mit `wwIdent` (Markt-ID), `displayName` und `isPickupStation`.
 - **Verfügbarkeit eines Stammprodukts:** Einen Abruf per Produkt-ID kennen wir nicht. Geprüft wird, ob die ID in den Suchergebnissen zum Produktnamen auftaucht.
-- **Zurückhaltend abfragen:** Ergebnisse auf dem Server zwischenspeichern und Anfragen nacheinander mit kurzen Pausen stellen.
+- **Zurückhaltend abfragen:** Der Server speichert Suchergebnisse 6 Stunden und Märkte 7 Tage zwischen (`rewe_cache` in SQLite). Er stellt die Anfragen nacheinander, mit 400 ms Pause dazwischen. Die App schickt lange Listen in Teilen und zeigt den Fortschritt.
 
 ### 8.3 Warenkorb per Userscript (neu geschrieben)
 
@@ -273,6 +283,11 @@ Entschieden bei der Umsetzung von M4:
 - **Feste IDs für abgeleitete Zeilen** (5.2).
 - **Einfacher Vorrat ohne Mengen:** „da“ oder „nachkaufen“ je Lebensmittel; Mengen und Buchungen folgen in M6.
 - **Planeintrag als Kochansicht:** Er zeigt Zutaten und Schritte für die geplanten Portionen und Optionen.
+
+Entschieden bei der Umsetzung von M5:
+- **REWE-Produkt je Lebensmittel,** nicht je Position: So gilt eine Wahl auch für spätere Einkäufe. Die Packungen rechnet die App je Position aus der Menge.
+- **Abgleich auf dem Server, Auswahl in der App:** Der Server sucht und bewertet; die App sucht für die Auswahl selbst über den Server und bewertet mit derselben Logik aus `packages/core`.
+- **Ein Markt für den Haushalt,** gewählt per PLZ im Haushalt oder in der Einkaufsliste.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.

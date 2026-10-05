@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { HouseholdSettings } from '@/components/household-settings';
 import { Icon } from '@/components/icon';
+import { ReweSettings } from '@/components/rewe-settings';
 import { SyncStatusLine } from '@/components/sync-status';
 import { Button, Card, CardHeader, Hint, IconButton, IconCircle, Notice, SectionTitle, Tag } from '@/components/ui';
 import { listDevices, removeDevice, type DeviceInfo } from '@/data/api';
@@ -111,6 +112,7 @@ export default function HouseholdScreen() {
       )}
 
       <HouseholdSettings />
+      <ReweSettings />
 
       <SectionTitle>Geräte</SectionTitle>
       {error ? <Notice tone="danger">{error}</Notice> : null}

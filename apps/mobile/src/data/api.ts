@@ -1,4 +1,4 @@
-import type { ImportedRecipe } from '@zauberjournal/core';
+import type { ImportedRecipe, ReweMarket, ReweMatchRequestItem, ReweMatchResult, ReweProduct } from '@zauberjournal/core';
 
 /** Zugangsdaten dieses Geräts für den Server des Haushalts. */
 export type Credentials = { serverUrl: string; deviceId: string; token: string };
@@ -114,6 +114,46 @@ export async function importRecipe(credentials: Credentials, input: ImportInput,
     signal,
   });
   return recipe;
+}
+
+/** REWE-Märkte mit Abholservice zu einer Postleitzahl. */
+export async function findReweMarkets(credentials: Credentials, zipCode: string): Promise<ReweMarket[]> {
+  const { markets } = await request<{ markets: ReweMarket[] }>(
+    credentials.serverUrl,
+    `/api/rewe/markets?zip=${encodeURIComponent(zipCode)}`,
+    { token: credentials.token },
+  );
+  return markets;
+}
+
+/** Produktsuche im gewählten Markt. */
+export async function searchReweProducts(
+  credentials: Credentials,
+  query: string,
+  marketId: string,
+  signal?: AbortSignal,
+): Promise<ReweProduct[]> {
+  const params = new URLSearchParams({ q: query, market: marketId });
+  const { products } = await request<{ products: ReweProduct[] }>(credentials.serverUrl, `/api/rewe/products?${params}`, {
+    token: credentials.token,
+    signal,
+  });
+  return products;
+}
+
+/** Sucht passende Produkte für einige Positionen; der Server fragt REWE nacheinander, das dauert pro Position etwa eine Sekunde. */
+export async function matchReweItems(
+  credentials: Credentials,
+  marketId: string,
+  organic: boolean,
+  items: ReweMatchRequestItem[],
+): Promise<ReweMatchResult[]> {
+  const { results } = await request<{ results: ReweMatchResult[] }>(credentials.serverUrl, '/api/rewe/match', {
+    method: 'POST',
+    token: credentials.token,
+    body: { market: marketId, organic, items },
+  });
+  return results;
 }
 
 export function photoUrl(credentials: Credentials, photoId: string): string {

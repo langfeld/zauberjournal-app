@@ -2,6 +2,7 @@ import type { TablesSchema, ValuesSchema } from 'tinybase';
 
 import { FOOD_CATEGORY_IDS, FOOD_DIET_IDS } from './food-catalog.ts';
 import { MEAL_IDS } from './meals.ts';
+import { REWE_STATES } from './rewe.ts';
 
 const optionalNumber = { type: 'number', allowNull: true, default: null } as const;
 
@@ -125,17 +126,40 @@ export const tablesSchema = {
     unit: { type: 'string', default: '' },
     checked: { type: 'boolean', default: false },
     origin: { enum: ['plan', 'pantry', 'manual'], default: 'manual' },
+    /** Packungen bei REWE, wenn von Hand geändert; leer = aus der Menge berechnet. */
+    rewePacks: optionalNumber,
     createdAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,
   },
+  /**
+   * REWE-Produkt je Lebensmittel; die Zeilen-ID ist die ID des Lebensmittels. Was der Haushalt wählt,
+   * gilt bei jedem Abgleich wieder (Zustände siehe `ReweState`). Preis und Packung: Stand des letzten Abgleichs.
+   */
+  reweProducts: {
+    state: { enum: REWE_STATES, default: 'none' },
+    productId: { type: 'string', default: '' },
+    name: { type: 'string', default: '' },
+    imageUrl: { type: 'string', default: '' },
+    price: { type: 'number', default: 0 },
+    grammage: { type: 'string', default: '' },
+    listingId: { type: 'string', default: '' },
+    updatedAt: { type: 'number', default: 0 },
+  },
 } as const satisfies TablesSchema;
 
-/** Einstellungen des Haushalts: welche Mahlzeiten der Plan zeigt (Standard: nur Abendessen). */
+/** Einstellungen des Haushalts. */
 export const valuesSchema = {
+  /** Welche Mahlzeiten der Plan zeigt (Standard: nur Abendessen). */
   mealBreakfast: { type: 'boolean', default: false },
   mealLunch: { type: 'boolean', default: false },
   mealDinner: { type: 'boolean', default: true },
   mealSnack: { type: 'boolean', default: false },
+  /** REWE-Markt für Abgleich und Abholung; leer = keiner gewählt. */
+  reweMarketId: { type: 'string', default: '' },
+  reweMarketName: { type: 'string', default: '' },
+  reweMarketAddress: { type: 'string', default: '' },
+  /** Beim Abgleich Bio-Produkte vorziehen. */
+  reweOrganic: { type: 'boolean', default: false },
 } as const satisfies ValuesSchema;
 
 export type AppTablesSchema = typeof tablesSchema;

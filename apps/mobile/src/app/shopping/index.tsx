@@ -20,9 +20,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CATEGORY_STYLES } from '@/components/category-style';
 import { Icon } from '@/components/icon';
 import { RecipeCover } from '@/components/recipe-photo';
+import { ReweListCard } from '@/components/rewe-list-card';
 import { ShoppingItemRow } from '@/components/shopping-item-row';
 import { AddField, Button, Card, Chip, EmptyState, Hint, IconCircle, ProgressBar } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
+import { useReweMatch } from '@/data/rewe-match';
 import { useStore } from '@/data/store';
 import { useAppTables, useToday } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
@@ -51,6 +53,7 @@ export default function ShoppingScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const [newItem, setNewItem] = useState('');
   const [showDone, setShowDone] = useState(false);
+  const rewe = useReweMatch();
   const listId = lists.find((list) => list.id === selected)?.id ?? lists[0]?.id;
 
   // Die Positionen folgen dem Plan: Ändern sich Gerichte, Portionen oder der Vorrat, passt sich die Liste an.
@@ -97,6 +100,7 @@ export default function ShoppingScreen() {
     write(completeShoppingList(tables, view.id));
   };
   const toggle = (itemId: string, checked: boolean) => write(checkShoppingItem(tables, itemId, checked));
+  const openProduct = (itemId: string) => router.push({ pathname: '/shopping/product', params: { item: itemId } });
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -140,6 +144,16 @@ export default function ShoppingScreen() {
         ) : null}
       </Card>
 
+      {rewe.connected ? (
+        <ReweListCard
+          summary={view.rewe}
+          settings={rewe.settings}
+          progress={rewe.progress}
+          error={rewe.error}
+          onMatch={() => void rewe.run(tables, view.id)}
+        />
+      ) : null}
+
       <AddField
         accessibilityLabel="Artikel hinzufügen"
         value={newItem}
@@ -165,6 +179,7 @@ export default function ShoppingScreen() {
                   divider={index > 0}
                   onToggle={() => toggle(item.id, true)}
                   onRemove={item.origin === 'manual' ? () => write(removeShoppingItem(item.id, Date.now())) : undefined}
+                  onOpenProduct={rewe.connected && rewe.settings.marketId ? () => openProduct(item.id) : undefined}
                 />
               ))}
             </View>

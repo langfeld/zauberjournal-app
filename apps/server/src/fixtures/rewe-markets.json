@@ -1,0 +1,34 @@
+[
+ {
+  "wwIdent": "1234567",
+  "displayName": "REWE Markt",
+  "distance": 2150,
+  "latitude": "51.00000",
+  "longitude": "10.00000",
+  "companyName": "REWE Muster oHG",
+  "zipCode": "12345",
+  "street": "Hauptstr. 1",
+  "city": "Musterstadt",
+  "houseNumber": null,
+  "signedMapsUrl": "/api/markets/1234567/map",
+  "isPickupStation": false,
+  "pickupVariant": "Abholservice",
+  "pickupStation": false
+ },
+ {
+  "wwIdent": "7654321",
+  "displayName": "REWE Markt",
+  "distance": 8400,
+  "latitude": "51.05000",
+  "longitude": "10.05000",
+  "companyName": "REWE Beispiel GmbH",
+  "zipCode": "12346",
+  "street": "Bahnhofstr.",
+  "city": "Beispieldorf",
+  "houseNumber": "12",
+  "signedMapsUrl": "/api/markets/7654321/map",
+  "isPickupStation": false,
+  "pickupVariant": "Abholservice",
+  "pickupStation": false
+ }
+]
