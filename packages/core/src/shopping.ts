@@ -240,11 +240,16 @@ export type ShoppingItemView = {
   amount: string;
   checked: boolean;
   origin: ShoppingItemOrigin;
-  /** Für welche Gerichte, z. B. „2× Curry, Lasagne“. */
+  /** Für welche Gerichte, jedes einmal in der Reihenfolge des Plans. */
+  dishes: ShoppingItemDish[];
+  /** Dasselbe als Text, z. B. „2× Curry, Lasagne“. */
   sources: string;
   stock: FoodStock;
   category: FoodCategory;
 };
+
+/** Ein Gericht, für das eine Zutat gebraucht wird; `count` zählt, wie oft es auf der Liste steht. */
+export type ShoppingItemDish = { title: string; photo: string; count: number };
 
 export type ShoppingSection = { category: FoodCategory; label: string; items: ShoppingItemView[] };
 
@@ -265,14 +270,20 @@ export type ShoppingListView = {
   done: ShoppingItemView[];
 };
 
-/**
- * Für welche Gerichte eine Zutat gebraucht wird: jedes Gericht einmal, mehrfach geplante mit Anzahl,
- * z. B. „3× Curry, Salat“. Die Tage stehen schon bei den Gerichten der Liste.
- */
-export function describeSources(sources: readonly NeedSource[]): string {
-  const counts = new Map<string, number>();
-  for (const source of sources) counts.set(source.title, (counts.get(source.title) ?? 0) + 1);
-  return [...counts].map(([title, count]) => (count > 1 ? `${count}× ${title}` : title)).join(', ');
+/** Fasst die Planeinträge einer Zutat zu Gerichten zusammen: jedes einmal, mehrfach geplante mit Anzahl. */
+export function groupDishes(sources: readonly NeedSource[], photoOf: (entryId: string) => string): ShoppingItemDish[] {
+  const dishes = new Map<string, ShoppingItemDish>();
+  for (const source of sources) {
+    const dish = dishes.get(source.title);
+    if (dish) dish.count += 1;
+    else dishes.set(source.title, { title: source.title, photo: photoOf(source.entryId), count: 1 });
+  }
+  return [...dishes.values()];
+}
+
+/** z. B. „3× Curry, Salat“. Die Tage stehen schon bei den Gerichten der Liste. */
+export function describeDishes(dishes: readonly ShoppingItemDish[]): string {
+  return dishes.map(({ title, count }) => (count > 1 ? `${count}× ${title}` : title)).join(', ');
 }
 
 export function formatItemAmount(amount: number | null, unit: string): string {
@@ -304,12 +315,14 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
       return entry ? [{ entryId: id, date: entry.date, title: entry.title, photo: entry.recipe?.photo ?? '' }] : [];
     })
     .sort((a, b) => a.date.localeCompare(b.date));
+  const photos = new Map(entries.map((entry) => [entry.entryId, entry.photo]));
+  const photoOf = (entryId: string) => photos.get(entryId) ?? '';
 
   const items = Object.entries(tables.shoppingItems)
     .filter(([, item]) => item.listId === listId && isActive(item))
     .map(([id, item]): ShoppingItemView => {
       const food = tables.foods[item.foodId];
-      const sources = item.origin === 'plan' ? (needs.get(id)?.sources ?? []) : [];
+      const dishes = item.origin === 'plan' ? groupDishes(needs.get(id)?.sources ?? [], photoOf) : [];
       return {
         id,
         foodId: item.foodId,
@@ -317,7 +330,8 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
         amount: formatItemAmount(item.amount, item.unit),
         checked: item.checked,
         origin: item.origin,
-        sources: describeSources(sources),
+        dishes,
+        sources: describeDishes(dishes),
         stock: food && isActive(food) ? (food.stock ?? '') : '',
         category: food && isActive(food) ? food.category : 'other',
       };

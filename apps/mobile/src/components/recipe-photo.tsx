@@ -59,13 +59,15 @@ function PhotoTile({ photoId, title, style, letterSize }: { photoId: string; tit
   );
 }
 
-/** Kleines Vorschaubild für Listen. */
-export function RecipeThumbnail({ photoId, title, size = 64 }: { photoId: string; title: string; size?: number }) {
+type RecipeThumbnailProps = { photoId: string; title: string; size?: number; round?: boolean };
+
+/** Kleines Vorschaubild für Listen; `round` für winzige Hinweise, z. B. auf der Einkaufsliste. */
+export function RecipeThumbnail({ photoId, title, size = 64, round }: RecipeThumbnailProps) {
   return (
     <PhotoTile
       photoId={photoId}
       title={title}
-      style={{ width: size, height: size, borderRadius: Math.round(size * 0.24) }}
+      style={{ width: size, height: size, borderRadius: round ? size / 2 : Math.round(size * 0.24) }}
       letterSize={Math.round(size * 0.46)}
     />
   );

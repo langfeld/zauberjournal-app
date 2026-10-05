@@ -1,10 +1,28 @@
-import type { ShoppingItemView } from '@zauberjournal/core';
+import type { ShoppingItemDish, ShoppingItemView } from '@zauberjournal/core';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '@/theme';
 
 import { Icon } from './icon';
+import { RecipeThumbnail } from './recipe-photo';
 import { Button, IconButton } from './ui';
+
+/** So viele Gerichte zeigen ihr Foto; die Namen stehen trotzdem alle im Text daneben. */
+const MAX_DISH_PHOTOS = 3;
+const DISH_PHOTO_SIZE = 22;
+
+/** Runde Fotos der Gerichte, leicht überlappend; sie passen zu den Karten oben auf der Liste. */
+function DishPhotos({ dishes, dimmed }: { dishes: ShoppingItemDish[]; dimmed: boolean }) {
+  return (
+    <View aria-hidden style={[styles.photos, dimmed && styles.dimmed]}>
+      {dishes.slice(0, MAX_DISH_PHOTOS).map((dish, index) => (
+        <View key={dish.title} style={[styles.photoRing, index > 0 && styles.photoOverlap]}>
+          <RecipeThumbnail photoId={dish.photo} title={dish.title} size={DISH_PHOTO_SIZE} round />
+        </View>
+      ))}
+    </View>
+  );
+}
 
 type ShoppingItemRowProps = {
   item: ShoppingItemView;
@@ -33,9 +51,12 @@ export function ShoppingItemRow({ item, onToggle, action, onRemove, divider }: S
         <View style={styles.text}>
           <Text style={[styles.name, item.checked && styles.checked]}>{item.name}</Text>
           {note ? (
-            <Text style={styles.note} numberOfLines={1}>
-              {note}
-            </Text>
+            <View style={styles.noteRow}>
+              {item.dishes.length > 0 ? <DishPhotos dishes={item.dishes} dimmed={item.checked} /> : null}
+              <Text style={styles.note} numberOfLines={1}>
+                {note}
+              </Text>
+            </View>
           ) : null}
         </View>
         {item.amount ? (
@@ -65,9 +86,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   boxChecked: { backgroundColor: colors.primary },
-  text: { flex: 1, gap: 2 },
+  text: { flex: 1, gap: 3 },
   name: { fontSize: 16, color: colors.text },
-  note: { fontSize: 12.5, lineHeight: 17, color: colors.textMuted },
+  noteRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
+  note: { flexShrink: 1, fontSize: 12.5, lineHeight: 17, color: colors.textMuted },
+  photos: { flexDirection: 'row' },
+  // Der helle Ring trennt die überlappenden Fotos voneinander.
+  photoRing: { borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: colors.surface },
+  photoOverlap: { marginLeft: -8 },
+  dimmed: { opacity: 0.5 },
   amount: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,

@@ -104,6 +104,10 @@ describe('Einkaufsliste', () => {
     const sources = Object.fromEntries(items.map((item) => [item.name, item.sources]));
     // Das Curry steht zuerst im Plan, deshalb heißt das Lebensmittel nach seiner Zutat „2 Zwiebeln“.
     expect(sources).toMatchObject({ Zwiebeln: '2× Curry, Salat', Kokosmilch: '2× Curry', Romanasalat: 'Salat' });
+    expect(items.find((item) => item.name === 'Zwiebeln')?.dishes).toEqual([
+      { title: 'Curry', photo: '', count: 2 },
+      { title: 'Salat', photo: '', count: 1 },
+    ]);
   });
 
   it('trennt Vorrat, Nachkaufen und Abgehaktes und schließt den Einkauf ab', () => {
