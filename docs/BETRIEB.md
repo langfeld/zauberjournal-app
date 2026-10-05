@@ -53,6 +53,16 @@ Pangolin selbst aktuell halten.
 - **Weitere Geräte:** auf einem verbundenen Gerät *Haushalt → Gerät hinzufügen*. Das zeigt einen QR-Code, der 15 Minuten gilt und nur einmal verwendbar ist. Auf dem neuen Gerät *Haushalt → Beitreten → QR-Code scannen*.
 - **Gerät entfernen:** *Haushalt → Geräte → Entfernen*. Das Gerät wird sofort getrennt und behält seine Rezepte nur noch lokal.
 
+### REWE-Userscript
+
+Das Userscript legt die Einkaufsliste auf rewe.de in den Warenkorb, am PC oder in Firefox auf dem Handy. Es koppelt sich wie ein Gerät:
+
+1. Im Browser Violentmonkey oder Tampermonkey installieren.
+2. In der App *Haushalt → REWE-Abholung → Userscript für rewe.de* öffnen. Den Link `https://kochbuch.<deine-domain>/rewe.user.js` dort öffnen oder teilen und das Script installieren. Der Server trägt dabei seine Adresse ins Script ein.
+3. Dort *Code anzeigen* tippen und den Code auf rewe.de im Userscript eingeben. Das Userscript ist der grüne Knopf unten rechts.
+
+Zum Einkaufen in der Einkaufsliste *In den Warenkorb* tippen und dann auf rewe.de den grünen Knopf. Das Userscript meldet je Produkt zurück, ob es geklappt hat. Neue Versionen kommen mit dem Server-Image; der Userscript-Manager holt sie über denselben Link.
+
 ### Notfall: kein verbundenes Gerät mehr zur Hand
 
 Im Container einen Einladungscode erzeugen:

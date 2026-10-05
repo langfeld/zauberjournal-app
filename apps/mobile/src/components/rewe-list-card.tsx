@@ -46,6 +46,7 @@ function CartStatus({ order, sending, onSend }: { order: ReweOrder | null; sendi
       <View style={styles.cart}>
         <Button small icon="add_shopping_cart" title="In den Warenkorb" disabled={sending} onPress={onSend} />
         <Hint>Das Userscript legt die Produkte danach auf rewe.de in den Warenkorb.</Hint>
+        <Button small variant="ghost" icon="link" title="Userscript einrichten" onPress={() => router.push('/shopping/userscript')} />
       </View>
     );
   }

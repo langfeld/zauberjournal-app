@@ -77,6 +77,7 @@ const GLYPHS = {
   search_off: 0xea76,
   sell: 0xf05b,
   set_meal: 0xf1ea,
+  share: 0xe80d,
   shopping_basket: 0xe8cb,
   shopping_cart: 0xe8cc,
   skillet: 0xf543,

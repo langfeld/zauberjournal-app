@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Zauberjournal: REWE-Warenkorb
 // @namespace    https://github.com/langfeld/zauberjournal-app
-// @version      1.0.1
+// @version      1.0.2
 // @description  Legt die Einkaufsliste aus Zauberjournal in den REWE-Warenkorb (Abholservice).
 // @homepageURL  https://github.com/langfeld/zauberjournal-app
 // @match        https://www.rewe.de/*
@@ -24,7 +24,7 @@
  * Website in den Warenkorb. Pro Produkt meldet es zurück, was passiert ist; die App zeigt das an.
  *
  * Einrichten: Serveradresse und einen Code aus der App eingeben (Haushalt → REWE-Abholung →
- * Code fürs Userscript). Das Script koppelt sich dann wie ein weiteres Gerät; in der App lässt es
+ * Userscript für rewe.de). Das Script koppelt sich dann wie ein weiteres Gerät; in der App lässt es
  * sich unter „Geräte“ wieder entfernen. Im Script selbst steht kein Schlüssel.
  */
 (() => {
@@ -301,7 +301,7 @@
     else if (state.view === 'retry') body = '<button class="secondary" data-action="reload">Noch einmal versuchen</button>';
     else if (state.view === 'setup') {
       body = `
-        <p>Verbinde das Script mit eurem Zauberjournal. Den Code zeigt die App unter Haushalt → REWE-Abholung → Code fürs Userscript.</p>
+        <p>Verbinde das Script mit eurem Zauberjournal. Den Code zeigt die App unter Haushalt → REWE-Abholung → Userscript für rewe.de.</p>
         <label>Serveradresse<input name="server" type="url" inputmode="url" autocomplete="url" placeholder="https://kochbuch.example.org" value="${escapeHtml(state.server)}"></label>
         <label>Code<input name="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="z. B. 93ZK-JDE6"></label>
         <button class="primary" data-action="connect">Verbinden</button>`;
