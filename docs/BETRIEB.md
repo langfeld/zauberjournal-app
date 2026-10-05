@@ -63,6 +63,19 @@ Das Userscript legt die Einkaufsliste auf rewe.de in den Warenkorb, am PC oder i
 
 Zum Einkaufen in der Einkaufsliste *In den Warenkorb* tippen und dann auf rewe.de den grünen Knopf. Das Userscript meldet je Produkt zurück, ob es geklappt hat. Neue Versionen kommen mit dem Server-Image; der Userscript-Manager holt sie über denselben Link.
 
+### Übernahme aus dem alten Zauberjournal
+
+Rezepte (mit Fotos) und bevorzugte REWE-Produkte aus den JSON-Exporten des alten Systems überträgt ein Werkzeug im Repo. Es braucht Node 24 sowie Python 3 mit Pillow, das die Fotos in JPEG umwandelt.
+
+1. Auf einem verbundenen Gerät *Haushalt → Gerät hinzufügen* öffnen und den Code notieren.
+2. Im Repo ausführen:
+
+   ```bash
+   node apps/server/src/import-legacy.ts --server https://kochbuch.<deine-domain> --code ABCD-EFGH rezepte.json rewe-prefs.json
+   ```
+
+Das Werkzeug koppelt sich wie ein Gerät, schreibt über den Sync und meldet sich am Ende wieder ab. Rezepte, deren Titel es schon gibt, übernimmt es nicht noch einmal. Die REWE-Produkte kommen je Lebensmittel in die Rangliste: das am häufigsten gewählte zuerst, hinter schon gemerkten. Mit `--dry-run` statt Server und Code zeigt es nur, was es übernehmen würde.
+
 ### Notfall: kein verbundenes Gerät mehr zur Hand
 
 Im Container einen Einladungscode erzeugen:

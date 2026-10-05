@@ -45,6 +45,7 @@ export const UNITS: readonly UnitDefinition[] = [
   { id: 'Glas', singular: 'Glas', plural: 'Gläser', aliases: ['glas', 'gläser'], rounding: 'fraction' },
   { id: 'Scheibe', singular: 'Scheibe', plural: 'Scheiben', aliases: ['scheibe', 'scheiben'], rounding: 'fraction' },
   { id: 'Zweig', singular: 'Zweig', plural: 'Zweige', aliases: ['zweig', 'zweige'], rounding: 'fraction' },
+  { id: 'Stiel', singular: 'Stiel', plural: 'Stiele', aliases: ['stiel', 'stiele'], rounding: 'fraction' },
   { id: 'Blatt', singular: 'Blatt', plural: 'Blätter', aliases: ['blatt', 'blätter'], rounding: 'fraction' },
   { id: 'Handvoll', singular: 'Handvoll', plural: 'Handvoll', aliases: ['handvoll'], rounding: 'fraction' },
   { id: 'Tropfen', singular: 'Tropfen', plural: 'Tropfen', aliases: ['tropfen'], rounding: 'fraction' },

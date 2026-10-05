@@ -23,6 +23,9 @@ export type ReweFavorite = Pick<ReweFavoriteRow, 'productId' | 'name' | 'imageUr
 /** Was zu einem gemerkten Produkt gespeichert wird, außer der Reihenfolge. */
 type FavoriteData = Pick<ReweProduct, 'name' | 'imageUrl' | 'price' | 'grammage'>;
 
+/** Ein Produkt, das neu gemerkt wird, mit seinen Daten. */
+export type ReweFavoriteData = FavoriteData & { productId: string };
+
 function favoriteId(foodId: string, productId: string): string {
   return `${foodId}~${productId}`;
 }
@@ -52,13 +55,13 @@ function favoriteCells(product: FavoriteData): Record<string, CellValue> {
 
 /**
  * Schreibt die gemerkten Produkte eines Lebensmittels in der Reihenfolge `order`. `added` bringt die
- * Daten eines neu gemerkten Produkts mit. Sortierschlüssel bleiben, wo die Reihenfolge es zulässt.
+ * Daten neu gemerkter Produkte mit. Sortierschlüssel bleiben, wo die Reihenfolge es zulässt.
  */
 function writeFavoriteOrder(
   tables: ShoppingTables,
   foodId: string,
   order: readonly string[],
-  added?: FavoriteData & { productId: string },
+  added: readonly ReweFavoriteData[] = [],
 ): RowWrite[] {
   const rows = order.map((productId) => {
     const id = favoriteId(foodId, productId);
@@ -66,12 +69,13 @@ function writeFavoriteOrder(
   });
   const keys = assignSortKeys(rows.map(({ row }) => (row && isActive(row) ? row.sortKey : undefined)));
   return rows.flatMap(({ id, productId, row }, index) => {
+    const data = added.find((product) => product.productId === productId);
     const cells = {
       foodId,
       productId,
       sortKey: keys[index]!,
       deletedAt: null,
-      ...(added?.productId === productId ? favoriteCells(added) : {}),
+      ...(data ? favoriteCells(data) : {}),
     };
     const write = changedCells('reweFavorites', id, row, cells);
     return write ? [write] : [];
@@ -86,6 +90,20 @@ export function moveReweFavorite(tables: ShoppingTables, foodId: string, product
   if (from < 0 || to < 0 || to >= order.length) return [];
   [order[from], order[to]] = [order[to]!, order[from]!];
   return writeFavoriteOrder(tables, foodId, order);
+}
+
+/**
+ * Merkt sich übernommene Produkte in ihrer Reihenfolge hinter den schon gemerkten, z. B. aus dem alten
+ * Zauberjournal. Was schon gemerkt oder ausdrücklich vergessen ist, bleibt, wie es ist.
+ */
+export function addReweFavorites(tables: ShoppingTables, foodId: string, products: readonly ReweFavoriteData[]): RowWrite[] {
+  const added = products.filter(
+    (product, index) =>
+      !tables.reweFavorites[favoriteId(foodId, product.productId)] &&
+      products.findIndex((other) => other.productId === product.productId) === index,
+  );
+  if (added.length === 0) return [];
+  return writeFavoriteOrder(tables, foodId, [...favoriteOrder(tables, foodId), ...added.map((product) => product.productId)], added);
 }
 
 /** Vergisst ein gemerktes Produkt. Gilt es gerade für den Einkauf, ist es dort nur noch ein Vorschlag. */
@@ -209,7 +227,7 @@ export function chooseReweProduct(
   const currentRank = current?.state === 'chosen' ? order.indexOf(current.productId) : -1;
   const takeNow = currentRank === -1 || order.indexOf(product.id) <= currentRank;
   return [
-    ...writeFavoriteOrder(tables, item.foodId, order, { ...product, productId: product.id }),
+    ...writeFavoriteOrder(tables, item.foodId, order, [{ ...product, productId: product.id }]),
     ...(takeNow ? writeProduct(tables, item.listId, item.foodId, { state: 'chosen', ...productCells(product) }, now) : []),
   ];
 }
@@ -222,7 +240,7 @@ export function confirmReweProduct(tables: ShoppingTables, itemId: string, now: 
   const order = favoriteOrder(tables, item.foodId);
   if (!order.includes(product.productId)) order.push(product.productId);
   return [
-    ...writeFavoriteOrder(tables, item.foodId, order, product),
+    ...writeFavoriteOrder(tables, item.foodId, order, [product]),
     ...writeProduct(tables, item.listId, item.foodId, { state: 'chosen' }, now),
   ];
 }
