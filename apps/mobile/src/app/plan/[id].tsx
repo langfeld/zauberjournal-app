@@ -2,7 +2,6 @@ import {
   addDays,
   buildPlanEntry,
   createDietLookup,
-  createId,
   formatDate,
   listMembers,
   mealLabel,
@@ -12,6 +11,7 @@ import {
   planSetServings,
   planSetStatus,
   planUpdateEntry,
+  removeCookedBookings,
   type EaterView,
   type PlanEntryView,
   type PlanStatus,
@@ -41,7 +41,7 @@ import {
 } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
-import { useActiveMeals, useAppTables } from '@/data/tables';
+import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
 import { colors, fonts, radius, spacing } from '@/theme';
 
@@ -84,6 +84,7 @@ export default function PlanEntryScreen() {
   const meals = useActiveMeals();
   const entry = useMemo(() => buildPlanEntry(tables, id, createDietLookup(tables)), [tables, id]);
   const members = useMemo(() => listMembers(tables), [tables]);
+  const today = useToday();
 
   if (!entry) return <NotFound message="Diesen Eintrag gibt es nicht (mehr)." backLabel="Zum Plan" href="/plan" />;
 
@@ -95,7 +96,9 @@ export default function PlanEntryScreen() {
   const update = (cells: Parameters<typeof planUpdateEntry>[2]) => write(planUpdateEntry(tables, entry.id, cells));
   const remove = async () => {
     if (!(await confirm('Aus dem Plan entfernen?', `„${entry.title}“ wird aus dem Plan entfernt.`, 'Entfernen'))) return;
-    write(planRemoveEntry(entry.id, Date.now()));
+    // Wer einen Eintrag entfernt, hat ihn nicht gekocht: Eine Abbuchung geht zurück in den Vorrat.
+    const now = Date.now();
+    write([...planRemoveEntry(entry.id, now), ...removeCookedBookings(tables, entry.id, now)]);
     router.back();
   };
 
@@ -140,13 +143,16 @@ export default function PlanEntryScreen() {
             ))}
           </View>
         ) : null}
-        {/* „Gekocht“ bucht genau geführte Zutaten aus dem Vorrat ab; zurück nimmt die Abbuchung zurück. */}
+        {/* „Gekocht“ bucht die Zutaten aus dem Vorrat ab; zurück nimmt die Abbuchung zurück. */}
         <Segmented
           options={STATUSES}
           value={entry.status}
-          onChange={(status) => write(planSetStatus(tables, entry.id, status, Date.now(), createId))}
+          onChange={(status) => write(planSetStatus(tables, entry.id, status, Date.now()))}
           small
         />
+        {entry.recipe && entry.date < today ? (
+          <Hint>Eingekauftes gilt nach seinem Tag als gekocht und geht vom Vorrat ab. Nicht gekocht? Dann „geplant“ wählen.</Hint>
+        ) : null}
       </Card>
 
       {entry.recipe ? (

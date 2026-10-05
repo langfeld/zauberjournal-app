@@ -1,13 +1,13 @@
 import {
-  ensureFood,
+  addToPantry,
+  createId,
   FOOD_CATEGORIES,
   formatStock,
-  listFoods,
-  stockLevels,
+  pantryOverview,
   updateFood,
   type FoodStock,
+  type PantryEntry,
   type RowWrite,
-  type StockUnit,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -20,7 +20,7 @@ import { SyncBadge } from '@/components/sync-status';
 import { AddField, Card, EmptyState, Hint, IconCircle, Segmented, Tag, type SegmentOption } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
-import { useAppTables } from '@/data/tables';
+import { useAppTables, useToday } from '@/data/tables';
 import { colors, fonts, spacing, tones } from '@/theme';
 
 const STOCK_OPTIONS: SegmentOption<FoodStock>[] = [
@@ -28,26 +28,43 @@ const STOCK_OPTIONS: SegmentOption<FoodStock>[] = [
   { id: 'buy', label: 'Nachkaufen', color: colors.accent },
 ];
 
+/** Wie lange ein Rest von Frischem noch zählt. */
+function freshness(daysLeft: number | null): string {
+  if (daysLeft === null) return '';
+  if (daysLeft <= 0) return 'nur noch heute';
+  return daysLeft === 1 ? 'noch 1 Tag' : `noch ${daysLeft} Tage`;
+}
+
+function EntryState({ entry, onStock }: { entry: PantryEntry; onStock: (stock: FoodStock) => void }) {
+  // Ohne Menge: „immer im Haus“ wie bisher mit „da“ und „nachkaufen“.
+  if (entry.level === null || entry.unit === null) {
+    return <Segmented small options={STOCK_OPTIONS} value={entry.stock} labelPrefix={`${entry.name}: `} onChange={onStock} />;
+  }
+  const fresh = freshness(entry.daysLeft);
+  return (
+    <View style={styles.level}>
+      <Text style={[styles.levelText, entry.empty && styles.levelEmpty]}>{entry.empty ? 'leer' : formatStock(entry.level, entry.unit)}</Text>
+      {entry.empty ? <Text style={styles.levelNote}>kommt auf die Liste</Text> : fresh ? <Text style={styles.levelNote}>{fresh}</Text> : null}
+    </View>
+  );
+}
+
 export default function PantryScreen() {
   const store = useStore();
   const tables = useAppTables();
-  const [name, setName] = useState('');
-  const stocked = useMemo(() => listFoods(tables).filter((food) => food.stock !== '' || food.stockUnit !== ''), [tables]);
-  const levels = useMemo(() => stockLevels(tables), [tables]);
-  const isEmpty = (foodId: string) => (levels.get(foodId) ?? 0) <= 0;
-  const levelLabel = (foodId: string, unit: StockUnit) => (isEmpty(foodId) ? 'leer' : formatStock(levels.get(foodId) ?? 0, unit));
-  const toBuy = stocked.filter((food) => (food.stockUnit ? isEmpty(food.id) : food.stock === 'buy')).length;
+  const today = useToday();
+  const [text, setText] = useState('');
+  const entries = useMemo(() => pantryOverview(tables, today), [tables, today]);
+  const toBuy = entries.filter((entry) => entry.empty).length;
 
   const write = (writes: RowWrite[]) => {
     if (store && writes.length > 0) applyWrites(store, writes);
   };
-  const setStock = (foodId: string, stock: FoodStock) => write(updateFood(tables, foodId, { stock }));
-  const add = () => {
-    const result = ensureFood(tables, name);
+  const add = (now: number) => {
+    const result = addToPantry(tables, text, now, createId);
     if (!result) return;
-    // Erst das Lebensmittel anlegen, dann den Vorrat setzen; beides in einem Schritt.
-    write([...result.writes, { table: 'foods', rowId: result.foodId, cells: { stock: 'have' } }]);
-    setName('');
+    write(result.writes);
+    setText('');
   };
 
   return (
@@ -64,26 +81,26 @@ export default function PantryScreen() {
         }}
       />
       <Hint>
-        Was ihr meistens daheim habt. Auf der Einkaufsliste stehen diese Dinge unter „Vorrat prüfen“; was auf
-        „Nachkaufen“ steht oder leer ist, kommt von selbst auf die nächste Liste. Beim Lebensmittel lässt sich
-        einstellen, dass die App die Menge mitzählt.
+        Was ihr daheim habt: Gekauftes kommt beim Abschließen der Einkaufsliste dazu, Gekochtes geht ab, Frisches läuft
+        nach ein paar Tagen ab. Was immer im Haus sein soll (Haus-Symbol), kommt auf die Liste, sobald es leer ist.
       </Hint>
       <AddField
-        accessibilityLabel="Lebensmittel zum Vorrat hinzufügen"
-        value={name}
-        onChangeText={setName}
-        onAdd={add}
-        placeholder="Hinzufügen, z. B. Olivenöl"
+        accessibilityLabel="Zum Vorrat hinzufügen"
+        value={text}
+        onChangeText={setText}
+        onAdd={() => add(Date.now())}
+        placeholder="Hinzufügen, z. B. 1 kg Reis oder Salz"
       />
       {toBuy > 0 ? <Tag icon="add_shopping_cart" label={`${toBuy} zum Nachkaufen`} tone={tones.terracotta} /> : null}
 
-      {stocked.length === 0 ? (
+      {entries.length === 0 ? (
         <EmptyState icon="kitchen" title="Noch nichts im Vorrat">
-          Trag ein, was ihr meistens daheim habt, z. B. Olivenöl, Reis oder Zwiebeln.
+          Nach dem nächsten Einkauf steht hier, was ihr gekauft habt. Was immer im Haus sein soll, z. B. Salz oder Öl, könnt
+          ihr oben eintragen.
         </EmptyState>
       ) : null}
       {FOOD_CATEGORIES.map((category) => {
-        const foods = stocked.filter((food) => food.category === category.id);
+        const foods = entries.filter((entry) => entry.category === category.id);
         if (foods.length === 0) return null;
         const style = CATEGORY_STYLES[category.id];
         return (
@@ -92,33 +109,17 @@ export default function PantryScreen() {
               <IconCircle icon={style.icon} tone={style.tone} size={34} square />
               <Text style={styles.sectionTitle}>{category.label}</Text>
             </View>
-            {foods.map((food, index) => (
-              <View key={food.id} style={[styles.row, index > 0 && styles.divider]}>
+            {foods.map((entry, index) => (
+              <View key={entry.foodId} style={[styles.row, index > 0 && styles.divider]}>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => router.push(`/pantry/${encodeURIComponent(food.id)}`)}
+                  accessibilityLabel={`${entry.name}${entry.staple ? ', immer im Haus' : ''}`}
+                  onPress={() => router.push(`/pantry/${encodeURIComponent(entry.foodId)}`)}
                   style={styles.name}>
-                  <Text style={styles.foodName}>{food.name}</Text>
+                  <Text style={styles.foodName}>{entry.name}</Text>
+                  {entry.staple ? <Icon name="home" size={15} color={colors.textMuted} /> : null}
                 </Pressable>
-                {food.stockUnit ? (
-                  // Mit Menge geführt: Der Bestand ändert sich über Einkauf, Kochen oder die Seite des Lebensmittels.
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${food.name}: ${levelLabel(food.id, food.stockUnit)}`}
-                    onPress={() => router.push(`/pantry/${encodeURIComponent(food.id)}`)}
-                    style={styles.level}>
-                    <Text style={[styles.levelText, isEmpty(food.id) && styles.levelEmpty]}>{levelLabel(food.id, food.stockUnit)}</Text>
-                    <Icon name="chevron_right" size={18} color={colors.borderStrong} />
-                  </Pressable>
-                ) : (
-                  <Segmented
-                    small
-                    options={STOCK_OPTIONS}
-                    value={food.stock}
-                    labelPrefix={`${food.name}: `}
-                    onChange={(stock) => setStock(food.id, stock)}
-                  />
-                )}
+                <EntryState entry={entry} onStock={(stock) => write(updateFood(tables, entry.foodId, { stock }))} />
               </View>
             ))}
           </Card>
@@ -135,9 +136,10 @@ const styles = StyleSheet.create({
   sectionTitle: { flex: 1, fontFamily: fonts.display, fontSize: 18, lineHeight: 24, color: colors.text },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs + 2 },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  name: { flex: 1, paddingVertical: spacing.sm },
-  foodName: { fontSize: 16, color: colors.text },
-  level: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingVertical: spacing.sm, paddingLeft: spacing.sm },
+  name: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2, paddingVertical: spacing.sm },
+  foodName: { flexShrink: 1, fontSize: 16, color: colors.text },
+  level: { alignItems: 'flex-end', paddingVertical: spacing.xs },
   levelText: { fontSize: 15, fontWeight: '600', color: colors.text, fontVariant: ['tabular-nums'] },
   levelEmpty: { color: colors.accent },
+  levelNote: { fontSize: 12.5, color: colors.textMuted },
 });

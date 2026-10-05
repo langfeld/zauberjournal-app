@@ -1,13 +1,18 @@
+import { addDays, dayOf, daysBetween } from './dates.ts';
+import type { FoodCategory } from './food-catalog.ts';
 import { createFoodResolver, type FoodStock, type FoodTables, type StockUnit } from './foods.ts';
+import { parseIngredientLine } from './ingredient-line.ts';
 import { formatNumber } from './quantity.ts';
 import type { RecipeTables } from './recipe.ts';
 import { changedCells, isActive, type RowWrite, type Table } from './rows.ts';
 import { unitLabel } from './units.ts';
 
 /**
- * Vorrat mit Mengen (M6). Ein Lebensmittel ist entweder gar nicht, einfach („da“ oder „nachkaufen“)
- * oder genau geführt. Genau geführte haben eine Vorratseinheit; ihr Bestand ist die Summe ihrer Buchungen
+ * Vorrat (M6): was daheim ist, als Summe von Buchungen je Lebensmittel in seiner Vorratseinheit
  * (Einkauf +, gekocht −, Korrektur ±). So gehen beim Sync keine gleichzeitigen Änderungen verloren.
+ * Gekauftes kommt beim Abschließen der Einkaufsliste dazu, Gekochtes geht ab, Reste von Frischem laufen
+ * nach einigen Tagen ab. Unabhängig davon kann ein Lebensmittel „immer im Haus“ sein (`foods.stock`):
+ * Ist es leer, kommt es von selbst auf die Einkaufsliste.
  */
 
 export const PANTRY_REASONS = ['purchase', 'cooked', 'correction'] as const;
@@ -30,20 +35,20 @@ export type PantryBookingRow = {
 
 export type PantryTables = FoodTables & { pantryBookings: Table<PantryBookingRow> };
 
-/** Wie ein Lebensmittel im Vorrat geführt wird. */
-export type StockMode = 'none' | 'simple' | 'exact';
+// ─── Haltbarkeit ───
 
-export function stockModeOf(food: { stock: FoodStock; stockUnit: StockUnit | '' }): StockMode {
-  if (food.stockUnit) return 'exact';
-  return food.stock ? 'simple' : 'none';
-}
+/**
+ * So viele Tage nach dem letzten Einkauf zählt ein Rest noch. Warengruppen ohne Angabe halten lange
+ * (Nudeln, Konserven, Tiefkühl …); ihr Bestand zählt, bis er aufgebraucht ist.
+ */
+export const SHELF_LIFE_DAYS: Partial<Record<FoodCategory, number>> = { produce: 7, bakery: 4, dairy: 14, meat: 3, fish: 2 };
 
 // ─── Umrechnen ───
 
 /**
- * Rezept-Einheiten, die sich sicher in eine Vorratseinheit umrechnen lassen. Messlöffel haben feste
- * Größen; eine Packung (Dose, Becher …) zählt als ein Stück. Alles andere (Prise, Zehe, Bund …) bleibt
- * außen vor: lieber nicht abziehen als falsch rechnen.
+ * Rezept-Einheiten, die sich in eine Vorratseinheit umrechnen lassen. Messlöffel haben feste Größen; eine
+ * Packung (Dose, Becher …) zählt als ein Stück. Alles andere (Prise, Zehe, Bund …) bleibt außen vor:
+ * lieber nicht abziehen als falsch rechnen.
  */
 const STOCK_FACTORS: Record<string, { unit: StockUnit; factor: number }> = {
   g: { unit: 'g', factor: 1 },
@@ -68,10 +73,21 @@ const STOCK_FACTORS: Record<string, { unit: StockUnit; factor: number }> = {
   Würfel: { unit: 'Stück', factor: 1 },
 };
 
-/** Menge in der Vorratseinheit, z. B. 1,5 kg → 1500 g; `null`, wenn sich das nicht sicher umrechnen lässt. */
+/**
+ * Menge in der Vorratseinheit, z. B. 1,5 kg → 1500 g; `null`, wenn sich das nicht umrechnen lässt. Gramm und
+ * Milliliter gelten als gleich: Für den Vorrat ist das genau genug, und „1 TL Zucker“ geht so vom Zucker in
+ * Gramm ab.
+ */
 export function toStockAmount(amount: number, unit: string, stockUnit: StockUnit): number | null {
   const conversion = STOCK_FACTORS[unit];
-  return conversion?.unit === stockUnit ? amount * conversion.factor : null;
+  if (!conversion) return null;
+  const metric = (value: StockUnit) => value === 'g' || value === 'ml';
+  return conversion.unit === stockUnit || (metric(conversion.unit) && metric(stockUnit)) ? amount * conversion.factor : null;
+}
+
+/** Vorratseinheit, in die sich eine Rezept-Einheit umrechnen lässt; `null` bei Prise, Zehe & Co. */
+export function stockUnitOf(unit: string): StockUnit | null {
+  return STOCK_FACTORS[unit]?.unit ?? null;
 }
 
 /** Menge aus einer Eingabe: „1,5“ und „1.5“ → 1,5, „1.500“ → 1500; leer, negativ oder Unsinn → `null`. */
@@ -89,42 +105,84 @@ export function formatStock(amount: number, unit: StockUnit): string {
 
 /**
  * Vorratseinheit, in der die Rezepte ein Lebensmittel meistens angeben, z. B. Stück für Zwiebeln;
- * ohne passende Angabe Gramm.
+ * `null`, wenn kein Rezept es mit umrechenbarer Menge nennt.
  */
-export function suggestStockUnit(tables: PantryTables & Pick<RecipeTables, 'recipeIngredients'>, foodId: string): StockUnit {
+export function stockUnitFromRecipes(tables: FoodTables & Pick<RecipeTables, 'recipeIngredients'>, foodId: string): StockUnit | null {
   const resolver = createFoodResolver(tables);
   const counts = new Map<StockUnit, number>();
   for (const row of Object.values(tables.recipeIngredients)) {
     if (!isActive(row) || row.kind !== 'ingredient' || typeof row.amount !== 'number') continue;
-    const unit = STOCK_FACTORS[row.unit]?.unit;
+    const unit = stockUnitOf(row.unit);
     if (!unit || resolver.resolve(row.name)?.id !== foodId) continue;
     counts.set(unit, (counts.get(unit) ?? 0) + 1);
   }
-  let best: StockUnit = 'g';
-  for (const [unit, count] of counts) if (count > (counts.get(best) ?? 0)) best = unit;
+  let best: StockUnit | null = null;
+  for (const [unit, count] of counts) if (best === null || count > (counts.get(best) ?? 0)) best = unit;
   return best;
+}
+
+/** Lebensmittel, die ein Rezept braucht; nur sie und was „immer im Haus“ ist, kommen in den Vorrat. */
+export function foodsInRecipes(tables: FoodTables & Pick<RecipeTables, 'recipeIngredients'>): Set<string> {
+  const resolver = createFoodResolver(tables);
+  const ids = new Set<string>();
+  for (const row of Object.values(tables.recipeIngredients)) {
+    if (!isActive(row) || row.kind !== 'ingredient') continue;
+    const food = resolver.resolve(row.name);
+    if (food) ids.add(food.id);
+  }
+  return ids;
 }
 
 // ─── Bestand ───
 
-/** Bestand aller genau geführten Lebensmittel in ihrer Vorratseinheit; kann durch Schätzfehler negativ sein. */
-export function stockLevels(tables: PantryTables): Map<string, number> {
-  const levels = new Map<string, number>();
-  for (const [id, food] of Object.entries(tables.foods)) {
-    if (isActive(food) && food.stockUnit) levels.set(id, 0);
-  }
+export type StockState = {
+  level: number;
+  unit: StockUnit;
+  /** Letzter Tag, an dem ein Rest von Frischem noch zählt; `null` = hält oder ist leer. */
+  expiresOn: string | null;
+};
+
+/**
+ * Bestand aller Lebensmittel mit Vorratseinheit am Tag `today`. Die Buchungen zählen der Reihe nach:
+ * Ein Abgang leert höchstens, und ist seit dem letzten Zugang die Haltbarkeit vorbei, ist nichts mehr da.
+ */
+export function stockStates(tables: PantryTables, today: string): Map<string, StockState> {
+  const bookings = new Map<string, PantryBookingRow[]>();
   for (const booking of Object.values(tables.pantryBookings)) {
-    const level = levels.get(booking.foodId);
-    if (level === undefined || !isActive(booking) || tables.foods[booking.foodId]?.stockUnit !== booking.unit) continue;
-    levels.set(booking.foodId, level + booking.amount);
+    const food = tables.foods[booking.foodId];
+    if (!food || !isActive(food) || !isActive(booking) || food.stockUnit !== booking.unit) continue;
+    const list = bookings.get(booking.foodId);
+    if (list) list.push(booking);
+    else bookings.set(booking.foodId, [booking]);
   }
-  // Gegen Rundungsreste aus Kommazahlen
-  for (const [id, level] of levels) levels.set(id, Math.round(level * 1000) / 1000);
-  return levels;
+  const states = new Map<string, StockState>();
+  for (const [id, food] of Object.entries(tables.foods)) {
+    if (!isActive(food) || !food.stockUnit) continue;
+    const shelfLife = SHELF_LIFE_DAYS[food.category] ?? null;
+    let level = 0;
+    let refilled: string | null = null;
+    const expired = (day: string) => shelfLife !== null && refilled !== null && daysBetween(refilled, day) > shelfLife;
+    for (const booking of (bookings.get(id) ?? []).sort((a, b) => a.createdAt - b.createdAt)) {
+      const day = dayOf(booking.createdAt);
+      if (level > 0 && expired(day)) level = 0;
+      level = Math.max(0, level + booking.amount);
+      if (booking.amount > 0) refilled = day;
+    }
+    if (level > 0 && expired(today)) level = 0;
+    // Gegen Rundungsreste aus Kommazahlen
+    level = Math.round(level * 1000) / 1000;
+    const expiresOn = shelfLife !== null && refilled !== null && level > 0 ? addDays(refilled, shelfLife) : null;
+    states.set(id, { level, unit: food.stockUnit, expiresOn });
+  }
+  return states;
 }
 
-export function stockOf(tables: PantryTables, foodId: string): number {
-  return stockLevels(tables).get(foodId) ?? 0;
+export function stockLevels(tables: PantryTables, today: string): Map<string, number> {
+  return new Map([...stockStates(tables, today)].map(([id, state]) => [id, state.level]));
+}
+
+export function stockOf(tables: PantryTables, foodId: string, today: string): number {
+  return stockStates(tables, today).get(foodId)?.level ?? 0;
 }
 
 /** Buchungen eines Lebensmittels in seiner Vorratseinheit, die neueste zuerst. */
@@ -136,34 +194,123 @@ export function stockBookings(tables: PantryTables, foodId: string): (PantryBook
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export function pantryBooking(
-  createId: () => string,
-  cells: Omit<PantryBookingRow, 'listId' | 'entryId' | 'deletedAt'> & Partial<Pick<PantryBookingRow, 'listId' | 'entryId'>>,
-): RowWrite {
-  return { table: 'pantryBookings', rowId: createId(), cells: { listId: '', entryId: '', ...cells, deletedAt: null } };
+/** Eintrag im Vorrat: was daheim ist und was „immer im Haus“ sein soll. */
+export type PantryEntry = {
+  foodId: string;
+  name: string;
+  category: FoodCategory;
+  stock: FoodStock;
+  staple: boolean;
+  /** Bestand in der Vorratseinheit; `null` ohne Menge („immer im Haus“, noch nie gekauft). */
+  level: number | null;
+  unit: StockUnit | null;
+  /** Immer im Haus, aber leer oder auf „nachkaufen“: kommt auf die nächste Liste. */
+  empty: boolean;
+  /** Tage, die ein Rest von Frischem noch zählt (0 = heute zum letzten Mal); `null` = hält. */
+  daysLeft: number | null;
+};
+
+/** Was daheim ist (Bestand über 0) und was immer im Haus sein soll, alphabetisch. */
+export function pantryOverview(tables: PantryTables, today: string): PantryEntry[] {
+  const states = stockStates(tables, today);
+  const entries: PantryEntry[] = [];
+  for (const [id, food] of Object.entries(tables.foods)) {
+    if (!isActive(food)) continue;
+    const state = states.get(id);
+    const staple = Boolean(food.stock);
+    if (!staple && !(state && state.level > 0)) continue;
+    entries.push({
+      foodId: id,
+      name: food.name,
+      category: food.category,
+      stock: food.stock ?? '',
+      staple,
+      level: state ? state.level : null,
+      unit: state ? state.unit : null,
+      empty: state ? staple && state.level <= 0 : food.stock === 'buy',
+      daysLeft: state?.expiresOn ? daysBetween(today, state.expiresOn) : null,
+    });
+  }
+  return entries.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
 }
 
-/**
- * Legt fest, wie ein Lebensmittel im Vorrat geführt wird. Wer auf „einfach“ wechselt, hat es erst einmal
- * „da“; für „genau“ trägt man danach den Bestand ein.
- */
-export function setStockMode(tables: PantryTables, foodId: string, mode: StockMode, unit: StockUnit = 'g'): RowWrite[] {
+// ─── Schreiben ───
+
+/** Feste IDs für Einkauf (je Liste) und Kochen (je Planeintrag): So bucht kein Gerät doppelt. */
+export function bookingId(sourceId: string, foodId: string): string {
+  return `${sourceId}~${foodId}`;
+}
+
+export function pantryBooking(
+  rowId: string,
+  cells: Omit<PantryBookingRow, 'listId' | 'entryId' | 'deletedAt'> & Partial<Pick<PantryBookingRow, 'listId' | 'entryId'>>,
+): RowWrite {
+  return { table: 'pantryBookings', rowId, cells: { listId: '', entryId: '', ...cells, deletedAt: null } };
+}
+
+/** „Immer im Haus“: Ist es leer (oder ohne Menge auf „nachkaufen“), kommt es auf die nächste Liste. */
+export function setStaple(tables: PantryTables, foodId: string, staple: boolean): RowWrite[] {
   const food = tables.foods[foodId];
   if (!food) return [];
-  const cells =
-    mode === 'exact'
-      ? { stock: '', stockUnit: unit }
-      : mode === 'simple'
-        ? { stock: food.stock || 'have', stockUnit: '' }
-        : { stock: '', stockUnit: '' };
-  const write = changedCells('foods', foodId, food, cells);
+  const write = changedCells('foods', foodId, food, { stock: staple ? food.stock || 'have' : '' });
   return write ? [write] : [];
 }
 
-/** Setzt den Bestand eines genau geführten Lebensmittels: Die Differenz wird als Korrektur gebucht. */
-export function correctStock(tables: PantryTables, foodId: string, amount: number, now: number, createId: () => string): RowWrite[] {
-  const unit = tables.foods[foodId]?.stockUnit;
-  if (!unit || !Number.isFinite(amount)) return [];
-  const difference = Math.round((Math.max(0, amount) - stockOf(tables, foodId)) * 1000) / 1000;
-  return difference === 0 ? [] : [pantryBooking(createId, { foodId, amount: difference, unit, reason: 'correction', createdAt: now })];
+/** Wechselt die Vorratseinheit. Buchungen in der alten Einheit zählen dann nicht mehr, bleiben aber erhalten. */
+export function setStockUnit(tables: PantryTables, foodId: string, unit: StockUnit): RowWrite[] {
+  const food = tables.foods[foodId];
+  if (!food) return [];
+  const write = changedCells('foods', foodId, food, { stockUnit: unit });
+  return write ? [write] : [];
+}
+
+/**
+ * „Hinzufügen“ im Vorrat: „1 kg Reis“ bucht 1000 g dazu, „Salz“ ohne Menge kommt als „immer im Haus“ dazu.
+ * Passt die Menge nicht zur Vorratseinheit (500 g Zwiebeln, gezählt in Stück), gilt es ebenfalls als immer im Haus.
+ */
+export function addToPantry(
+  tables: PantryTables,
+  text: string,
+  now: number,
+  createId: () => string,
+): { foodId: string; writes: RowWrite[] } | null {
+  const parsed = parseIngredientLine(text);
+  const resolver = createFoodResolver(tables);
+  const food = parsed?.name ? resolver.resolve(parsed.name) : null;
+  if (!parsed || !food) return null;
+  const writes = resolver.newFoodWrites();
+  const existing = tables.foods[food.id];
+  const unit = existing?.stockUnit || (parsed.amount === null ? null : stockUnitOf(parsed.unit));
+  const amount = unit && parsed.amount !== null ? toStockAmount(parsed.amount, parsed.unit, unit) : null;
+  if (unit && amount && amount > 0) {
+    if (!existing?.stockUnit) writes.push({ table: 'foods', rowId: food.id, cells: { stockUnit: unit } });
+    writes.push(pantryBooking(createId(), { foodId: food.id, amount, unit, reason: 'correction', createdAt: now }));
+  } else {
+    writes.push({ table: 'foods', rowId: food.id, cells: { stock: existing?.stock || 'have' } });
+  }
+  return { foodId: food.id, writes };
+}
+
+/**
+ * Trägt den Bestand ein, z. B. nach einem Blick in den Schrank: Die Differenz wird als Korrektur gebucht.
+ * Ohne Vorratseinheit bekommt das Lebensmittel `unit`.
+ */
+export function correctStock(
+  tables: PantryTables,
+  foodId: string,
+  amount: number,
+  now: number,
+  createId: () => string,
+  unit?: StockUnit,
+): RowWrite[] {
+  const food = tables.foods[foodId];
+  const stockUnit = food?.stockUnit || unit;
+  if (!food || !stockUnit || !Number.isFinite(amount)) return [];
+  const writes: RowWrite[] = food.stockUnit ? [] : [{ table: 'foods', rowId: foodId, cells: { stockUnit } }];
+  const current = food.stockUnit ? stockOf(tables, foodId, dayOf(now)) : 0;
+  const difference = Math.round((Math.max(0, amount) - current) * 1000) / 1000;
+  if (difference !== 0) {
+    writes.push(pantryBooking(createId(), { foodId, amount: difference, unit: stockUnit, reason: 'correction', createdAt: now }));
+  }
+  return writes;
 }

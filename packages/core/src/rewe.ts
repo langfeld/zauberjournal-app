@@ -88,6 +88,10 @@ function hasComparableAmount(amount: number | null, unit: string): boolean {
 /** Hier sind Stück einzelne Früchte oder Filets; ein Netz oder eine Schale enthält mehrere. */
 const LOOSE: ReadonlySet<FoodCategory> = new Set(['produce', 'meat', 'fish']);
 
+export function isLooseCategory(category: FoodCategory): boolean {
+  return LOOSE.has(category);
+}
+
 function atLeastOne(packs: number): number {
   return Math.max(1, Math.ceil(packs - 1e-9));
 }

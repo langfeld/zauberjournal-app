@@ -1,6 +1,7 @@
 import {
   correctStock,
   createId,
+  formatDate,
   formatShortDate,
   formatStock,
   FOOD_CATEGORIES,
@@ -9,12 +10,13 @@ import {
   listFoods,
   mergeFoods,
   parseStockAmount,
-  setStockMode,
+  setStaple,
+  setStockUnit,
+  SHELF_LIFE_DAYS,
   STOCK_UNITS,
   stockBookings,
-  stockModeOf,
-  stockOf,
-  suggestStockUnit,
+  stockStates,
+  stockUnitFromRecipes,
   todayKey,
   updateFood,
   type FoodCategory,
@@ -23,17 +25,17 @@ import {
   type PantryBookingRow,
   type RowWrite,
   type ShoppingTables,
-  type StockMode,
   type StockUnit,
 } from '@zauberjournal/core';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
 import { Icon } from '@/components/icon';
 import { NotFound } from '@/components/not-found';
 import {
+  Button,
   Card,
   Chip,
   Hint,
@@ -47,16 +49,11 @@ import {
 } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
-import { useAppTables } from '@/data/tables';
+import { useAppTables, useToday } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
 import { colors, fonts, radius, shadows, spacing } from '@/theme';
 
 const DIETS: { id: FoodDiet; label: string }[] = [{ id: '', label: 'unbekannt' }, ...FOOD_DIETS];
-const MODES: SegmentOption<StockMode>[] = [
-  { id: 'none', label: 'nicht geführt' },
-  { id: 'simple', label: 'einfach' },
-  { id: 'exact', label: 'mit Menge' },
-];
 const STOCKS: SegmentOption<FoodStock>[] = [
   { id: 'have', label: 'da' },
   { id: 'buy', label: 'nachkaufen', color: colors.accent },
@@ -64,6 +61,12 @@ const STOCKS: SegmentOption<FoodStock>[] = [
 const UNIT_LABELS: Record<StockUnit, string> = { g: 'Gramm', ml: 'Milliliter', Stück: 'Stück' };
 /** So viele Buchungen zeigt die Seite, die neuesten zuerst. */
 const MAX_BOOKINGS = 8;
+
+/** Tag einer Buchung; beim Kochen der Tag im Plan, auch wenn erst später abgebucht wurde. */
+function bookingDay(tables: ShoppingTables, booking: PantryBookingRow): string {
+  const entry = booking.reason === 'cooked' ? tables.planEntries[booking.entryId] : undefined;
+  return entry?.date ?? todayKey(new Date(booking.createdAt));
+}
 
 /** Wofür gebucht wurde: das gekochte Gericht oder die Einkaufsliste. */
 function bookingTitle(tables: ShoppingTables, booking: PantryBookingRow): string {
@@ -80,8 +83,10 @@ export default function FoodScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const store = useStore();
   const tables = useAppTables();
+  const today = useToday();
   const [query, setQuery] = useState('');
   const [stockText, setStockText] = useState('');
+  const [chosenUnit, setChosenUnit] = useState<StockUnit | null>(null);
   const food = tables.foods[id];
   const others = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase('de');
@@ -90,6 +95,7 @@ export default function FoodScreen() {
       .filter((other) => other.id !== id && other.name.toLocaleLowerCase('de').includes(needle))
       .slice(0, 8);
   }, [tables, id, query]);
+  const state = useMemo(() => stockStates(tables, today).get(id), [tables, today, id]);
 
   if (!food || !isActive(food)) {
     return <NotFound message="Dieses Lebensmittel gibt es nicht (mehr)." backLabel="Zum Vorrat" href="/pantry" />;
@@ -106,23 +112,28 @@ export default function FoodScreen() {
   };
   const style = CATEGORY_STYLES[food.category as FoodCategory] ?? CATEGORY_STYLES.other;
 
-  const mode = stockModeOf({ stock: food.stock ?? '', stockUnit: food.stockUnit ?? '' });
-  const stockUnit = food.stockUnit || null;
-  const level = stockUnit ? stockOf(tables, id) : 0;
-  const bookings = stockUnit ? stockBookings(tables, id).slice(0, MAX_BOOKINGS) : [];
+  const staple = Boolean(food.stock);
+  // Ohne Vorratseinheit wählt man sie beim ersten Eintragen; vorgeschlagen ist die der Rezepte.
+  const unit: StockUnit = food.stockUnit || chosenUnit || stockUnitFromRecipes(tables, id) || 'g';
+  const level = state?.level ?? 0;
+  const shelfLife = SHELF_LIFE_DAYS[food.category as FoodCategory];
+  const bookings = food.stockUnit ? stockBookings(tables, id).slice(0, MAX_BOOKINGS) : [];
   const newStock = parseStockAmount(stockText);
-  const setMode = (next: StockMode) => write(setStockMode(tables, id, next, stockUnit ?? suggestStockUnit(tables, id)));
-  const setUnit = async (unit: StockUnit) => {
-    if (!stockUnit || unit === stockUnit) return;
+  const changeUnit = async (next: StockUnit) => {
+    if (!food.stockUnit) {
+      setChosenUnit(next);
+      return;
+    }
+    if (next === food.stockUnit) return;
     if (level !== 0) {
-      const message = `Die ${formatStock(level, stockUnit)} zählen in ${UNIT_LABELS[unit]} nicht mit. Tragt danach den Bestand neu ein.`;
+      const message = `Die ${formatStock(level, food.stockUnit)} zählen in ${UNIT_LABELS[next]} nicht mit. Tragt danach den Bestand neu ein.`;
       if (!(await confirm('Einheit ändern?', message, 'Ändern'))) return;
     }
-    write(setStockMode(tables, id, 'exact', unit));
+    write(setStockUnit(tables, id, next));
   };
-  const saveStock = (now: number) => {
-    if (newStock === null) return;
-    write(correctStock(tables, id, newStock, now, createId));
+  const saveStock = (amount: number | null, now: number) => {
+    if (amount === null) return;
+    write(correctStock(tables, id, amount, now, createId, unit));
     setStockText('');
   };
 
@@ -138,6 +149,98 @@ export default function FoodScreen() {
           containerStyle={styles.grow}
         />
       </Card>
+
+      <SectionTitle>Vorrat</SectionTitle>
+      <Card style={styles.stockCard}>
+        <View style={styles.stockHeader}>
+          <Text style={styles.stockLabel}>Bestand</Text>
+          <Text style={[styles.stockValue, food.stockUnit && level <= 0 ? styles.stockEmpty : null]}>
+            {food.stockUnit ? (level > 0 ? formatStock(level, food.stockUnit) : 'leer') : '–'}
+          </Text>
+        </View>
+        {state?.expiresOn ? (
+          <Text style={styles.stockNote}>Frisch gekauft, zählt bis {formatDate(state.expiresOn)}</Text>
+        ) : shelfLife ? (
+          <Text style={styles.stockNote}>Frisches zählt {shelfLife} Tage nach dem Einkauf, danach gilt es als verbraucht.</Text>
+        ) : null}
+        {!food.stockUnit ? (
+          <Text style={styles.stockNote}>Die Menge kommt mit dem nächsten Einkauf. Ihr könnt sie auch selbst eintragen.</Text>
+        ) : null}
+        <View style={styles.chips}>
+          {STOCK_UNITS.map((option) => (
+            <Chip
+              key={option}
+              label={UNIT_LABELS[option]}
+              accessibilityLabel={`Bestand in ${UNIT_LABELS[option]}`}
+              selected={option === unit}
+              onPress={() => void changeUnit(option)}
+            />
+          ))}
+        </View>
+        <TextField
+          label="Bestand neu eintragen"
+          value={stockText}
+          onChangeText={setStockText}
+          placeholder={`Menge in ${UNIT_LABELS[unit]}`}
+          keyboardType="decimal-pad"
+          returnKeyType="done"
+          onSubmitEditing={() => saveStock(newStock, Date.now())}
+          trailing={
+            <IconButton
+              icon="check"
+              variant="primary"
+              size={36}
+              accessibilityLabel="Bestand übernehmen"
+              disabled={newStock === null}
+              onPress={() => saveStock(newStock, Date.now())}
+            />
+          }
+        />
+        {food.stockUnit && level > 0 ? (
+          <Button variant="secondary" small icon="remove_shopping_cart" title="Aufgebraucht" onPress={() => saveStock(0, Date.now())} />
+        ) : null}
+      </Card>
+
+      <Card style={styles.stapleCard}>
+        <View style={styles.stapleRow}>
+          <Icon name="home" size={22} color={staple ? colors.primary : colors.textMuted} />
+          <View style={styles.grow}>
+            <Text style={styles.stapleTitle}>Immer im Haus haben</Text>
+            <Text style={styles.stapleText}>Kommt von selbst auf die Einkaufsliste, sobald es leer ist.</Text>
+          </View>
+          <Switch
+            accessibilityLabel="Immer im Haus haben"
+            value={staple}
+            onValueChange={(value) => write(setStaple(tables, id, value))}
+            trackColor={{ false: colors.borderStrong, true: colors.primary }}
+            thumbColor={colors.surface}
+          />
+        </View>
+        {staple && !food.stockUnit ? (
+          <Segmented options={STOCKS} value={food.stock ?? 'have'} onChange={(stock) => write(updateFood(tables, id, { stock }))} />
+        ) : null}
+      </Card>
+
+      {bookings.length > 0 ? (
+        <>
+          <SectionTitle>Letzte Buchungen</SectionTitle>
+          <Card style={styles.bookings}>
+            {bookings.map((booking, index) => (
+              <View key={booking.id} style={[styles.booking, index > 0 && styles.divider]}>
+                <View style={styles.grow}>
+                  <Text style={styles.bookingTitle} numberOfLines={1}>
+                    {bookingTitle(tables, booking)}
+                  </Text>
+                  <Text style={styles.bookingDate}>{formatShortDate(bookingDay(tables, booking))}</Text>
+                </View>
+                <Text style={[styles.bookingAmount, booking.amount > 0 && styles.bookingIn]}>
+                  {`${booking.amount > 0 ? '+' : '−'}${formatStock(Math.abs(booking.amount), booking.unit)}`}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        </>
+      ) : null}
 
       <SectionTitle>Warengruppe</SectionTitle>
       <View style={styles.chips}>
@@ -165,78 +268,6 @@ export default function FoodScreen() {
           />
         ))}
       </View>
-
-      <SectionTitle>Vorrat</SectionTitle>
-      <Segmented options={MODES} value={mode} onChange={setMode} />
-      {mode === 'simple' ? (
-        <Segmented options={STOCKS} value={food.stock ?? 'have'} onChange={(stock) => write(updateFood(tables, id, { stock }))} />
-      ) : null}
-      {stockUnit ? (
-        <>
-          <Card style={styles.stockCard}>
-            <View style={styles.stockHeader}>
-              <Text style={styles.stockLabel}>Bestand</Text>
-              <Text style={[styles.stockValue, level <= 0 && styles.stockEmpty]}>
-                {level > 0 ? formatStock(level, stockUnit) : 'leer'}
-              </Text>
-            </View>
-            <View style={styles.chips}>
-              {STOCK_UNITS.map((unit) => (
-                <Chip
-                  key={unit}
-                  label={UNIT_LABELS[unit]}
-                  accessibilityLabel={`Bestand in ${UNIT_LABELS[unit]}`}
-                  selected={unit === stockUnit}
-                  onPress={() => void setUnit(unit)}
-                />
-              ))}
-            </View>
-            <TextField
-              label="Bestand neu eintragen"
-              value={stockText}
-              onChangeText={setStockText}
-              placeholder={`Menge in ${UNIT_LABELS[stockUnit]}`}
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-              onSubmitEditing={() => saveStock(Date.now())}
-              trailing={
-                <IconButton
-                  icon="check"
-                  variant="primary"
-                  size={36}
-                  accessibilityLabel="Bestand übernehmen"
-                  disabled={newStock === null}
-                  onPress={() => saveStock(Date.now())}
-                />
-              }
-            />
-          </Card>
-          <Hint>
-            Gekauftes bucht ihr beim Abschließen der Einkaufsliste ein, „gekocht“ im Plan bucht die Zutaten ab. Auf der
-            Einkaufsliste steht nur, was fehlt.
-          </Hint>
-        </>
-      ) : null}
-      {bookings.length > 0 ? (
-        <>
-          <SectionTitle>Letzte Buchungen</SectionTitle>
-          <Card style={styles.bookings}>
-            {bookings.map((booking, index) => (
-              <View key={booking.id} style={[styles.booking, index > 0 && styles.divider]}>
-                <View style={styles.grow}>
-                  <Text style={styles.bookingTitle} numberOfLines={1}>
-                    {bookingTitle(tables, booking)}
-                  </Text>
-                  <Text style={styles.bookingDate}>{formatShortDate(todayKey(new Date(booking.createdAt)))}</Text>
-                </View>
-                <Text style={[styles.bookingAmount, booking.amount > 0 && styles.bookingIn]}>
-                  {`${booking.amount > 0 ? '+' : '−'}${formatStock(Math.abs(booking.amount), booking.unit)}`}
-                </Text>
-              </View>
-            ))}
-          </Card>
-        </>
-      ) : null}
 
       <SectionTitle>Dasselbe wie …</SectionTitle>
       <Hint>Wenn es dieses Lebensmittel doppelt gibt, z. B. „Lauchzwiebeln“ und „Frühlingszwiebeln“.</Hint>
@@ -284,6 +315,11 @@ const styles = StyleSheet.create({
   stockLabel: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   stockValue: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, color: colors.text },
   stockEmpty: { color: colors.accent },
+  stockNote: { marginTop: -spacing.xs, fontSize: 14, lineHeight: 20, color: colors.textMuted },
+  stapleCard: { gap: spacing.md },
+  stapleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  stapleTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  stapleText: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
   bookings: { paddingVertical: spacing.xs, gap: 0 },
   booking: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm + 2 },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },

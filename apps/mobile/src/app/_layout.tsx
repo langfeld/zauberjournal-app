@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { AppTabs } from '@/components/app-tabs';
+import { AutoCook } from '@/data/auto-cook';
 import { ConnectionProvider } from '@/data/connection';
 import { createAppPersister } from '@/data/persister';
 import { createAppStore, Provider, useCreateMergeableStore, useCreatePersister } from '@/data/store';
@@ -39,6 +40,7 @@ export default function RootLayout() {
     <Provider store={store}>
       <ConnectionProvider store={store}>
         <StatusBar style="dark" />
+        <AutoCook />
         <AppTabs />
       </ConnectionProvider>
     </Provider>

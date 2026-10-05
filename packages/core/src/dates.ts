@@ -28,6 +28,22 @@ export function todayKey(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+/** Tag eines Zeitpunkts in der Zeitzone des Geräts. */
+export function dayOf(timestamp: number): string {
+  return todayKey(new Date(timestamp));
+}
+
+/** Zeitpunkt an einem Tag zur vollen Stunde, in der Zeitzone des Geräts. */
+export function timeOfDay(key: string, hour: number): number {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year!, month! - 1, day!, hour).getTime();
+}
+
+/** Tage von `from` bis `to`; negativ, wenn `to` davor liegt. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((toUtc(to).getTime() - toUtc(from).getTime()) / 86_400_000);
+}
+
 export function addDays(key: string, days: number): string {
   const date = toUtc(key);
   date.setUTCDate(date.getUTCDate() + days);

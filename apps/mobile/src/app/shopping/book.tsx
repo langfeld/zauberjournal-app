@@ -1,7 +1,6 @@
 import {
   bookPurchase,
   completeShoppingList,
-  createId,
   formatNumber,
   parseStockAmount,
   purchaseSuggestions,
@@ -61,7 +60,7 @@ function BookingRow({
   );
 }
 
-/** Nach dem Einkauf: genau geführte Lebensmittel in den Vorrat buchen, dann die Liste abschließen. */
+/** Nach dem Einkauf: das Gekaufte in den Vorrat buchen, dann die Liste abschließen. */
 export default function BookPurchaseScreen() {
   const { list: listId = '' } = useLocalSearchParams<{ list?: string }>();
   const store = useStore();
@@ -75,7 +74,7 @@ export default function BookPurchaseScreen() {
   if (!list || (list.status !== 'open' && !finished)) return <Redirect href="/shopping" />;
 
   const draftOf = (suggestion: PurchaseSuggestion): Draft =>
-    drafts[suggestion.itemId] ?? {
+    drafts[suggestion.foodId] ?? {
       amount: suggestion.amount === null ? '' : formatNumber(suggestion.amount, 'decimal'),
       selected: suggestion.selected,
     };
@@ -85,11 +84,11 @@ export default function BookPurchaseScreen() {
   const entries = suggestions.flatMap((suggestion) => {
     const draft = draftOf(suggestion);
     const amount = parseStockAmount(draft.amount);
-    return draft.selected && amount ? [{ foodId: suggestion.foodId, amount }] : [];
+    return draft.selected && amount ? [{ foodId: suggestion.foodId, amount, unit: suggestion.unit }] : [];
   });
   const finish = (book: boolean, now: number) => {
     setFinished(true);
-    write([...bookPurchase(tables, listId, book ? entries : [], now, createId), ...completeShoppingList(tables, listId)]);
+    write([...bookPurchase(tables, listId, book ? entries : [], now), ...completeShoppingList(tables, listId)]);
     router.back();
   };
 
@@ -97,26 +96,26 @@ export default function BookPurchaseScreen() {
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: 'In den Vorrat buchen' }} />
       <Hint>
-        Diese Lebensmittel führt ihr im Vorrat mit Menge. Die Mengen kommen aus den REWE-Packungen oder der Liste. Ändert
-        sie, wenn etwas anders war, und wählt ab, was ihr nicht bekommen habt.
+        Das kommt in den Vorrat, mit den Mengen aus den REWE-Packungen oder der Liste. Passt etwas nicht, ändert die
+        Menge oder wählt es ab.
       </Hint>
-      <Card style={styles.list}>
-        {suggestions.map((suggestion, index) => (
-          <BookingRow
-            key={suggestion.itemId}
-            suggestion={suggestion}
-            draft={draftOf(suggestion)}
-            divider={index > 0}
-            onChange={(draft) => setDrafts((previous) => ({ ...previous, [suggestion.itemId]: draft }))}
-          />
-        ))}
-      </Card>
       <Button
         icon="inventory_2"
         title="Einbuchen und abschließen"
         disabled={entries.length === 0}
         onPress={() => finish(true, Date.now())}
       />
+      <Card style={styles.list}>
+        {suggestions.map((suggestion, index) => (
+          <BookingRow
+            key={suggestion.foodId}
+            suggestion={suggestion}
+            draft={draftOf(suggestion)}
+            divider={index > 0}
+            onChange={(draft) => setDrafts((previous) => ({ ...previous, [suggestion.foodId]: draft }))}
+          />
+        ))}
+      </Card>
       <Button variant="ghost" title="Ohne Einbuchen abschließen" onPress={() => finish(false, Date.now())} />
     </ScrollView>
   );

@@ -6,19 +6,20 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CATEGORY_STYLES } from '@/components/category-style';
 import { Icon } from '@/components/icon';
 import { EmptyState, Hint, IconCircle, SearchField } from '@/components/ui';
-import { useAppTables } from '@/data/tables';
+import { useAppTables, useToday } from '@/data/tables';
 import { colors, radius, shadows, spacing } from '@/theme';
 
-const STOCK_LABELS = { '': '', have: 'im Vorrat', buy: 'nachkaufen' } as const;
+const STOCK_LABELS = { '': '', have: 'immer im Haus', buy: 'nachkaufen' } as const;
 
 export default function FoodsScreen() {
   const tables = useAppTables();
+  const today = useToday();
   const [query, setQuery] = useState('');
   const foods = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase('de');
     return listFoods(tables).filter((food) => !needle || food.name.toLocaleLowerCase('de').includes(needle));
   }, [tables, query]);
-  const levels = useMemo(() => stockLevels(tables), [tables]);
+  const levels = useMemo(() => stockLevels(tables, today), [tables, today]);
 
   return (
     <FlatList
@@ -50,7 +51,8 @@ export default function FoodsScreen() {
                 {[
                   categoryLabel(item.category),
                   FOOD_DIETS.find((diet) => diet.id === item.diet)?.label,
-                  item.stockUnit ? `${formatStock(Math.max(0, levels.get(item.id) ?? 0), item.stockUnit)} im Vorrat` : STOCK_LABELS[item.stock],
+                  item.stockUnit && (levels.get(item.id) ?? 0) > 0 ? `${formatStock(levels.get(item.id) ?? 0, item.stockUnit)} im Vorrat` : '',
+                  STOCK_LABELS[item.stock],
                 ]
                   .filter(Boolean)
                   .join(' · ')}
