@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Zauberjournal: REWE-Warenkorb
 // @namespace    https://github.com/langfeld/zauberjournal-app
-// @version      1.0.0
+// @version      1.0.1
 // @description  Legt die Einkaufsliste aus Zauberjournal in den REWE-Warenkorb (Abholservice).
 // @homepageURL  https://github.com/langfeld/zauberjournal-app
 // @match        https://www.rewe.de/*
@@ -133,16 +133,18 @@
     return fetch(`/shop/api/baskets/listings/${encodeURIComponent(listingId)}`, {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      // Kein eigener Accept-Header: REWE wählt das Format selbst, auf `application/json` antwortet es mit 406.
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity, includeTimeslot: false, context: 'product-detail' }),
     });
   }
 
-  /** Listing-ID für den Markt dieser Sitzung, aus der Produktseite. */
+  /** Listing-ID für den Markt dieser Sitzung, aus der Produktseite (Attribut oder eingebettete Daten). */
   async function listingFromProductPage(productId) {
     const response = await fetch(`/shop/p/${encodeURIComponent(productId)}`, { credentials: 'include' });
     if (!response.ok) return null;
-    return /data-listingid="([^"]+)"/.exec(await response.text())?.[1] ?? null;
+    const html = await response.text();
+    return (/data-listingid="([^"]+)"/.exec(html) ?? /"listingId"\s*:\s*"([^"]+)"/.exec(html))?.[1] ?? null;
   }
 
   async function addProduct(product) {
@@ -154,6 +156,8 @@
       response = await postListing(listingId, product.packs);
     }
     if (response.ok) return { status: 'added', message: '' };
+    // Was REWE geantwortet hat, steht in der Browser-Konsole.
+    console.warn(`Zauberjournal: REWE antwortet mit ${response.status} für ${product.name}`, await response.text().catch(() => ''));
     if (response.status === 409) return { status: 'present', message: '' };
     if (response.status === 401 || response.status === 403) {
       throw new StopError('REWE lässt das gerade nicht zu. Bitte bei REWE anmelden, den Abholservice wählen und es noch einmal versuchen.');
