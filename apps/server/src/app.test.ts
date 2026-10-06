@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
+import { createFoodDuplicates } from './food-duplicates.ts';
 import { createHousehold } from './household.ts';
 import { createImporter } from './importer.ts';
 import { createNutrition } from './nutrition.ts';
@@ -41,6 +42,7 @@ function setUp() {
     orders: createOrderStore(db, () => 1000),
     // Ohne KI und ohne Netz: Open Food Facts kennt nichts, der BLS hilft mit dem besten Treffer.
     nutrition: createNutrition({ db, fetch: async () => new Response('', { status: 404 }), pauseMs: 0, log: () => {} }),
+    duplicates: createFoodDuplicates({ ai: { apiKey: '', models: [], baseUrl: '' }, log: () => {} }),
     onDeviceRevoked: (deviceId) => revoked.push(deviceId),
   });
   const post = (path: string, body: unknown, token?: string) =>
@@ -227,6 +229,20 @@ describe('API', () => {
     const search = (await (await get('/api/nutrition/search?q=Kokosmilch', token)).json()) as { results: { name: string }[] };
     expect(search.results[0]?.name).toBe('Kokosmilch/Kokosnussmilch');
     expect((await get('/api/nutrition/search?q=', token)).status).toBe(400);
+  });
+
+  it('sucht doppelte Lebensmittel nur für angemeldete Geräte und mit Schlüssel', async () => {
+    const { household, post } = setUp();
+    const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;
+    const foods = [
+      { id: 'food:a', name: 'Tortilla-Chips', category: 'sweets' },
+      { id: 'food:b', name: 'Tortillaschips', category: 'sweets' },
+    ];
+    expect((await post('/api/foods/duplicates', { foods })).status).toBe(401);
+    expect((await post('/api/foods/duplicates', { foods: [{ id: 'food:a' }] }, token)).status).toBe(400);
+    const withoutKey = await post('/api/foods/duplicates', { foods }, token);
+    expect(withoutKey.status).toBe(503);
+    expect(await withoutKey.json()).toEqual({ error: 'Dafür braucht der Server einen Requesty-Schlüssel (REQUESTY_API_KEY).' });
   });
 
   it('liefert das Userscript mit der Adresse des Servers aus', async () => {

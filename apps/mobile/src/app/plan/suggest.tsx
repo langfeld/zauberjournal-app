@@ -150,7 +150,9 @@ function Draft({ header, dates, meal, today }: { header: ReactNode; dates: strin
               ) : suggestion ? (
                 <SuggestionCard
                   suggestion={suggestion}
-                  trailing={
+                  accessibilityLabel={`${suggestion.title} ansehen`}
+                  onPress={() => router.push({ pathname: '/plan/recipe/[id]', params: { id: suggestion.recipeId } })}
+                  actions={
                     <View style={styles.actions}>
                       <IconButton
                         icon="refresh"

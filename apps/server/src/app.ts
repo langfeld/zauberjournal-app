@@ -4,6 +4,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
 
+import { DuplicatesError, readDuplicatesRequest, type FoodDuplicates } from './food-duplicates.ts';
 import type { Device, Household } from './household.ts';
 import { ImportError, readImportRequest, type Importer } from './importer.ts';
 import { readLookupRequest, type Nutrition } from './nutrition.ts';
@@ -50,12 +51,13 @@ export type AppOptions = {
   rewe: ReweClient;
   orders: OrderStore;
   nutrition: Nutrition;
+  duplicates: FoodDuplicates;
   /** Wird aufgerufen, nachdem ein Gerät abgemeldet wurde (z. B. um offene Sync-Verbindungen zu trennen). */
   onDeviceRevoked?: (deviceId: string) => void;
 };
 
 /** HTTP-API des Servers. */
-export function createApp({ household, photos, importer, rewe, orders, nutrition, onDeviceRevoked = () => {} }: AppOptions) {
+export function createApp({ household, photos, importer, rewe, orders, nutrition, duplicates, onDeviceRevoked = () => {} }: AppOptions) {
   const app = new Hono<Env>();
   app.use('/api/*', cors());
 
@@ -192,6 +194,18 @@ export function createApp({ household, photos, importer, rewe, orders, nutrition
     const query = (c.req.query('q') ?? '').trim();
     if (!query || query.length > 80) return c.json({ error: 'Bitte einen Suchbegriff angeben.' }, 400);
     return c.json({ results: nutrition.search(query) });
+  });
+
+  // Lebensmittel, die dasselbe meinen, nach Einschätzung der KI
+  app.post('/api/foods/duplicates', requireDevice, async (c) => {
+    const foods = readDuplicatesRequest(await readBody(c));
+    if (!foods) return c.json({ error: 'Die Lebensmittel zum Prüfen sind unvollständig.' }, 400);
+    try {
+      return c.json({ groups: await duplicates.find(foods) });
+    } catch (error) {
+      if (error instanceof DuplicatesError) return c.json({ error: error.message }, error.status);
+      throw error;
+    }
   });
 
   app.get('/api/rewe/order', requireDevice, (c) => c.json({ order: orders.get() }));

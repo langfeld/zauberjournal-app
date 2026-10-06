@@ -5,7 +5,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
 import { Icon } from '@/components/icon';
-import { EmptyState, Hint, IconCircle, SearchField } from '@/components/ui';
+import { Button, EmptyState, Hint, IconCircle, SearchField } from '@/components/ui';
 import { useAppTables, useToday } from '@/data/tables';
 import { colors, radius, shadows, spacing } from '@/theme';
 
@@ -34,6 +34,13 @@ export default function FoodsScreen() {
             Lebensmittel entstehen von selbst aus den Zutaten der Rezepte. Hier lässt sich ändern, wo sie im Laden stehen,
             ob sie vegetarisch sind und welche Namen dasselbe meinen.
           </Hint>
+          <Button
+            small
+            variant="secondary"
+            icon="auto_awesome"
+            title="Doppelte mit KI finden"
+            onPress={() => router.push('/pantry/duplicates')}
+          />
           <SearchField accessibilityLabel="Lebensmittel suchen" value={query} onChangeText={setQuery} placeholder="Suchen" />
         </View>
       }

@@ -133,15 +133,22 @@ describe('Planvorschläge', () => {
   });
 
   it('schlägt zur Mahlzeit Passendes vor: nach dem Plan, sonst nach dem Titel', () => {
-    const { recipe, suggest, test, ids } = setUp();
+    const { recipe, suggest, test, ids, buy } = setUp();
     recipe('Protein-Pancakes', ['100 g Haferflocken', '2 Eier']);
     recipe('Gemüsecurry', ['400 ml Kokosmilch', '300 g Brokkoli']);
+    recipe('Erdbeerkuchen', ['500 g Erdbeeren', '200 g Mehl']);
+    recipe('Flammkuchen', ['1 Flammkuchenteig', '200 g Schmand']);
     const salad = recipe('Salatteller', ['200 g Romanasalat']);
     // Der Salat stand bisher nur mittags im Plan.
     test.apply(planAddEntry(test.tables(), { date: '2026-09-01', meal: 'lunch', recipeId: salad, text: '' }, 1000, ids).writes);
 
-    expect(titles(suggest(TODAY))).toEqual(['Gemüsecurry', 'Salatteller', 'Protein-Pancakes']);
     expect(titles(createPlanner(test.tables(), TODAY, 'breakfast').suggest(TODAY, { limit: 10 }))[0]).toBe('Protein-Pancakes');
+
+    // Zum Abendessen kommt Kuchen auch dann nicht nach vorn, wenn die Erdbeeren bald weg müssen.
+    buy('Erdbeeren', 500, '2026-10-05');
+    const dinner = titles(suggest(TODAY));
+    expect(dinner.slice(0, 3).sort()).toEqual(['Flammkuchen', 'Gemüsecurry', 'Salatteller']);
+    expect(dinner.slice(3).sort()).toEqual(['Erdbeerkuchen', 'Protein-Pancakes']);
   });
 
   it('füllt freie Tage ohne Wiederholung, Frisches zuerst', () => {

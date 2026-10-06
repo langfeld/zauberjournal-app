@@ -8,7 +8,7 @@ import {
   FOOD_DIETS,
   isActive,
   listFoods,
-  mergeFoods,
+  mergeFoodGroup,
   parseStockAmount,
   setStaple,
   setStockUnit,
@@ -106,9 +106,9 @@ export default function FoodScreen() {
     if (store && writes.length > 0) applyWrites(store, writes);
   };
   const merge = async (intoId: string, intoName: string, now: number) => {
-    const message = `„${food.name}“ und „${intoName}“ werden ein Lebensmittel. Zutaten mit dem Namen „${food.name}“ zählen danach zu „${intoName}“.`;
+    const message = `„${food.name}“ und „${intoName}“ werden ein Lebensmittel. Zutaten mit dem Namen „${food.name}“ zählen danach zu „${intoName}“; gemerkte REWE-Produkte, Nährwerte und Vorrat gehen mit.`;
     if (!(await confirm('Zusammenführen?', message, 'Zusammenführen'))) return;
-    write(mergeFoods(tables, id, intoId, now));
+    write(mergeFoodGroup(tables, intoId, [id], now));
     router.back();
   };
   const style = CATEGORY_STYLES[food.category as FoodCategory] ?? CATEGORY_STYLES.other;

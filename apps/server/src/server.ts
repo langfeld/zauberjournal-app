@@ -8,6 +8,7 @@ import { serve } from '@hono/node-server';
 import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
 import { createHousehold } from './household.ts';
+import { createFoodDuplicates } from './food-duplicates.ts';
 import { createImporter, REQUESTY_BASE_URL, type ImporterConfig } from './importer.ts';
 import { createNutrition } from './nutrition.ts';
 import { createPhotoStore } from './photos.ts';
@@ -36,6 +37,8 @@ export async function startServer({
   const sync = createSyncServer(db, household.authenticate);
   const photos = createPhotoStore(join(dataDir, 'photos'));
   const importer = createImporter({ ...importerConfig, log });
+  // Dieselbe KI wie beim Import ordnet Zutaten dem BLS zu und findet doppelte Lebensmittel.
+  const ai = { apiKey: importerConfig.apiKey, models: importerConfig.models, baseUrl: importerConfig.baseUrl ?? REQUESTY_BASE_URL };
 
   const announceSetupCode = () => {
     const code = household.ensureSetupCode();
@@ -48,12 +51,8 @@ export async function startServer({
     importer,
     rewe: createReweClient({ db, log }),
     orders: createOrderStore(db),
-    nutrition: createNutrition({
-      db,
-      // Dieselbe KI wie beim Import ordnet Zutaten dem BLS zu.
-      ai: { apiKey: importerConfig.apiKey, models: importerConfig.models, baseUrl: importerConfig.baseUrl ?? REQUESTY_BASE_URL },
-      log,
-    }),
+    nutrition: createNutrition({ db, ai, log }),
+    duplicates: createFoodDuplicates({ ai, log }),
     onDeviceRevoked: (deviceId) => {
       sync.disconnectDevice(deviceId);
       announceSetupCode();

@@ -44,6 +44,8 @@ const MAX_LOOKAHEAD_DAYS = 90;
 /** Am Titel erkennbar: Frühstück und Süßes passen selten als Mittag- oder Abendessen. */
 const BREAKFAST_WORDS = ['pancake', 'waffel', 'porridge', 'müsli', 'granola', 'smoothie', 'frühstück', 'overnight', 'french toast'];
 const SWEET_WORDS = ['kuchen', 'torte', 'muffin', 'cookie', 'keks', 'dessert', 'pudding', 'tiramisu', 'brownie', 'mousse'];
+/** Herzhaftes, das nur nach Kuchen klingt */
+const SAVORY_WORDS = ['flammkuchen', 'zwiebelkuchen', 'pfannkuchen', 'reibekuchen', 'kartoffelkuchen', 'gemüsekuchen', 'speckkuchen', 'lauchkuchen'];
 
 type DishKind = 'breakfast' | 'sweet' | 'main';
 
@@ -149,7 +151,7 @@ function buildCandidates(tables: ShoppingTables): Candidate[] {
     const title = view.title.toLocaleLowerCase('de');
     const kind: DishKind = BREAKFAST_WORDS.some((word) => title.includes(word))
       ? 'breakfast'
-      : SWEET_WORDS.some((word) => title.includes(word))
+      : SWEET_WORDS.some((word) => title.includes(word)) && !SAVORY_WORDS.some((word) => title.includes(word))
         ? 'sweet'
         : 'main';
     candidates.push({
@@ -234,13 +236,16 @@ type Context = {
   memberCount: number;
 };
 
-/** Passt das Gericht zur Mahlzeit? Erst nach dem Plan, sonst nach dem Titel. */
+/**
+ * Passt das Gericht zur Mahlzeit? Erst nach dem Plan, sonst nach dem Titel. Frühstück und Kuchen kommen als
+ * Mittag- oder Abendessen nur, wenn sonst nichts da ist.
+ */
 function mealFit(candidate: Candidate, meal: MealId, known: ReadonlySet<MealId> | undefined): number {
   if (known?.has(meal)) return 0.5;
   if (known && known.size > 0) return -2;
   if (meal === 'breakfast') return candidate.kind === 'breakfast' ? 2 : candidate.kind === 'sweet' ? 0.5 : -1;
   if (meal === 'snack') return candidate.kind === 'main' ? 0 : 1;
-  return candidate.kind === 'main' ? 0 : -3;
+  return candidate.kind === 'main' ? 0 : -20;
 }
 
 function evaluate(candidate: Candidate, date: string, context: Context): Suggestion {

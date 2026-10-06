@@ -15,6 +15,7 @@ export { formatIngredientLine, parseIngredientLine, type ParsedIngredient } from
 export * from './legacy-import.ts';
 export * from './cooking.ts';
 export * from './suggestions.ts';
+export * from './food-merge.ts';
 export * from './nutrition.ts';
 export * from './pantry.ts';
 export * from './pantry-bookings.ts';

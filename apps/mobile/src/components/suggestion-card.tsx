@@ -21,14 +21,17 @@ const REASON_STYLES: Record<SuggestionReasonKind, { icon: IconName; tone: Tone }
 
 type SuggestionCardProps = {
   suggestion: Suggestion;
-  /** Ohne `onPress` ist die Karte nicht antippbar, z. B. wenn `trailing` eigene Knöpfe hat. */
+  /** Tipp auf Foto und Titel */
   onPress?: () => void;
   accessibilityLabel?: string;
+  /** Rechts in der antippbaren Fläche, z. B. ein Plus */
   trailing?: ReactNode;
+  /** Eigene Knöpfe rechts daneben, außerhalb der antippbaren Fläche */
+  actions?: ReactNode;
 };
 
 /** Vorgeschlagenes Rezept mit Foto, Titel und den Gründen dafür. */
-export function SuggestionCard({ suggestion, onPress, accessibilityLabel, trailing }: SuggestionCardProps) {
+export function SuggestionCard({ suggestion, onPress, accessibilityLabel, trailing, actions }: SuggestionCardProps) {
   const content = (
     <>
       <RecipeThumbnail photoId={suggestion.photo} title={suggestion.title} size={52} />
@@ -47,15 +50,21 @@ export function SuggestionCard({ suggestion, onPress, accessibilityLabel, traili
       {trailing}
     </>
   );
-  if (!onPress) return <View style={styles.card}>{content}</View>;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? suggestion.title}
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      {content}
-    </Pressable>
+    <View style={[styles.card, actions ? styles.withActions : null]}>
+      {onPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel ?? suggestion.title}
+          onPress={onPress}
+          style={({ pressed }) => [styles.main, pressed && styles.pressed]}>
+          {content}
+        </Pressable>
+      ) : (
+        <View style={styles.main}>{content}</View>
+      )}
+      {actions}
+    </View>
   );
 }
 
@@ -63,14 +72,14 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.sm + 2,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.hairline,
     backgroundColor: colors.surface,
     boxShadow: shadows.card,
   },
+  withActions: { paddingRight: spacing.sm + 2 },
+  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm + 2 },
   pressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
   text: { flex: 1, gap: spacing.xs + 2 },
   title: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },

@@ -1,4 +1,5 @@
 import type {
+  FoodDuplicateGroup,
   ImportedRecipe,
   NutritionLookupItem,
   NutritionResult,
@@ -191,6 +192,19 @@ export async function lookupNutrition(credentials: Credentials, foods: Nutrition
     body: { foods },
   });
   return results;
+}
+
+/** Lässt die KI nach Lebensmitteln suchen, die dasselbe meinen; das dauert meist ein paar Sekunden. */
+export async function findDuplicateFoods(
+  credentials: Credentials,
+  foods: { id: string; name: string; category: string }[],
+): Promise<FoodDuplicateGroup[]> {
+  const { groups } = await request<{ groups: FoodDuplicateGroup[] }>(credentials.serverUrl, '/api/foods/duplicates', {
+    method: 'POST',
+    token: credentials.token,
+    body: { foods },
+  });
+  return groups;
 }
 
 export type BlsEntry = { code: string; name: string; per100: Per100 };
