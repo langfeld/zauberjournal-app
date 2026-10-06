@@ -6,7 +6,7 @@ import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from
 import { MEAL_ICONS } from '@/components/category-style';
 import { Icon, type IconName } from '@/components/icon';
 import { RecipeCover } from '@/components/recipe-photo';
-import { Button, Chip, EmptyState, SearchField } from '@/components/ui';
+import { Button, Chip, EmptyState, IconButton, SearchField } from '@/components/ui';
 import { useRecipeTables } from '@/data/recipes';
 import { useToday } from '@/data/tables';
 import { colors, fonts, radius, shadows, spacing, tones } from '@/theme';
@@ -78,11 +78,14 @@ export default function RecipeListScreen() {
   const today = useToday();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const all = useMemo(() => listRecipes(tables), [tables]);
   const found = useMemo(() => listRecipes(tables, query), [tables, query]);
   const recipes = filter ? found.filter((recipe) => matches(recipe, filter, today)) : found;
   // Nur Filter, die etwas treffen; der gewählte bleibt, damit er sich abwählen lässt.
   const filters = FILTERS.filter((option) => option.id === filter || all.some((recipe) => matches(recipe, option.id, today)));
+  // Zugeklappt bleibt nur der gewählte Filter sichtbar.
+  const shownFilters = showFilters ? filters : filters.filter((option) => option.id === filter);
   const hasRecipes = Object.keys(tables.recipes).length > 0;
   const { width } = useWindowDimensions();
   const columns = Math.max(2, Math.floor((width - spacing.lg * 2 + spacing.md) / (MIN_CARD_WIDTH + spacing.md)));
@@ -107,10 +110,21 @@ export default function RecipeListScreen() {
                 value={query}
                 onChangeText={setQuery}
                 placeholder="Suchen nach Titel oder Zutat"
+                action={
+                  filters.length > 1 || filter ? (
+                    <IconButton
+                      icon="tune"
+                      variant={showFilters || filter ? 'secondary' : 'muted'}
+                      size={32}
+                      accessibilityLabel={showFilters ? 'Filter ausblenden' : 'Filter zeigen'}
+                      onPress={() => setShowFilters(!showFilters)}
+                    />
+                  ) : null
+                }
               />
-              {filters.length > 1 || filter ? (
+              {shownFilters.length > 0 ? (
                 <View style={styles.filters}>
-                  {filters.map((option) => (
+                  {shownFilters.map((option) => (
                     <Chip
                       key={option.id}
                       icon={option.icon}

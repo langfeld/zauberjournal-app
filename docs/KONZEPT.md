@@ -215,7 +215,7 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Pause:** Ein Rezept lässt sich für 2 Wochen, 1 Monat, 3 oder 6 Monate oder bis auf Weiteres aus den Vorschlägen nehmen, direkt am Vorschlag („Pausieren“) oder im Rezept unter „Für den Plan“. Einplanen von Hand geht weiter; die Rezeptliste zeigt Pausiertes unter dem Filter „Pausiert“.
   - **Lieblingsessen:** Rezepte mit Herz kommen etwas öfter („Lieblingsessen“); Vorrat, der weg muss, geht trotzdem vor, und die Abwechslung gilt auch für sie.
   - **Aufwand:** Unter der Woche kostet ein Rezept über 45 Minuten ein wenig, mehr nicht.
-- **Passt zu (M8):** Wozu ein Rezept passt, schätzt die KI: beim Import gleich mit (in der Prüfansicht änderbar), für vorhandene Rezepte einmal im Hintergrund, sobald der Server erreichbar ist. Im Editor lässt es sich ändern; was jemand festlegt, überschreibt die KI nie. Die Rezeptliste filtert danach (Frühstück, Mittagessen, Abendessen, Snack, Beilagen & Co., Pausiert). Die 34 Rezepte aus dem alten System bekommen dessen Kategorien und Favoriten über das Übernahme-Werkzeug (Dessert wird Snack).
+- **Passt zu (M8):** Wozu ein Rezept passt, schätzt die KI: beim Import gleich mit (in der Prüfansicht änderbar), für vorhandene Rezepte einmal im Hintergrund, sobald der Server erreichbar ist. Im Editor lässt es sich ändern; was jemand festlegt, überschreibt die KI nie. Die Rezeptliste filtert danach (Favoriten, Frühstück, Mittagessen, Abendessen, Snack, Beilagen & Co., Pausiert); die Filter klappt der Knopf im Suchfeld auf, ein gewählter bleibt sichtbar. Die 34 Rezepte aus dem alten System bekommen dessen Kategorien und Favoriten über das Übernahme-Werkzeug (Dessert wird Snack).
 
 ## 8. REWE
 

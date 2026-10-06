@@ -91,6 +91,7 @@ const GLYPHS = {
   task_alt: 0xe2e6,
   timer: 0xe425,
   today: 0xe8df,
+  tune: 0xe429,
   warning: 0xe002,
 } as const;
 

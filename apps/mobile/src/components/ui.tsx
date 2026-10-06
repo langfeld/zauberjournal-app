@@ -169,9 +169,11 @@ type SearchFieldProps = {
   onChangeText: (text: string) => void;
   placeholder: string;
   accessibilityLabel: string;
+  /** Weiterer Knopf rechts im Feld, z. B. für Filter */
+  action?: ReactNode;
 };
 
-export function SearchField({ value, onChangeText, placeholder, accessibilityLabel }: SearchFieldProps) {
+export function SearchField({ value, onChangeText, placeholder, accessibilityLabel, action }: SearchFieldProps) {
   return (
     <TextField
       round
@@ -183,9 +185,12 @@ export function SearchField({ value, onChangeText, placeholder, accessibilityLab
       autoCorrect={false}
       returnKeyType="search"
       trailing={
-        value ? (
-          <IconButton icon="close" variant="muted" size={32} accessibilityLabel="Suche leeren" onPress={() => onChangeText('')} />
-        ) : null
+        <>
+          {value ? (
+            <IconButton icon="close" variant="muted" size={32} accessibilityLabel="Suche leeren" onPress={() => onChangeText('')} />
+          ) : null}
+          {action}
+        </>
       }
     />
   );
