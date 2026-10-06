@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { createFoodDuplicates, DuplicatesError, readDuplicatesRequest, type DuplicateFood } from './food-duplicates.ts';
+import { AiError } from './ai.ts';
+import { createFoodDuplicates, readDuplicatesRequest, type DuplicateFood } from './food-duplicates.ts';
 
 const FOODS: DuplicateFood[] = [
   { id: 'food:tortilla-chips', name: 'Tortilla-Chips', category: 'sweets' },
@@ -63,7 +64,7 @@ describe('Doppelte Lebensmittel', () => {
     const withoutKey = createFoodDuplicates({ ai: { apiKey: '', models: [], baseUrl: '' }, log: () => {} });
     await expect(withoutKey.find(FOODS)).rejects.toMatchObject({ status: 503 });
     const { duplicates } = setUp([]);
-    await expect(duplicates.find(FOODS)).rejects.toBeInstanceOf(DuplicatesError);
+    await expect(duplicates.find(FOODS)).rejects.toBeInstanceOf(AiError);
     await expect(duplicates.find(FOODS.slice(0, 1))).resolves.toEqual([]);
   });
 });

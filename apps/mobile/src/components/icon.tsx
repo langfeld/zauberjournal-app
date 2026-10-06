@@ -82,6 +82,7 @@ const GLYPHS = {
   shopping_cart: 0xe8cc,
   skillet: 0xf543,
   smartphone: 0xe32c,
+  snooze: 0xe046,
   soup_kitchen: 0xe7d3,
   sticky_note_2: 0xf1fc,
   storefront: 0xea12,

@@ -1,7 +1,9 @@
 import { createFoodResolver } from './foods.ts';
 import { formatIngredientLine, parseIngredientLine } from './ingredient-line.ts';
+import { MEALS, type MealId } from './meals.ts';
 import type { RecipeDraft, RecipeTables } from './recipe.ts';
 import { importedRecipeToDraft, type ImportedRecipe } from './recipe-import.ts';
+import { recipeMealCells } from './recipe-meals.ts';
 import { addReweFavorites } from './rewe-shopping.ts';
 import { isActive, type RowWrite } from './rows.ts';
 import type { ShoppingTables } from './shopping.ts';
@@ -10,8 +12,8 @@ import { findUnit } from './units.ts';
 /**
  * Übernahme aus dem alten Zauberjournal (Stufe M7): Rezepte und REWE-Vorlieben aus dessen JSON-Export.
  * Hier steht nur die Umrechnung; Fotos, Sync und Server erledigt `apps/server/src/import-legacy.ts`.
- * Kategorien, Schwierigkeit, Favoriten-Markierung und Kochzeiten je Schritt gibt es in der App nicht;
- * sie fallen weg.
+ * Von den Kategorien zählen die, die eine Mahlzeit meinen (seit M8). Schwierigkeit, Favoriten-Markierung und
+ * Kochzeiten je Schritt gibt es in der App nicht; sie fallen weg.
  */
 
 export type LegacyIngredient = {
@@ -28,6 +30,8 @@ export type LegacyIngredient = {
 /** Ein Rezept aus dem alten Export, mit den Feldern, die übernommen werden. */
 export type LegacyRecipe = {
   title: string;
+  /** Mahlzeiten aus den Kategorien; `null`, wenn keine Kategorie eine Mahlzeit meint */
+  meals: MealId[] | null;
   description: string;
   servings: number | null;
   prepMinutes: number | null;
@@ -76,6 +80,21 @@ function timestamp(value: unknown): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+/** Kategorien des alten Systems, die eine Mahlzeit meinen; Desserts gelten als Snack. */
+const LEGACY_MEALS: Readonly<Record<string, MealId>> = {
+  frühstück: 'breakfast',
+  mittagessen: 'lunch',
+  abendessen: 'dinner',
+  snack: 'snack',
+  dessert: 'snack',
+};
+
+function readMeals(value: unknown): MealId[] | null {
+  const names = (Array.isArray(value) ? value : []).filter(isObject).map((category) => text(category.name).toLocaleLowerCase('de'));
+  const meals = MEALS.filter((meal) => names.some((name) => LEGACY_MEALS[name] === meal.id)).map((meal) => meal.id);
+  return meals.length > 0 ? meals : null;
+}
+
 function readRecipe(value: Json): LegacyRecipe {
   const ingredients = (Array.isArray(value.ingredients) ? value.ingredients : []).filter(isObject).map(
     (item, index): LegacyIngredient => ({
@@ -95,6 +114,7 @@ function readRecipe(value: Json): LegacyRecipe {
   const base64 = text(value.image_base64);
   return {
     title: text(value.title),
+    meals: readMeals(value.categories),
     description: text(value.description),
     servings: positive(value.servings),
     prepMinutes: positive(value.prep_time),
@@ -169,6 +189,7 @@ export function legacyRecipeToImported(recipe: LegacyRecipe): ImportedRecipe {
     ingredients: ingredients.map((item) => ({ section: sections.size > 1 ? item.group : '', text: ingredientLine(item) })),
     steps: recipe.steps.map(stepText),
     notes: recipe.notes,
+    meals: recipe.meals,
     uncertainties: [],
     vegetarian: null,
   };
@@ -176,7 +197,24 @@ export function legacyRecipeToImported(recipe: LegacyRecipe): ImportedRecipe {
 
 /** Entwurf zum Speichern mit `planRecipeSave`; das Foto setzt das Werkzeug, sobald es hochgeladen ist. */
 export function legacyRecipeDraft(recipe: LegacyRecipe, createId: () => string): RecipeDraft {
-  return importedRecipeToDraft(legacyRecipeToImported(recipe), createId);
+  const draft = importedRecipeToDraft(legacyRecipeToImported(recipe), createId);
+  // Die Kategorien hat der Haushalt selbst vergeben.
+  return recipe.meals ? { ...draft, mealsBy: 'person' } : draft;
+}
+
+/**
+ * Mahlzeiten aus dem alten System für Rezepte, die es schon gibt (gleicher Titel). Was die KI geschätzt hat,
+ * weicht; was hier jemand festgelegt hat, bleibt.
+ */
+export function legacyMealWrites(tables: RecipeTables, recipes: readonly LegacyRecipe[]): RowWrite[] {
+  return recipes.flatMap((recipe) => {
+    const wanted = recipe.title.trim().toLocaleLowerCase('de');
+    const found = Object.entries(tables.recipes).find(
+      ([, row]) => isActive(row) && row.title.trim().toLocaleLowerCase('de') === wanted,
+    );
+    if (!recipe.meals || !found || found[1].mealsBy === 'person') return [];
+    return [{ table: 'recipes', rowId: found[0], cells: recipeMealCells(recipe.meals, 'person') }];
+  });
 }
 
 /** Zutatennamen, wie sie nach dem Speichern im Rezept stehen. */

@@ -1,4 +1,4 @@
-import { IMPORT_LIMITS, type ImportedRecipe, type VegetarianSuggestion } from '@zauberjournal/core';
+import { IMPORT_LIMITS, MEAL_IDS, type ImportedRecipe, type VegetarianSuggestion } from '@zauberjournal/core';
 
 import { htmlToText } from './html.ts';
 import { extractJsonLdRecipe } from './json-ld.ts';
@@ -94,6 +94,7 @@ Regeln:
 - Portionen und Zeiten in Minuten nur angeben, wenn sie in der Vorlage stehen oder eindeutig ableitbar sind, sonst 0. Fehlt die Portionenzahl, schätze sie und vermerke das in "uncertainties".
 - "source": die Quelle, falls sie in der Vorlage erkennbar ist (z. B. Buchtitel und Seitenzahl), sonst leer.
 - "notes": Tipps, Varianten oder Hinweise aus der Vorlage, die weder Zutat noch Schritt sind, sonst leer.
+- "meals": wozu das Gericht passt, eins oder mehrere von "breakfast" (Frühstück), "lunch" (Mittagessen), "dinner" (Abendessen) und "snack" (Snack, auch Kuchen, Gebäck und Desserts). Hauptgerichte passen meist zu Mittag- und Abendessen. Beilagen, Saucen, Dips, Getränke und Grundrezepte wie Teig oder Brühe sind kein eigenes Gericht: leere Liste.
 - "uncertainties": kurze Hinweise auf Stellen, die du nicht sicher lesen konntest oder geschätzt hast, z. B. „Menge Zucker schlecht lesbar (100 oder 180 g?)“. Leer, wenn alles klar ist.
 - Ist in der Vorlage kein Rezept zu finden, gib leere Listen für Zutaten und Schritte zurück.
 
@@ -121,6 +122,7 @@ const RECIPE_SCHEMA = {
     'ingredients',
     'steps',
     'notes',
+    'meals',
     'uncertainties',
     'vegetarian',
   ],
@@ -142,6 +144,7 @@ const RECIPE_SCHEMA = {
     },
     steps: { type: 'array', items: { type: 'string' } },
     notes: { type: 'string' },
+    meals: { type: 'array', items: { type: 'string', enum: MEAL_IDS } },
     uncertainties: { type: 'array', items: { type: 'string' } },
     vegetarian: {
       type: 'object',
@@ -228,6 +231,7 @@ export function toImportedRecipe(value: unknown): ImportedRecipe {
     })),
     steps: strings(data.steps),
     notes: str(data.notes),
+    meals: Array.isArray(data.meals) ? MEAL_IDS.filter((id) => (data.meals as unknown[]).includes(id)) : null,
     uncertainties: strings(data.uncertainties).filter(Boolean),
     vegetarian,
   };

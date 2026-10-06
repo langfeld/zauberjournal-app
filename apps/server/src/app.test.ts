@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
 import { createFoodDuplicates } from './food-duplicates.ts';
+import { createMealClassifier } from './meal-classifier.ts';
 import { createHousehold } from './household.ts';
 import { createImporter } from './importer.ts';
 import { createNutrition } from './nutrition.ts';
@@ -43,6 +44,7 @@ function setUp() {
     // Ohne KI und ohne Netz: Open Food Facts kennt nichts, der BLS hilft mit dem besten Treffer.
     nutrition: createNutrition({ db, fetch: async () => new Response('', { status: 404 }), pauseMs: 0, log: () => {} }),
     duplicates: createFoodDuplicates({ ai: { apiKey: '', models: [], baseUrl: '' }, log: () => {} }),
+    meals: createMealClassifier({ ai: { apiKey: '', models: [], baseUrl: '' }, log: () => {} }),
     onDeviceRevoked: (deviceId) => revoked.push(deviceId),
   });
   const post = (path: string, body: unknown, token?: string) =>
@@ -231,7 +233,7 @@ describe('API', () => {
     expect((await get('/api/nutrition/search?q=', token)).status).toBe(400);
   });
 
-  it('sucht doppelte Lebensmittel nur für angemeldete Geräte und mit Schlüssel', async () => {
+  it('fragt die KI nach Doppelten und Mahlzeiten nur für angemeldete Geräte und mit Schlüssel', async () => {
     const { household, post } = setUp();
     const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;
     const foods = [
@@ -243,6 +245,11 @@ describe('API', () => {
     const withoutKey = await post('/api/foods/duplicates', { foods }, token);
     expect(withoutKey.status).toBe(503);
     expect(await withoutKey.json()).toEqual({ error: 'Dafür braucht der Server einen Requesty-Schlüssel (REQUESTY_API_KEY).' });
+
+    const recipes = [{ id: 'r1', title: 'Curry', description: '', ingredients: ['Kokosmilch'] }];
+    expect((await post('/api/recipes/meals', { recipes })).status).toBe(401);
+    expect((await post('/api/recipes/meals', { recipes: [{ id: 'r1' }] }, token)).status).toBe(400);
+    expect((await post('/api/recipes/meals', { recipes }, token)).status).toBe(503);
   });
 
   it('liefert das Userscript mit der Adresse des Servers aus', async () => {

@@ -6,13 +6,15 @@ import { shelfLifeDays, stockStates, toStockAmount } from './pantry.ts';
 import { purchaseSuggestions } from './pantry-bookings.ts';
 import { createDietLookup, defaultOptionId, dietSuits, optionDiet, type PlanTables } from './plan.ts';
 import { buildRecipeView, type IngredientItem } from './recipe.ts';
+import { isRecipePaused, recipeMealIds } from './recipe-meals.ts';
 import { isActive } from './rows.ts';
 import { computeShoppingNeeds, type ShoppingTables } from './shopping.ts';
 
 /**
  * Planvorschläge (M8): Jedes Rezept bekommt für einen Tag Punkte nach nachvollziehbaren Gründen, die der
  * Vorschlag auch nennt. Gerechnet wird mit dem freien Vorrat: Bestand und absehbarer Einkauf (offene Listen
- * mit ganzen Packungen), abzüglich dessen, was geplante Gerichte schon brauchen.
+ * mit ganzen Packungen), abzüglich dessen, was geplante Gerichte schon brauchen. Vorgeschlagen wird nur, was
+ * zur Mahlzeit passt und nicht pausiert ist.
  */
 
 export type SuggestionReasonKind = 'unsuitable' | 'planned' | 'expiring' | 'leftover' | 'shopping' | 'longAgo' | 'stock' | 'forAll';
@@ -88,6 +90,9 @@ type Candidate = {
   /** Die Personen bekommen verschiedene Optionen („für beide“). */
   mixed: boolean;
   kind: DishKind;
+  /** Mahlzeiten, zu denen es passt; `null`, solange niemand sie festgelegt hat (dann zählen Plan und Titel) */
+  meals: MealId[] | null;
+  pausedUntil: string;
 };
 
 /** Freier Vorrat eines Lebensmittels: Bestand (läuft bei Frischem ab) und was ein Einkauf noch bringt. */
@@ -164,6 +169,8 @@ function buildCandidates(tables: ShoppingTables): Candidate[] {
       unsuitable,
       mixed,
       kind,
+      meals: row.mealsBy ? recipeMealIds(row) : null,
+      pausedUntil: row.pausedUntil ?? '',
     });
   }
   for (const candidate of candidates) {
@@ -237,8 +244,8 @@ type Context = {
 };
 
 /**
- * Passt das Gericht zur Mahlzeit? Erst nach dem Plan, sonst nach dem Titel. Frühstück und Kuchen kommen als
- * Mittag- oder Abendessen nur, wenn sonst nichts da ist.
+ * Passt das Gericht zur Mahlzeit, solange niemand das festgelegt hat? Erst nach dem Plan, sonst nach dem Titel.
+ * Frühstück und Kuchen kommen als Mittag- oder Abendessen nur, wenn sonst nichts da ist.
  */
 function mealFit(candidate: Candidate, meal: MealId, known: ReadonlySet<MealId> | undefined): number {
   if (known?.has(meal)) return 0.5;
@@ -250,7 +257,7 @@ function mealFit(candidate: Candidate, meal: MealId, known: ReadonlySet<MealId> 
 
 function evaluate(candidate: Candidate, date: string, context: Context): Suggestion {
   const { today, free, dated, byId, memberCount } = context;
-  let score = mealFit(candidate, context.meal, context.meals.get(candidate.id));
+  let score = candidate.meals === null ? mealFit(candidate, context.meal, context.meals.get(candidate.id)) : 0;
   const reasons: Weighted[] = [];
 
   if (candidate.unsuitable) {
@@ -420,7 +427,12 @@ export function createPlanner(tables: ShoppingTables, today: string, meal: MealI
     }
     const skip = new Set(exclude);
     return candidates
-      .filter((candidate) => !skip.has(candidate.id))
+      .filter(
+        (candidate) =>
+          !skip.has(candidate.id) &&
+          !isRecipePaused(candidate, date) &&
+          (candidate.meals === null || candidate.meals.includes(meal)),
+      )
       .map((candidate) => evaluate(candidate, date, { today, meal, free, dated: [...dated, ...picks], byId, meals, memberCount }))
       .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'de'))
       .slice(0, limit);

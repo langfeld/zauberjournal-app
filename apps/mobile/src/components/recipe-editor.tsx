@@ -1,8 +1,10 @@
 import {
   createId,
+  MEALS,
   planRecipeDelete,
   planRecipeSave,
   validateRecipeDraft,
+  type MealId,
   type RecipeDraft,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
@@ -16,13 +18,14 @@ import { useStore } from '@/data/store';
 import { confirm } from '@/lib/confirm';
 import { spacing } from '@/theme';
 
+import { MEAL_ICONS } from './category-style';
 import { ChoiceGroupsEditor } from './choice-groups-editor';
 import { HeaderButton, HeaderRight } from './header';
 import type { IconName } from './icon';
 import { IngredientListEditor } from './ingredient-list-editor';
 import { PhotoField } from './photo-field';
 import { StepListEditor } from './step-list-editor';
-import { Button, Card, Hint, Notice, SectionTitle, Stepper, TextField } from './ui';
+import { Button, Card, Chip, Hint, Notice, SectionTitle, Stepper, TextField } from './ui';
 import { useConfirmDiscard } from './use-confirm-discard';
 
 type MinutesFieldProps = { label: string; icon: IconName; value: number | null; onChange: (value: number | null) => void };
@@ -43,6 +46,14 @@ function MinutesField({ label, icon, value, onChange }: MinutesFieldProps) {
       />
     </View>
   );
+}
+
+/** Was unter „Passt zu“ steht, je nachdem, wer die Mahlzeiten festgelegt hat */
+function mealHint(draft: RecipeDraft): string {
+  if (!draft.mealsBy) return 'Noch offen; nach dem Speichern schätzt das die KI. Vorgeschlagen wird ein Rezept nur zu passenden Mahlzeiten.';
+  if (draft.mealsBy === 'ai') return 'Von der KI geschätzt. Passt etwas nicht, einfach antippen.';
+  if (draft.meals.length === 0) return 'Ohne Mahlzeit gilt es als Beilage o. Ä. und wird nicht vorgeschlagen.';
+  return 'Vorgeschlagen wird das Rezept nur zu diesen Mahlzeiten.';
 }
 
 type RecipeEditorProps = {
@@ -69,6 +80,13 @@ export function RecipeEditor({ recipeId, initialDraft, title, notices = [], dirt
 
   const set = <K extends keyof RecipeDraft>(key: K, value: RecipeDraft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
+  // Wer antippt, legt die Mahlzeiten selbst fest; die KI ändert sie danach nicht mehr.
+  const toggleMeal = (meal: MealId) =>
+    setDraft((current) => {
+      const chosen = current.mealsBy ? current.meals : [];
+      const next = chosen.includes(meal) ? chosen.filter((id) => id !== meal) : [...chosen, meal];
+      return { ...current, meals: MEALS.filter(({ id }) => next.includes(id)).map(({ id }) => id), mealsBy: 'person' };
+    });
 
   const options = draft.groups.flatMap((group) =>
     group.options.map((option, index) => ({ id: option.id, name: option.name.trim() || `Option ${index + 1}` })),
@@ -154,6 +172,20 @@ export function RecipeEditor({ recipeId, initialDraft, title, notices = [], dirt
           />
         </Card>
 
+        <SectionTitle>Passt zu</SectionTitle>
+        <View style={styles.chips}>
+          {MEALS.map((meal) => (
+            <Chip
+              key={meal.id}
+              icon={MEAL_ICONS[meal.id]}
+              label={meal.label}
+              selected={draft.mealsBy !== '' && draft.meals.includes(meal.id)}
+              onPress={() => toggleMeal(meal.id)}
+            />
+          ))}
+        </View>
+        <Hint>{mealHint(draft)}</Hint>
+
         <SectionTitle>Zutaten</SectionTitle>
         <Hint>
           Eine Zutat pro Zeile, z. B. „200 g Mehl“ oder „2 Zehen Knoblauch, gehackt“. Alle Mengen gelten für{' '}
@@ -192,6 +224,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
   row: { flexDirection: 'row', gap: spacing.md },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
   half: { flex: 1 },
   footer: { gap: spacing.md, marginTop: spacing.xl },
 });

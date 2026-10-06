@@ -1,16 +1,32 @@
-import { formatDuration, listRecipes, type RecipeSummary } from '@zauberjournal/core';
+import { formatDuration, isRecipePaused, listRecipes, MEALS, type MealId, type RecipeSummary } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { Icon } from '@/components/icon';
+import { MEAL_ICONS } from '@/components/category-style';
+import { Icon, type IconName } from '@/components/icon';
 import { RecipeCover } from '@/components/recipe-photo';
-import { Button, EmptyState, SearchField } from '@/components/ui';
+import { Button, Chip, EmptyState, SearchField } from '@/components/ui';
 import { useRecipeTables } from '@/data/recipes';
+import { useToday } from '@/data/tables';
 import { colors, fonts, radius, shadows, spacing } from '@/theme';
 
 /** Mindestbreite einer Karte; auf breiten Bildschirmen passen mehr Spalten nebeneinander. */
 const MIN_CARD_WIDTH = 160;
+
+type Filter = MealId | 'none' | 'paused';
+
+const FILTERS: { id: Filter; label: string; icon: IconName }[] = [
+  ...MEALS.map((meal) => ({ id: meal.id, label: meal.label, icon: MEAL_ICONS[meal.id] })),
+  { id: 'none', label: 'Beilagen & Co.', icon: 'restaurant' },
+  { id: 'paused', label: 'Pausiert', icon: 'snooze' },
+];
+
+function matches(recipe: RecipeSummary, filter: Filter, today: string): boolean {
+  if (filter === 'paused') return isRecipePaused(recipe, today);
+  if (filter === 'none') return recipe.mealsBy !== '' && recipe.meals.length === 0;
+  return recipe.meals.includes(filter);
+}
 
 function RecipeCard({ recipe, width }: { recipe: RecipeSummary; width: number }) {
   return (
@@ -50,8 +66,14 @@ function RecipeCard({ recipe, width }: { recipe: RecipeSummary; width: number })
 
 export default function RecipeListScreen() {
   const tables = useRecipeTables();
+  const today = useToday();
   const [query, setQuery] = useState('');
-  const recipes = useMemo(() => listRecipes(tables, query), [tables, query]);
+  const [filter, setFilter] = useState<Filter | null>(null);
+  const all = useMemo(() => listRecipes(tables), [tables]);
+  const found = useMemo(() => listRecipes(tables, query), [tables, query]);
+  const recipes = filter ? found.filter((recipe) => matches(recipe, filter, today)) : found;
+  // Nur Filter, die etwas treffen; der gewählte bleibt, damit er sich abwählen lässt.
+  const filters = FILTERS.filter((option) => option.id === filter || all.some((recipe) => matches(recipe, option.id, today)));
   const hasRecipes = Object.keys(tables.recipes).length > 0;
   const { width } = useWindowDimensions();
   const columns = Math.max(2, Math.floor((width - spacing.lg * 2 + spacing.md) / (MIN_CARD_WIDTH + spacing.md)));
@@ -77,15 +99,28 @@ export default function RecipeListScreen() {
                 onChangeText={setQuery}
                 placeholder="Suchen nach Titel oder Zutat"
               />
+              {filters.length > 1 || filter ? (
+                <View style={styles.filters}>
+                  {filters.map((option) => (
+                    <Chip
+                      key={option.id}
+                      icon={option.icon}
+                      label={option.label}
+                      selected={filter === option.id}
+                      onPress={() => setFilter(filter === option.id ? null : option.id)}
+                    />
+                  ))}
+                </View>
+              ) : null}
               <Text style={styles.count}>
-                {query ? `${recipes.length} Treffer` : `${recipes.length} ${recipes.length === 1 ? 'Rezept' : 'Rezepte'}`}
+                {query || filter ? `${recipes.length} Treffer` : `${recipes.length} ${recipes.length === 1 ? 'Rezept' : 'Rezepte'}`}
               </Text>
             </View>
           ) : null
         }
         renderItem={({ item }) => <RecipeCard recipe={item} width={cardWidth} />}
         ListEmptyComponent={
-          hasRecipes && query ? (
+          hasRecipes && (query || filter) ? (
             <EmptyState icon="search" title="Nichts gefunden">
               Versuch es mit einem anderen Suchbegriff.
             </EmptyState>
@@ -113,6 +148,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl, gap: spacing.md },
   row: { gap: spacing.md },
   header: { gap: spacing.md, marginBottom: spacing.xs },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
   count: { fontSize: 13, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.3 },
   card: {
     overflow: 'hidden',

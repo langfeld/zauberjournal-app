@@ -85,7 +85,7 @@ Rezepte (mit Fotos) und bevorzugte REWE-Produkte aus den JSON-Exporten des alten
    node apps/server/src/import-legacy.ts --server https://kochbuch.<deine-domain> --code ABCD-EFGH rezepte.json rewe-prefs.json
    ```
 
-Das Werkzeug koppelt sich wie ein Gerät, schreibt über den Sync und meldet sich am Ende wieder ab. Rezepte, deren Titel es schon gibt, übernimmt es nicht noch einmal. Die REWE-Produkte kommen je Lebensmittel in die Rangliste: das am häufigsten gewählte zuerst, hinter schon gemerkten. Mit `--dry-run` statt Server und Code zeigt es nur, was es übernehmen würde.
+Das Werkzeug koppelt sich wie ein Gerät, schreibt über den Sync und meldet sich am Ende wieder ab. Rezepte, deren Titel es schon gibt, übernimmt es nicht noch einmal. Die Kategorien Frühstück, Mittagessen, Abendessen und Dessert (als Snack) werden zu „Passt zu“; bei schon vorhandenen Rezepten trägt das Werkzeug sie nach, solange im Haushalt niemand sie selbst festgelegt hat. Die REWE-Produkte kommen je Lebensmittel in die Rangliste: das am häufigsten gewählte zuerst, hinter schon gemerkten. Mit `--dry-run` statt Server und Code zeigt es nur, was es übernehmen würde.
 
 ### Notfall: kein verbundenes Gerät mehr zur Hand
 

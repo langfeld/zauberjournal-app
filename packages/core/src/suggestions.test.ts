@@ -6,6 +6,7 @@ import { addMember } from './members.ts';
 import { bookPurchase } from './pantry-bookings.ts';
 import { planAddEntry } from './plan.ts';
 import { createShoppingList, syncShoppingList } from './shopping.ts';
+import { pauseRecipe, recipeMealCells } from './recipe-meals.ts';
 import { createPlanner, draftDates, type Suggestion } from './suggestions.ts';
 import { counterIds, createTestStore } from './test-helpers.ts';
 
@@ -149,6 +150,28 @@ describe('Planvorschläge', () => {
     const dinner = titles(suggest(TODAY));
     expect(dinner.slice(0, 3).sort()).toEqual(['Flammkuchen', 'Gemüsecurry', 'Salatteller']);
     expect(dinner.slice(3).sort()).toEqual(['Erdbeerkuchen', 'Protein-Pancakes']);
+  });
+
+  it('schlägt nur vor, was zur Mahlzeit passt und gerade nicht pausiert ist', () => {
+    const { recipe, suggest, test } = setUp();
+    const meals = (recipeId: string, ...list: ('breakfast' | 'lunch' | 'dinner' | 'snack')[]) =>
+      test.apply([{ table: 'recipes', rowId: recipeId, cells: recipeMealCells(list, 'person') }]);
+    meals(recipe('Gemüsecurry', ['400 ml Kokosmilch']), 'lunch', 'dinner');
+    meals(recipe('Porridge', ['80 g Haferflocken']), 'breakfast');
+    // Ohne Mahlzeit: Beilage
+    meals(recipe('Tzatziki', ['250 g Joghurt']));
+    // Für sich als Abendessen festgelegt, auch wenn der Titel nach Kuchen klingt
+    meals(recipe('Kartoffel-Lauch-Kuchen', ['500 g Kartoffeln']), 'dinner');
+    // Noch nicht zugeordnet: Dann zählt der Titel.
+    recipe('Linsensuppe', ['200 g rote Linsen']);
+    const pizza = recipe('Pizza', ['1 Pizzateig']);
+    meals(pizza, 'dinner');
+    test.apply(pauseRecipe(pizza, TODAY, 10));
+
+    expect(titles(suggest(TODAY)).sort()).toEqual(['Gemüsecurry', 'Kartoffel-Lauch-Kuchen', 'Linsensuppe']);
+    // Die Pause endet nach zehn Tagen.
+    expect(titles(suggest('2026-10-20'))).toContain('Pizza');
+    expect(titles(createPlanner(test.tables(), TODAY, 'breakfast').suggest(TODAY, { limit: 10 }))[0]).toBe('Porridge');
   });
 
   it('füllt freie Tage ohne Wiederholung, Frisches zuerst', () => {

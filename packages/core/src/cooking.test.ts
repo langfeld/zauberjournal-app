@@ -19,6 +19,9 @@ const BOWL: RecipeView = {
   source: '',
   notes: '',
   photo: '',
+  meals: ['dinner'],
+  mealsBy: 'person',
+  pausedUntil: '',
   ingredients: [item('Reis', 200, 'g'), item('Zwiebel', 1)],
   groups: [
     {

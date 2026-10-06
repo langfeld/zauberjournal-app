@@ -12,6 +12,7 @@ import { NotFound } from './not-found';
 import { RecipeNutrition } from './nutrition';
 import { RecipeBody } from './recipe-body';
 import { RecipeCover } from './recipe-photo';
+import { RecipePlanCard } from './recipe-plan-card';
 import { Button, Card, Stepper, Tag } from './ui';
 
 type RecipeDetailProps = {
@@ -65,6 +66,8 @@ export function RecipeDetail({ id, preview }: RecipeDetailProps) {
           </View>
         ) : null}
         {view.description ? <Text style={styles.description}>{view.description}</Text> : null}
+        {/* Aus den Vorschlägen heraus geht es vor allem darum, ob das Rezept passt. */}
+        {preview ? <RecipePlanCard view={view} /> : null}
 
         <Card>
           <Stepper
@@ -110,6 +113,7 @@ export function RecipeDetail({ id, preview }: RecipeDetailProps) {
 
         <RecipeBody view={view} servings={total} distribution={current} />
         <RecipeNutrition recipeId={view.id} />
+        {preview ? null : <RecipePlanCard view={view} />}
 
         {view.notes ? (
           <View style={styles.notes}>

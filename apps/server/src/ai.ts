@@ -18,6 +18,24 @@ export function aiAvailable(ai: AiConfig): boolean {
   return ai.apiKey !== '' && ai.models.length > 0;
 }
 
+/** Fehler für die App: ohne Schlüssel 503, ohne Antwort der KI 502 */
+export class AiError extends Error {
+  readonly status: 502 | 503;
+
+  constructor(message: string, status: 502 | 503) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export function requireAi(ai: AiConfig): void {
+  if (!aiAvailable(ai)) throw new AiError('Dafür braucht der Server einen Requesty-Schlüssel (REQUESTY_API_KEY).', 503);
+}
+
+export function aiUnreachable(): AiError {
+  return new AiError('Die KI ist gerade nicht erreichbar. Bitte versuch es später noch einmal.', 502);
+}
+
 function stripCodeFence(content: string): string {
   return content.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
 }

@@ -26,12 +26,12 @@ type SuggestionCardProps = {
   accessibilityLabel?: string;
   /** Rechts in der antippbaren Fläche, z. B. ein Plus */
   trailing?: ReactNode;
-  /** Eigene Knöpfe rechts daneben, außerhalb der antippbaren Fläche */
-  actions?: ReactNode;
+  /** Eigene Knöpfe unter dem Rezept, außerhalb der antippbaren Fläche */
+  footer?: ReactNode;
 };
 
 /** Vorgeschlagenes Rezept mit Foto, Titel und den Gründen dafür. */
-export function SuggestionCard({ suggestion, onPress, accessibilityLabel, trailing, actions }: SuggestionCardProps) {
+export function SuggestionCard({ suggestion, onPress, accessibilityLabel, trailing, footer }: SuggestionCardProps) {
   const content = (
     <>
       <RecipeThumbnail photoId={suggestion.photo} title={suggestion.title} size={52} />
@@ -51,7 +51,7 @@ export function SuggestionCard({ suggestion, onPress, accessibilityLabel, traili
     </>
   );
   return (
-    <View style={[styles.card, actions ? styles.withActions : null]}>
+    <View style={styles.card}>
       {onPress ? (
         <Pressable
           accessibilityRole="button"
@@ -63,23 +63,26 @@ export function SuggestionCard({ suggestion, onPress, accessibilityLabel, traili
       ) : (
         <View style={styles.main}>{content}</View>
       )}
-      {actions}
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.hairline,
     backgroundColor: colors.surface,
     boxShadow: shadows.card,
   },
-  withActions: { paddingRight: spacing.sm + 2 },
-  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm + 2 },
+  main: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm + 2 },
+  footer: {
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
   pressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
   text: { flex: 1, gap: spacing.xs + 2 },
   title: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },

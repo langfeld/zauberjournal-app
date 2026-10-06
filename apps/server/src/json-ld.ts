@@ -132,6 +132,7 @@ function toImportedRecipe(node: JsonObject): ImportedRecipe {
     ingredients: listOfTexts(node.recipeIngredient ?? node.ingredients).map((line) => ({ section: '', text: line })),
     steps: instructions(node.recipeInstructions),
     notes: '',
+    meals: null,
     uncertainties: [],
     vegetarian: null,
   };

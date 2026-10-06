@@ -1,5 +1,7 @@
 import { formatIngredientLine, parseIngredientLine } from './ingredient-line.ts';
+import type { MealId } from './meals.ts';
 import { formatAmount, scaleAmount } from './quantity.ts';
+import { recipeMealCells, recipeMealIds, type RecipeMealsBy } from './recipe-meals.ts';
 import { activeSorted, changedCells, isActive, type CellValue, type RowWrite, type Table } from './rows.ts';
 import { assignSortKeys } from './sort-keys.ts';
 import { unitLabel } from './units.ts';
@@ -17,6 +19,14 @@ export type RecipeRow = {
   source: string;
   notes: string;
   photo: string;
+  /** Wozu das Rezept passt (seit M8), siehe `recipe-meals.ts` */
+  mealBreakfast: boolean;
+  mealLunch: boolean;
+  mealDinner: boolean;
+  mealSnack: boolean;
+  mealsBy: RecipeMealsBy;
+  /** Vor diesem Tag nicht vorschlagen; leer = keine Pause */
+  pausedUntil: string;
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;
@@ -97,6 +107,9 @@ export type RecipeView = {
   notes: string;
   /** ID des Rezeptfotos, leer = kein Foto. */
   photo: string;
+  meals: MealId[];
+  mealsBy: RecipeMealsBy;
+  pausedUntil: string;
   ingredients: IngredientItem[];
   groups: ChoiceGroupView[];
   steps: StepItem[];
@@ -145,6 +158,9 @@ export function buildRecipeView(tables: RecipeTables, recipeId: string): RecipeV
     source: recipe.source,
     notes: recipe.notes,
     photo: recipe.photo ?? '',
+    meals: recipeMealIds(recipe),
+    mealsBy: recipe.mealsBy ?? '',
+    pausedUntil: recipe.pausedUntil ?? '',
     ingredients: ingredientsOf(tables, recipeId, ''),
     groups,
     steps: activeSorted(tables.recipeSteps, (row) => row.recipeId === recipeId).map(([id, row]) => ({
@@ -162,6 +178,9 @@ export type RecipeSummary = {
   totalMinutes: number | null;
   optionNames: string[];
   photo: string;
+  meals: MealId[];
+  mealsBy: RecipeMealsBy;
+  pausedUntil: string;
 };
 
 function normalizeForSearch(text: string): string {
@@ -197,6 +216,9 @@ export function listRecipes(tables: RecipeTables, query = ''): RecipeSummary[] {
         totalMinutes: minutes > 0 ? minutes : null,
         optionNames: optionNames.get(id) ?? [],
         photo: recipe.photo ?? '',
+        meals: recipeMealIds(recipe),
+        mealsBy: recipe.mealsBy ?? '',
+        pausedUntil: recipe.pausedUntil ?? '',
       };
     })
     .sort((a, b) => a.title.localeCompare(b.title, 'de', { sensitivity: 'base' }));
@@ -324,6 +346,9 @@ export type RecipeDraft = {
   source: string;
   notes: string;
   photo: string;
+  meals: MealId[];
+  /** Leer, solange niemand die Mahlzeiten festgelegt hat; dann bleiben die gespeicherten. */
+  mealsBy: RecipeMealsBy;
   ingredients: IngredientDraft[];
   groups: ChoiceGroupDraft[];
   steps: StepDraft[];
@@ -339,6 +364,8 @@ export function emptyRecipeDraft(): RecipeDraft {
     source: '',
     notes: '',
     photo: '',
+    meals: [],
+    mealsBy: '',
     ingredients: [],
     groups: [],
     steps: [],
@@ -363,6 +390,8 @@ export function recipeViewToDraft(view: RecipeView): RecipeDraft {
     source: view.source,
     notes: view.notes,
     photo: view.photo,
+    meals: view.meals,
+    mealsBy: view.mealsBy,
     ingredients: view.ingredients.map(toIngredientDraft),
     groups: view.groups.map((group) => ({
       id: group.id,
@@ -511,6 +540,8 @@ export function planRecipeSave(
     source: draft.source.trim(),
     notes: draft.notes.trim(),
     photo: draft.photo,
+    // Hat niemand Mahlzeiten festgelegt, bleibt, was inzwischen gespeichert ist, etwa von der KI.
+    ...(draft.mealsBy ? recipeMealCells(draft.meals, draft.mealsBy) : {}),
     deletedAt: null,
   };
   if (!tables.recipes[id]) recipeDesired.createdAt = now;

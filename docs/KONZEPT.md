@@ -132,7 +132,7 @@ Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten�
 Die Ernährungsklasse bestimmt, welche Option eine vegetarische Person bekommt. Fehltreffer wiegen deshalb schwer. Wörter, die nur nach Fleisch oder Fisch aussehen („Limette“ enthält „Mett“, „Fruchtfleisch“, „Weizenkleber“), stehen in einer eigenen Liste. Lernen die Schlüsselwörter dazu, bessert die App gespeicherte Lebensmittel nach (seit M6): „unbekannt“ bekommt die neue Klasse, ein solcher Fehltreffer verliert die falsche. Von Hand Gewähltes bleibt.
 
 **Rezepte**
-- `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-ID, Tags, Notizen, `deletedAt`
+- `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-ID, Tags, Notizen, `deletedAt`. Seit M8 außerdem „Passt zu“: je Mahlzeit des Plans ein Feld (`mealBreakfast` … `mealSnack`), dazu `mealsBy`, wer das festgelegt hat (leer = noch niemand, `ai`, `person`), und `pausedUntil`, vor welchem Tag das Rezept nicht vorgeschlagen wird
 - `recipeIngredients`: Rezept, Sortierschlüssel, Zeilenart (`ingredient` oder `heading`; Zwischenüberschriften wie „Für das Dressing“ sind eigene Zeilen), Menge und optionale Obergrenze bei Spannen („2–3“) für die Basisportionen, Einheit, Name, Zusatz („fein gehackt“), Option (leer = für alle). Das Lebensmittel ergibt sich aus dem Namen (siehe Zuordnung oben).
 - `recipeSteps`: Rezept, Sortierschlüssel, Text, Option (leer = für alle)
 - `choiceGroups`: Rezept, Name („Protein“)
@@ -211,7 +211,10 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Punkte:** Frisches aus dem Vorrat zählt viel, kurz vor dem Ablauf noch mehr („Spinat · noch 2 Tage“). Was nach dem Einkauf übrig bleibt, zählt etwas weniger, Haltbares kaum. Grundzutaten, die in mindestens jedem fünften Rezept stecken (Zwiebeln, Butter, Zucker), zählen wenig und werden nur kurz vor dem Ablauf genannt. „Alles da“ oder „nur 1 Zutat fehlt“ gibt einen Bonus.
   - **Abwechslung:** Steht das Rezept in derselben Woche schon im Plan, rutscht es weit nach hinten. Was es in den letzten zwei Wochen gab, rutscht ein Stück nach hinten; was es lange nicht gab („zuletzt vor 6 Wochen“), rückt vor. Ähnliches bis zu zwei Tage davor oder danach (dieselbe Grundlage wie Nudeln oder Reis, dasselbe Fleisch) kostet Punkte.
   - **Passt für alle:** Isst jemand vegetarisch oder vegan mit, kommen Rezepte ohne passende Möglichkeit ganz nach hinten, mit dem Hinweis „nicht vegetarisch“ oder „nicht vegan“; Rezepte mit Optionen für beide zeigen „für beide“.
-  - **Mahlzeit und Aufwand:** Wofür ein Rezept schon im Plan stand, zählt; sonst der Titel (Pancakes und Kuchen nicht zum Abendessen). Unter der Woche kostet ein Rezept über 45 Minuten ein wenig, mehr nicht.
+  - **Mahlzeit:** Vorgeschlagen wird nur, was laut „Passt zu“ zur Mahlzeit passt; ohne Mahlzeit (Beilage, Sauce) nie. Solange das bei einem Rezept noch niemand festgelegt hat, zählt, wofür es schon im Plan stand, sonst der Titel (Pancakes und Kuchen nicht zum Abendessen, Flammkuchen schon).
+  - **Pause:** Ein Rezept lässt sich für 2 Wochen, 1 Monat, 3 oder 6 Monate oder bis auf Weiteres aus den Vorschlägen nehmen, direkt am Vorschlag („Pausieren“) oder im Rezept unter „Für den Plan“. Einplanen von Hand geht weiter; die Rezeptliste zeigt Pausiertes unter dem Filter „Pausiert“.
+  - **Aufwand:** Unter der Woche kostet ein Rezept über 45 Minuten ein wenig, mehr nicht.
+- **Passt zu (M8):** Wozu ein Rezept passt, schätzt die KI: beim Import gleich mit (in der Prüfansicht änderbar), für vorhandene Rezepte einmal im Hintergrund, sobald der Server erreichbar ist. Im Editor lässt es sich ändern; was jemand festlegt, überschreibt die KI nie. Die Rezeptliste filtert danach (Frühstück, Mittagessen, Abendessen, Snack, Beilagen & Co., Pausiert). Die 34 Rezepte aus dem alten System bekommen dessen Kategorien über das Übernahme-Werkzeug (Dessert wird Snack).
 
 ## 8. REWE
 
@@ -273,7 +276,7 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
 - **Eingabe:** bis zu vier Fotos oder Screenshots, ein Link oder Text, auch kombiniert. Die App verkleinert Fotos vorher auf 2048 Pixel an der längeren Seite.
 - **Links:** Der Server lädt die Seite und liest zuerst die schema.org-Rezeptdaten (JSON-LD), die die meisten Rezeptseiten mitliefern. Die KI bereitet sie dann auf: einheitliches Format, Übersetzung, vegetarischer Vorschlag. Ohne Requesty-Schlüssel oder wenn die KI ausfällt, übernimmt der Server die Rezeptdaten direkt. Seiten ohne Rezeptdaten gehen als Text an die KI. Instagram und Co. liefern Servern meist nur eine Anmeldeseite; dort helfen ein Screenshot oder der kopierte Text.
 - **Verarbeitung:** Der Server ruft Requesty mit einem JSON-Schema auf. Das Modell steht in `IMPORT_MODEL` (Standard `anthropic/claude-sonnet-5-5`). Fällt es aus, versucht der Server `IMPORT_FALLBACK_MODEL` (Standard `google/gemini-3.6-flash`).
-- **Ergebnis:** Titel, Portionen, Zeiten, Quelle, Zutatenzeilen mit Zwischenüberschrift, Schritte, Notizen und unsichere Stellen. Die Zutatenzeilen haben das Format „Menge Einheit Zutat, Zusatz“; dieselbe Logik wie im Editor zerlegt sie beim Speichern.
+- **Ergebnis:** Titel, Portionen, Zeiten, Quelle, Zutatenzeilen mit Zwischenüberschrift, Schritte, Notizen, unsichere Stellen und seit M8, wozu das Gericht passt. Die Zutatenzeilen haben das Format „Menge Einheit Zutat, Zusatz“; dieselbe Logik wie im Editor zerlegt sie beim Speichern.
 - **Prüfansicht in der App:** der normale Editor mit dem erkannten Entwurf. Darüber stehen die unsicheren Stellen. Das erste Foto wird zum Rezeptfoto und lässt sich ersetzen oder entfernen.
 - **Fleischrezepte:** Die KI schlägt eine vegetarische Option vor. Daraus wird eine Wahlkomponente: Die erste Option ist das Original, die zweite vegetarisch, jeweils mit eigenen Zutaten und Schritten. Lässt sich eine Zutat nicht getrennt kochen (z. B. Hühnerbrühe in der Suppe), nennt die KI den Austausch als Hinweis.
 - **Zuordnung der Zutaten zu Lebensmitteln:** verschoben nach M4, weil sie den Lebensmittel-Katalog braucht.
@@ -356,6 +359,8 @@ Entschieden bei der Umsetzung von M8 (6. Oktober 2026):
 - **„Vorschlagen“ für eine wählbare Zahl freier Tage statt eines Wochenplans:** Wie weit der Haushalt vorausplant, ist jedes Mal anders. Gezählt werden freie Tage, damit „3 Tage“ auch drei Gerichte ergibt, wenn die nächsten Tage schon belegt sind.
 - **Nichtvegetarisches nach hinten statt ausblenden;** der Aufwand spielt nur eine kleine Rolle, weil die meisten Rezepte ähnlich lange dauern.
 - **Lagergemüse hält länger:** Zwiebeln, Kartoffeln & Co. liefen im Vorrat nach 7 Tagen ab und galten bei den Vorschlägen als Rest, der weg muss. Jetzt zählen sie 28 Tage.
+- **„Passt zu“ mit mehreren Mahlzeiten statt einer Art je Rezept:** Viele Gerichte passen mittags und abends. Die Felder entsprechen den Mahlzeiten des Plans, damit die Vorschläge sie direkt nutzen können.
+- **Die KI ordnet zu, die alte Zuordnung hat Vorrang:** Für die übernommenen Rezepte gelten die Kategorien des alten Systems; die KI schätzt den Rest. Im Test lag sie bei 32 von 34 alten Rezepten genauso.
 - **Doppelte Lebensmittel: KI schlägt vor, der Haushalt entscheidet.** Die KI sieht nur die Namen und Warengruppen und fasst im Zweifel nicht zusammen. Zusammengeführt wird erst nach einem Tipp je Gruppe, weil es sich nicht rückgängig machen lässt.
 
 Noch offen:

@@ -1,3 +1,4 @@
+import type { MealId } from './meals.ts';
 import { emptyRecipeDraft, type ChoiceGroupDraft, type IngredientDraft, type RecipeDraft, type StepDraft } from './recipe.ts';
 
 /** Höchstwerte für einen Import; App und Server prüfen dieselben. */
@@ -32,6 +33,8 @@ export type ImportedRecipe = {
   ingredients: ImportedIngredient[];
   steps: string[];
   notes: string;
+  /** Wozu das Gericht passt; `null` = unbekannt, etwa ohne KI. */
+  meals: MealId[] | null;
   /** Stellen, die die KI nicht sicher lesen konnte oder geschätzt hat. */
   uncertainties: string[];
   vegetarian: VegetarianSuggestion | null;
@@ -123,6 +126,8 @@ export function importedRecipeToDraft(recipe: ImportedRecipe, createId: () => st
     cookMinutes: wholeNumber(recipe.cookMinutes, MAX_MINUTES),
     source: recipe.source.trim(),
     notes: recipe.notes.trim(),
+    meals: recipe.meals ?? [],
+    mealsBy: recipe.meals ? 'ai' : '',
     ingredients,
     groups,
     steps,

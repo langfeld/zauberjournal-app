@@ -10,6 +10,7 @@ import { openDatabase } from './database.ts';
 import { createHousehold } from './household.ts';
 import { createFoodDuplicates } from './food-duplicates.ts';
 import { createImporter, REQUESTY_BASE_URL, type ImporterConfig } from './importer.ts';
+import { createMealClassifier } from './meal-classifier.ts';
 import { createNutrition } from './nutrition.ts';
 import { createPhotoStore } from './photos.ts';
 import { createReweClient } from './rewe.ts';
@@ -37,7 +38,7 @@ export async function startServer({
   const sync = createSyncServer(db, household.authenticate);
   const photos = createPhotoStore(join(dataDir, 'photos'));
   const importer = createImporter({ ...importerConfig, log });
-  // Dieselbe KI wie beim Import ordnet Zutaten dem BLS zu und findet doppelte Lebensmittel.
+  // Dieselbe KI wie beim Import ordnet Zutaten dem BLS zu, findet doppelte Lebensmittel und ordnet Rezepte Mahlzeiten zu.
   const ai = { apiKey: importerConfig.apiKey, models: importerConfig.models, baseUrl: importerConfig.baseUrl ?? REQUESTY_BASE_URL };
 
   const announceSetupCode = () => {
@@ -53,6 +54,7 @@ export async function startServer({
     orders: createOrderStore(db),
     nutrition: createNutrition({ db, ai, log }),
     duplicates: createFoodDuplicates({ ai, log }),
+    meals: createMealClassifier({ ai, log }),
     onDeviceRevoked: (deviceId) => {
       sync.disconnectDevice(deviceId);
       announceSetupCode();

@@ -41,6 +41,7 @@ describe('extractJsonLdRecipe', () => {
       ],
       steps: ['Nudeln kochen.', 'Soße erhitzen.', 'Alles mischen.'],
       notes: '',
+      meals: null,
       uncertainties: [],
       vegetarian: null,
     });

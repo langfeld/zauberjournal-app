@@ -1,6 +1,6 @@
 import { categoryLabel, type FoodDuplicateGroup } from '@zauberjournal/core';
 
-import { aiAvailable, askJson, type AiConfig } from './ai.ts';
+import { aiUnreachable, askJson, requireAi, type AiConfig } from './ai.ts';
 
 /** Höchstens so viele Lebensmittel je Anfrage */
 const MAX_FOODS = 2000;
@@ -9,15 +9,6 @@ const MAX_REASON_LENGTH = 80;
 
 /** Ein Lebensmittel, wie es die App zur Prüfung schickt */
 export type DuplicateFood = { id: string; name: string; category: string };
-
-export class DuplicatesError extends Error {
-  readonly status: 502 | 503;
-
-  constructor(message: string, status: 502 | 503) {
-    super(message);
-    this.status = status;
-  }
-}
 
 /** Prüft den Body von `POST /api/foods/duplicates`; `null`, wenn etwas fehlt oder nicht passt. */
 export function readDuplicatesRequest(body: Record<string, unknown>): DuplicateFood[] | null {
@@ -94,7 +85,7 @@ export type FoodDuplicatesConfig = { ai: AiConfig; fetch?: typeof fetch; log?: (
 export function createFoodDuplicates({ ai, fetch: fetchImpl = fetch, log = console.warn }: FoodDuplicatesConfig) {
   return {
     async find(foods: readonly DuplicateFood[]): Promise<FoodDuplicateGroup[]> {
-      if (!aiAvailable(ai)) throw new DuplicatesError('Dafür braucht der Server einen Requesty-Schlüssel (REQUESTY_API_KEY).', 503);
+      requireAi(ai);
       if (foods.length < 2) return [];
       const list = foods.map((food, index) => `${index + 1}: ${food.name} (${categoryLabel(food.category)})`);
       const answer = await askJson(
@@ -103,7 +94,7 @@ export function createFoodDuplicates({ ai, fetch: fetchImpl = fetch, log = conso
         fetchImpl,
         log,
       );
-      if (answer === undefined) throw new DuplicatesError('Die KI ist gerade nicht erreichbar. Bitte versuch es später noch einmal.', 502);
+      if (answer === undefined) throw aiUnreachable();
       return readGroups(answer, foods);
     },
   };

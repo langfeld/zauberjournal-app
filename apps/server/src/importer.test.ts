@@ -32,6 +32,7 @@ const curry = {
   ],
   steps: ['Hähnchen anbraten.', 'Kokosmilch zugeben.'],
   notes: '',
+  meals: ['lunch', 'dinner'],
   uncertainties: ['Kochzeit fehlt in der Vorlage'],
   vegetarian: {
     needed: true,
@@ -207,9 +208,13 @@ describe('toImportedRecipe', () => {
       prepMinutes: -3,
       ingredients: ['1 Zwiebel', { section: 'Einlage', text: '' }, 42],
       steps: ['Kochen.', null],
+      meals: ['dinner', 'Frühstück', 'lunch'],
       vegetarian: { needed: false, groupName: 'Protein' },
     });
     expect(recipe).toMatchObject({ title: 'Suppe', servings: 4, prepMinutes: null, cookMinutes: null, vegetarian: null });
+    // Mahlzeiten in der Reihenfolge des Tages, Unbekanntes fällt weg; ganz ohne Angabe bleiben sie offen.
+    expect(recipe.meals).toEqual(['lunch', 'dinner']);
+    expect(toImportedRecipe({ title: 'Suppe' }).meals).toBeNull();
     expect(recipe.ingredients).toEqual([
       { section: '', text: '1 Zwiebel' },
       { section: 'Einlage', text: '' },

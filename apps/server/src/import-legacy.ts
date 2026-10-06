@@ -2,7 +2,8 @@
  * Übernahme aus dem alten Zauberjournal (Konzept, Stufe M7): Rezepte mit Fotos und bevorzugte
  * REWE-Produkte aus dessen JSON-Export. Das Werkzeug koppelt sich wie ein weiteres Gerät mit dem Server,
  * schreibt über den Sync und meldet sich danach wieder ab. Rezepte, deren Titel es schon gibt, bleiben
- * aus; ein zweiter Lauf übernimmt also nichts doppelt.
+ * aus; ein zweiter Lauf übernimmt also nichts doppelt. Ihre Mahlzeiten aus den Kategorien trägt er aber nach
+ * (seit M8), solange sie im Haushalt niemand selbst festgelegt hat.
  *
  *   node apps/server/src/import-legacy.ts --server https://kochbuch.example.org --code ABCD-EFGH export.json …
  *   node apps/server/src/import-legacy.ts --dry-run export.json …
@@ -19,7 +20,9 @@ import {
   hasRecipeTitled,
   legacyFavoriteWrites,
   legacyIngredientNames,
+  legacyMealWrites,
   legacyRecipeDraft,
+  mealLabel,
   planRecipeSave,
   readLegacyExport,
   tablesSchema,
@@ -144,7 +147,8 @@ if (values['dry-run']) {
   for (const recipe of recipes) {
     const draft = legacyRecipeDraft(recipe, createId);
     const photo = recipe.image ? `Foto ${Math.round(toJpeg(recipe.image.base64).length / 1024)} KB` : 'ohne Foto';
-    console.log(`• ${recipe.title}: ${draft.ingredients.length} Zutatenzeilen, ${draft.steps.length} Schritte, ${photo}`);
+    const meals = recipe.meals?.map(mealLabel).join(' + ') ?? 'keine Mahlzeit';
+    console.log(`• ${recipe.title}: ${draft.ingredients.length} Zutatenzeilen, ${draft.steps.length} Schritte, ${photo}, ${meals}`);
   }
   const empty = tablesOf(createMergeableStore().setSchema(tablesSchema, valuesSchema));
   const favorites = legacyFavoriteWrites(empty, preferences, ingredientNames);
@@ -186,21 +190,29 @@ try {
     console.log(`Rezept übernommen: ${recipe.title}`);
   }
 
+  // Mahlzeiten für Rezepte, die schon da waren
+  const mealWrites = legacyMealWrites(tablesOf(store), recipes.filter((recipe) => skipped.includes(recipe.title)));
+  apply(store, mealWrites);
+
   const favorites = legacyFavoriteWrites(tablesOf(store), preferences, ingredientNames);
   apply(store, favorites.writes);
 
   // Gegenprobe über eine zweite Verbindung: Ist alles auf dem Server angekommen?
   const check = await connect(server, token);
   connections.push(check.synchronizer);
-  const missing = () => [...imported.keys()].filter((id) => !check.store.hasRow('recipes', id));
+  const missing = () => [
+    ...[...imported.keys()].filter((id) => !check.store.hasRow('recipes', id)),
+    ...mealWrites.filter((write) => check.store.getCell('recipes', write.rowId, 'mealsBy') !== 'person').map((write) => write.rowId),
+  ];
   for (let attempt = 0; attempt < 30 && missing().length > 0; attempt++) await sleep(500);
 
   console.log('');
   console.log(`Rezepte: ${imported.size} übernommen, ${skipped.length} schon da.`);
   if (skipped.length > 0) console.log(`  Schon da: ${skipped.join(', ')}`);
+  console.log(`Mahlzeiten: bei ${mealWrites.length} schon vorhandenen Rezepten nachgetragen.`);
   console.log(`REWE: ${favorites.products} Produkte für ${favorites.foods} Lebensmittel gemerkt.`);
   if (missing().length > 0) {
-    console.log(`Achtung: ${missing().length} Rezepte sind noch nicht auf dem Server angekommen. Das Werkzeug bleibt deshalb als Gerät angemeldet.`);
+    console.log(`Achtung: ${missing().length} Rezepte sind noch nicht vollständig auf dem Server angekommen. Das Werkzeug bleibt deshalb als Gerät angemeldet.`);
     process.exitCode = 1;
   } else if (paired) {
     await call(server, `/api/devices/${paired.deviceId}`, { method: 'DELETE', token });

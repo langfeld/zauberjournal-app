@@ -1,6 +1,8 @@
 import type {
   FoodDuplicateGroup,
   ImportedRecipe,
+  MealRequestItem,
+  MealResult,
   NutritionLookupItem,
   NutritionResult,
   Per100,
@@ -205,6 +207,16 @@ export async function findDuplicateFoods(
     body: { foods },
   });
   return groups;
+}
+
+/** Lässt die KI schätzen, zu welchen Mahlzeiten Rezepte passen; das dauert ein paar Sekunden. */
+export async function assignRecipeMeals(credentials: Credentials, recipes: MealRequestItem[]): Promise<MealResult[]> {
+  const { results } = await request<{ results: MealResult[] }>(credentials.serverUrl, '/api/recipes/meals', {
+    method: 'POST',
+    token: credentials.token,
+    body: { recipes },
+  });
+  return results;
 }
 
 export type BlsEntry = { code: string; name: string; per100: Per100 };

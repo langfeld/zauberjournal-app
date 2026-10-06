@@ -25,6 +25,7 @@ function imported(overrides: Partial<ImportedRecipe> = {}): ImportedRecipe {
     ],
     steps: ['Zwiebel anschwitzen.', 'Hähnchen würfeln und anbraten.', 'Mit Kokosmilch ablöschen.', ''],
     notes: 'Dazu passt Reis.',
+    meals: ['lunch', 'dinner'],
     uncertainties: [],
     vegetarian: null,
     ...overrides,
@@ -49,6 +50,9 @@ describe('importedRecipeToDraft', () => {
     ]);
     expect(draft.groups).toEqual([]);
     expect(draft).toMatchObject({ title: 'Hähnchen-Curry', servings: 4, prepMinutes: 15, cookMinutes: 25, source: 'Kochbuch S. 42', notes: 'Dazu passt Reis.', photo: '' });
+    // Die Mahlzeiten hat die KI geschätzt; ohne KI bleiben sie offen.
+    expect(draft).toMatchObject({ meals: ['lunch', 'dinner'], mealsBy: 'ai' });
+    expect(importedRecipeToDraft(imported({ meals: null }), counterIds())).toMatchObject({ meals: [], mealsBy: '' });
     expect(validateRecipeDraft(draft)).toEqual([]);
   });
 

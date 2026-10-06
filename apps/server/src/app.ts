@@ -4,9 +4,11 @@ import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
 
-import { DuplicatesError, readDuplicatesRequest, type FoodDuplicates } from './food-duplicates.ts';
+import { AiError } from './ai.ts';
+import { readDuplicatesRequest, type FoodDuplicates } from './food-duplicates.ts';
 import type { Device, Household } from './household.ts';
 import { ImportError, readImportRequest, type Importer } from './importer.ts';
+import { readMealsRequest, type MealClassifier } from './meal-classifier.ts';
 import { readLookupRequest, type Nutrition } from './nutrition.ts';
 import { isJpeg, isPhotoId, type PhotoStore } from './photos.ts';
 import { isMarketId, matchItems, readMatchRequest, ReweError, type ReweClient } from './rewe.ts';
@@ -52,12 +54,23 @@ export type AppOptions = {
   orders: OrderStore;
   nutrition: Nutrition;
   duplicates: FoodDuplicates;
+  meals: MealClassifier;
   /** Wird aufgerufen, nachdem ein Gerät abgemeldet wurde (z. B. um offene Sync-Verbindungen zu trennen). */
   onDeviceRevoked?: (deviceId: string) => void;
 };
 
 /** HTTP-API des Servers. */
-export function createApp({ household, photos, importer, rewe, orders, nutrition, duplicates, onDeviceRevoked = () => {} }: AppOptions) {
+export function createApp({
+  household,
+  photos,
+  importer,
+  rewe,
+  orders,
+  nutrition,
+  duplicates,
+  meals,
+  onDeviceRevoked = () => {},
+}: AppOptions) {
   const app = new Hono<Env>();
   app.use('/api/*', cors());
 
@@ -196,16 +209,28 @@ export function createApp({ household, photos, importer, rewe, orders, nutrition
     return c.json({ results: nutrition.search(query) });
   });
 
+  /** Gibt Fehler der KI als Meldung an die App weiter. */
+  const askAi = async <T extends object>(c: Context<Env>, ask: () => Promise<T>) => {
+    try {
+      return c.json(await ask());
+    } catch (error) {
+      if (error instanceof AiError) return c.json({ error: error.message }, error.status);
+      throw error;
+    }
+  };
+
   // Lebensmittel, die dasselbe meinen, nach Einschätzung der KI
   app.post('/api/foods/duplicates', requireDevice, async (c) => {
     const foods = readDuplicatesRequest(await readBody(c));
     if (!foods) return c.json({ error: 'Die Lebensmittel zum Prüfen sind unvollständig.' }, 400);
-    try {
-      return c.json({ groups: await duplicates.find(foods) });
-    } catch (error) {
-      if (error instanceof DuplicatesError) return c.json({ error: error.message }, error.status);
-      throw error;
-    }
+    return askAi(c, async () => ({ groups: await duplicates.find(foods) }));
+  });
+
+  // Mahlzeiten für Rezepte, die noch niemand zugeordnet hat, nach Einschätzung der KI
+  app.post('/api/recipes/meals', requireDevice, async (c) => {
+    const recipes = readMealsRequest(await readBody(c));
+    if (!recipes) return c.json({ error: 'Die Rezepte zum Zuordnen sind unvollständig.' }, 400);
+    return askAi(c, async () => ({ results: await meals.classify(recipes) }));
   });
 
   app.get('/api/rewe/order', requireDevice, (c) => c.json({ order: orders.get() }));

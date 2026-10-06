@@ -5,6 +5,8 @@ import {
   draftDates,
   formatDate,
   formatRelativeDate,
+  PAUSE_OPTIONS,
+  pauseRecipe,
   planAddEntry,
   type DraftPick,
   type MealId,
@@ -16,7 +18,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { MEAL_ICONS } from '@/components/category-style';
 import { SuggestionCard } from '@/components/suggestion-card';
-import { Button, Card, Chip, Hint, IconButton, Segmented, Stepper, type SegmentOption } from '@/components/ui';
+import { Button, Card, Chip, Hint, Segmented, Stepper, type SegmentOption } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
 import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
@@ -93,6 +95,8 @@ function Draft({ header, dates, meal, today }: { header: ReactNode; dates: strin
   const planner = useMemo(() => createPlanner(tables, today, meal), [tables, today, meal]);
   const initial = useMemo(() => new Map(planner.draft(dates).map((pick) => [pick.date, pick.recipeId])), [planner, dates]);
   const [changes, setChanges] = useState<Record<string, Change>>({});
+  /** Tag, für dessen Vorschlag gerade die Dauer der Pause gewählt wird */
+  const [pausing, setPausing] = useState<string | null>(null);
 
   // Was an diesen Tagen schon geplant ist, bleibt.
   const occupied = useMemo(() => {
@@ -124,6 +128,12 @@ function Draft({ header, dates, meal, today }: { header: ReactNode; dates: strin
     setChanges({ ...changes, [date]: { recipeId: best?.recipeId ?? null, rejected } });
   };
   const leaveFree = (date: string) => setChanges({ ...changes, [date]: { recipeId: null, rejected: changes[date]?.rejected ?? [] } });
+  /** Das Rezept eine Weile nicht vorschlagen; der Tag bekommt gleich ein anderes. */
+  const pause = (date: string, recipeId: string, days: number | null) => {
+    if (store) applyWrites(store, pauseRecipe(recipeId, today, days));
+    setPausing(null);
+    next(date, true);
+  };
 
   const apply = (now: number) => {
     if (!store || picks.length === 0) return;
@@ -152,17 +162,47 @@ function Draft({ header, dates, meal, today }: { header: ReactNode; dates: strin
                   suggestion={suggestion}
                   accessibilityLabel={`${suggestion.title} ansehen`}
                   onPress={() => router.push({ pathname: '/plan/recipe/[id]', params: { id: suggestion.recipeId } })}
-                  actions={
-                    <View style={styles.actions}>
-                      <IconButton
-                        icon="refresh"
-                        variant="secondary"
-                        size={36}
-                        accessibilityLabel={`Anderes Gericht für ${formatDate(date)}`}
-                        onPress={() => next(date, true)}
-                      />
-                      <IconButton icon="close" variant="muted" size={36} accessibilityLabel={`${formatDate(date)} frei lassen`} onPress={() => leaveFree(date)} />
-                    </View>
+                  footer={
+                    pausing === date ? (
+                      <View style={styles.pause}>
+                        <Text style={styles.pauseLabel}>{`„${suggestion.title}“ wie lange nicht vorschlagen?`}</Text>
+                        <View style={styles.chips}>
+                          {PAUSE_OPTIONS.map((option) => (
+                            <Chip
+                              key={option.label}
+                              label={option.label}
+                              selected={false}
+                              onPress={() => pause(date, suggestion.recipeId, option.days)}
+                            />
+                          ))}
+                        </View>
+                        <Button small variant="ghost" title="Abbrechen" onPress={() => setPausing(null)} />
+                      </View>
+                    ) : (
+                      <View style={styles.actions}>
+                        <Button
+                          small
+                          variant="ghost"
+                          title="Anderes"
+                          accessibilityLabel={`Anderes Gericht für ${formatDate(date)}`}
+                          onPress={() => next(date, true)}
+                        />
+                        <Button
+                          small
+                          variant="ghost"
+                          title="Pausieren"
+                          accessibilityLabel={`„${suggestion.title}“ eine Weile nicht vorschlagen`}
+                          onPress={() => setPausing(date)}
+                        />
+                        <Button
+                          small
+                          variant="ghost"
+                          title="Frei lassen"
+                          accessibilityLabel={`${formatDate(date)} frei lassen`}
+                          onPress={() => leaveFree(date)}
+                        />
+                      </View>
+                    )
                   }
                 />
               ) : (
@@ -196,7 +236,9 @@ const styles = StyleSheet.create({
   date: { fontSize: 13, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase', color: colors.textMuted },
   muted: { fontSize: 15, color: colors.textMuted },
   free: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  actions: { gap: spacing.xs },
+  actions: { flexDirection: 'row', justifyContent: 'space-around' },
+  pause: { gap: spacing.sm, paddingTop: spacing.xs },
+  pauseLabel: { fontSize: 15, lineHeight: 21, color: colors.text },
   footer: {
     padding: spacing.lg,
     paddingTop: spacing.md,

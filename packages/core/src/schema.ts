@@ -5,6 +5,7 @@ import { STOCK_UNITS } from './foods.ts';
 import { MEAL_IDS } from './meals.ts';
 import { NUTRITION_SOURCES } from './nutrition.ts';
 import { PANTRY_REASONS } from './pantry.ts';
+import { RECIPE_MEALS_BY } from './recipe-meals.ts';
 import { REWE_STATES } from './rewe.ts';
 
 const optionalNumber = { type: 'number', allowNull: true, default: null } as const;
@@ -32,6 +33,15 @@ export const tablesSchema = {
     notes: { type: 'string', default: '' },
     /** ID des Rezeptfotos; die Datei liegt auf dem Server. Leer = kein Foto. */
     photo: { type: 'string', default: '' },
+    /** Wozu das Rezept passt (seit M8), wie die Mahlzeiten des Plans; keine = kein eigenes Gericht. */
+    mealBreakfast: { type: 'boolean', default: false },
+    mealLunch: { type: 'boolean', default: false },
+    mealDinner: { type: 'boolean', default: false },
+    mealSnack: { type: 'boolean', default: false },
+    /** Wer die Mahlzeiten festgelegt hat: leer = noch niemand (dann ordnet die KI zu), `ai` = die KI, `person` = jemand im Haushalt. */
+    mealsBy: { enum: RECIPE_MEALS_BY, default: '' },
+    /** Vor diesem Tag (`JJJJ-MM-TT`) nicht vorschlagen; leer = keine Pause. */
+    pausedUntil: { type: 'string', default: '' },
     createdAt: { type: 'number', default: 0 },
     updatedAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,
