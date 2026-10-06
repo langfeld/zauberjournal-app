@@ -2,6 +2,7 @@ import { dayOf, formatShortDate } from './dates.ts';
 import { FOOD_CATEGORIES, type FoodCategory } from './food-catalog.ts';
 import { createFoodResolver, type FoodResolver, type FoodStock, type StockUnit } from './foods.ts';
 import { parseIngredientLine } from './ingredient-line.ts';
+import type { FoodNutritionRow } from './nutrition.ts';
 import { stockLevels, toStockAmount, type PantryBookingRow } from './pantry.ts';
 import { buildPlanEntry, createDietLookup, type PlanTables } from './plan.ts';
 import { formatAmount, roundScaledAmount } from './quantity.ts';
@@ -38,6 +39,7 @@ export type ShoppingTables = PlanTables & {
   reweProducts: Table<ReweProductRow>;
   reweFavorites: Table<ReweFavoriteRow>;
   pantryBookings: Table<PantryBookingRow>;
+  foodNutrition: Table<FoodNutritionRow>;
 };
 
 // ─── Einheiten zusammenfassen ───

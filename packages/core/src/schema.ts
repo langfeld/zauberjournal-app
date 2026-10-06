@@ -3,6 +3,7 @@ import type { TablesSchema, ValuesSchema } from 'tinybase';
 import { FOOD_CATEGORY_IDS, FOOD_DIET_IDS } from './food-catalog.ts';
 import { STOCK_UNITS } from './foods.ts';
 import { MEAL_IDS } from './meals.ts';
+import { NUTRITION_SOURCES } from './nutrition.ts';
 import { PANTRY_REASONS } from './pantry.ts';
 import { REWE_STATES } from './rewe.ts';
 
@@ -153,6 +154,8 @@ export const tablesSchema = {
     price: { type: 'number', default: 0 },
     grammage: { type: 'string', default: '' },
     listingId: { type: 'string', default: '' },
+    /** EAN des Produkts (seit M6), für die Nährwerte von Open Food Facts; leer = unbekannt. */
+    ean: { type: 'string', default: '' },
     updatedAt: { type: 'number', default: 0 },
   },
   /**
@@ -169,6 +172,27 @@ export const tablesSchema = {
     entryId: { type: 'string', default: '' },
     createdAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,
+  },
+  /**
+   * Nährwerte je Lebensmittel (seit M6), Zeilen-ID = Lebensmittel: Werte je 100 g aus dem BLS oder für das
+   * REWE-Produkt aus Open Food Facts, dazu das Stückgewicht für Zutaten in Stück.
+   */
+  foodNutrition: {
+    source: { enum: NUTRITION_SOURCES, default: '' },
+    code: { type: 'string', default: '' },
+    label: { type: 'string', default: '' },
+    ean: { type: 'string', default: '' },
+    pinned: { type: 'boolean', default: false },
+    checkedAt: { type: 'number', default: 0 },
+    gramsPerPiece: optionalNumber,
+    kcal: optionalNumber,
+    fat: optionalNumber,
+    saturatedFat: optionalNumber,
+    carbs: optionalNumber,
+    sugar: optionalNumber,
+    fiber: optionalNumber,
+    protein: optionalNumber,
+    salt: optionalNumber,
   },
   /**
    * Gemerkte REWE-Produkte je Lebensmittel, ID `<Lebensmittel>~<Produkt>`. Beim Abgleich gilt das erste,

@@ -6,6 +6,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-na
 import { HeaderButton, HeaderRight } from '@/components/header';
 import { Icon } from '@/components/icon';
 import { NotFound } from '@/components/not-found';
+import { RecipeNutrition } from '@/components/nutrition';
 import { RecipeBody } from '@/components/recipe-body';
 import { RecipeCover } from '@/components/recipe-photo';
 import { Card, Stepper, Tag } from '@/components/ui';
@@ -87,6 +88,7 @@ export default function RecipeDetailScreen() {
         </Card>
 
         <RecipeBody view={view} servings={total} distribution={current} />
+        <RecipeNutrition recipeId={view.id} />
 
         {view.notes ? (
           <View style={styles.notes}>

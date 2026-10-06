@@ -35,9 +35,14 @@ describe('REWE', () => {
       categoryPath: 'Obst & Gemüse/Frisches Gemüse/Zwiebeln & Knoblauch/',
       tags: [],
       listingId: '8-RHN5TTNE-00000000-0000-4000-8000-000000000000',
+      ean: '',
     });
     expect(products[1]?.tags).toEqual(['organic']);
     expect(parseProducts({})).toEqual([]);
+    // Die EAN steht am Artikel (in den gekürzten Antworten oben fehlt sie).
+    const article = { gtin: '4337256836975', _embedded: { listing: { id: 'l1', pricing: { currentRetailPrice: 149 } } } };
+    const withEan = { _embedded: { products: [{ id: '1', productName: 'Kokosmilch', _embedded: { articles: [article] } }] } };
+    expect(parseProducts(withEan)[0]?.ean).toBe('4337256836975');
   });
 
   it('speichert Suchergebnisse einige Stunden zwischen', async () => {

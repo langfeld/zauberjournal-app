@@ -32,6 +32,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
+import { FoodNutrition } from '@/components/food-nutrition';
 import { Icon } from '@/components/icon';
 import { NotFound } from '@/components/not-found';
 import {
@@ -241,6 +242,8 @@ export default function FoodScreen() {
           </Card>
         </>
       ) : null}
+
+      <FoodNutrition foodId={id} />
 
       <SectionTitle>Warengruppe</SectionTitle>
       <View style={styles.chips}>

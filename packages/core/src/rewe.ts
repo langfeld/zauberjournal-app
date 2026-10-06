@@ -23,6 +23,8 @@ export type ReweProduct = {
   tags: string[];
   /** Listing-ID im gewählten Markt. */
   listingId: string;
+  /** EAN des Artikels, für die Nährwerte von Open Food Facts; leer = unbekannt. */
+  ean: string;
 };
 
 export type ReweMarket = { id: string; name: string; street: string; zipCode: string; city: string; distance: number };
@@ -395,6 +397,8 @@ export type ReweProductRow = {
   price: number;
   grammage: string;
   listingId: string;
+  /** EAN des Produkts, für die Nährwerte; leer = unbekannt. */
+  ean: string;
   updatedAt: number;
 };
 

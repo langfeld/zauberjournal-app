@@ -34,6 +34,17 @@ KI-Import mit anthropic/claude-sonnet-5-5, ersatzweise google/gemini-3.6-flash
 
 Ohne Schlüssel lassen sich nur Links von Rezeptseiten mit schema.org-Daten importieren, etwa von Chefkoch. Gemessen mit Claude Sonnet 5.5 kostet ein Import aus Text etwa 1,5 Cent, aus einem Foto etwa 2,5 Cent. Ein Link mit langen Schritten kostet etwa 5 Cent und dauert 10 bis 35 Sekunden. Gemini 3.6 Flash ist etwa dreimal günstiger und schneller, liest aber weniger genau. Die Abrechnung zeigt Requesty. Andere Modelle stellt man über `IMPORT_MODEL` und `IMPORT_FALLBACK_MODEL` ein (Modellnamen wie bei Requesty, z. B. `openai/gpt-5.4-mini`). Bei Fehlern schreibt der Server die Antwort von Requesty ins Protokoll.
 
+### Nährwerte
+
+Die App schlägt die Nährwerte der Lebensmittel aus den Rezepten im Hintergrund über den Server nach, sobald er erreichbar ist. Einrichten muss man dafür nichts:
+
+- **Gekaufte Produkte:** Hat ein Lebensmittel ein REWE-Produkt, fragt der Server [Open Food Facts](https://world.openfoodfacts.org) nach dessen EAN. Dafür braucht er Zugang ins Internet. Die Antworten hält er in `zauberjournal.db` vor.
+- **Alles andere:** Die KI wählt einen Eintrag im Bundeslebensmittelschlüssel (BLS). Sie nutzt denselben Requesty-Schlüssel und dieselben Modelle wie der Import. Im Testhaushalt brauchte der erste Durchlauf für 66 Lebensmittel 5 Anfragen und 36 Sekunden; danach kommen nur neue Lebensmittel dazu. Die Kosten zeigt Requesty.
+
+Ohne Schlüssel nimmt der Server nur Treffer, die nach dem Namen sicher passen. Fehlende Einträge wählt man in der App unter Vorrat → Lebensmittel.
+
+Der BLS steckt als Datei im Image (`apps/server/src/data/bls.json`). Für eine neue Version die Excel-Datei von [blsdb.de](https://blsdb.de/download) laden und im Repo `python3 scripts/create-bls-data.py <Datei>` ausführen (braucht `openpyxl`). Danach ein neues Image bauen.
+
 ### Backup
 
 Alle Daten liegen im Dataset: `zauberjournal.db` und der Ordner `photos/` mit den Rezeptfotos. ZFS-Snapshots des Datasets sind das Backup. Zum Zurückspielen die App stoppen, den Snapshot zurückrollen und die App wieder starten.

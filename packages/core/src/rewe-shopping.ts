@@ -150,10 +150,11 @@ function productCells(product: ReweProduct): Record<string, CellValue> {
     price: product.price,
     grammage: product.grammage,
     listingId: product.listingId,
+    ean: product.ean ?? '',
   };
 }
 
-const NO_PRODUCT = { productId: '', name: '', imageUrl: '', price: 0, grammage: '', listingId: '' };
+const NO_PRODUCT = { productId: '', name: '', imageUrl: '', price: 0, grammage: '', listingId: '', ean: '' };
 
 /** Schreibt das Produkt eines Lebensmittels; wechselt es, gelten wieder die berechneten Packungen. */
 function writeProduct(

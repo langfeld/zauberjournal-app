@@ -6,6 +6,7 @@ import { createMiddleware } from 'hono/factory';
 
 import type { Device, Household } from './household.ts';
 import { ImportError, readImportRequest, type Importer } from './importer.ts';
+import { readLookupRequest, type Nutrition } from './nutrition.ts';
 import { isJpeg, isPhotoId, type PhotoStore } from './photos.ts';
 import { isMarketId, matchItems, readMatchRequest, ReweError, type ReweClient } from './rewe.ts';
 import { loadUserscript, readOrderRequest, readOrderResults, type OrderStore } from './rewe-order.ts';
@@ -48,12 +49,13 @@ export type AppOptions = {
   importer: Importer;
   rewe: ReweClient;
   orders: OrderStore;
+  nutrition: Nutrition;
   /** Wird aufgerufen, nachdem ein Gerät abgemeldet wurde (z. B. um offene Sync-Verbindungen zu trennen). */
   onDeviceRevoked?: (deviceId: string) => void;
 };
 
 /** HTTP-API des Servers. */
-export function createApp({ household, photos, importer, rewe, orders, onDeviceRevoked = () => {} }: AppOptions) {
+export function createApp({ household, photos, importer, rewe, orders, nutrition, onDeviceRevoked = () => {} }: AppOptions) {
   const app = new Hono<Env>();
   app.use('/api/*', cors());
 
@@ -177,6 +179,19 @@ export function createApp({ household, photos, importer, rewe, orders, onDeviceR
     const request = readMatchRequest(await readBody(c));
     if (!request) return c.json({ error: 'Die Positionen für den Abgleich sind unvollständig.' }, 400);
     return askRewe(c, async () => ({ results: await matchItems(rewe, request) }));
+  });
+
+  // Nährwerte: BLS und Open Food Facts; die App merkt sich das Ergebnis je Lebensmittel.
+  app.post('/api/nutrition/lookup', requireDevice, async (c) => {
+    const items = readLookupRequest(await readBody(c));
+    if (!items) return c.json({ error: 'Die Lebensmittel zum Nachschlagen sind unvollständig.' }, 400);
+    return c.json({ results: await nutrition.lookup(items) });
+  });
+
+  app.get('/api/nutrition/search', requireDevice, (c) => {
+    const query = (c.req.query('q') ?? '').trim();
+    if (!query || query.length > 80) return c.json({ error: 'Bitte einen Suchbegriff angeben.' }, 400);
+    return c.json({ results: nutrition.search(query) });
   });
 
   app.get('/api/rewe/order', requireDevice, (c) => c.json({ order: orders.get() }));

@@ -1,5 +1,8 @@
 import type {
   ImportedRecipe,
+  NutritionLookupItem,
+  NutritionResult,
+  Per100,
   ReweMarket,
   ReweMatchRequestItem,
   ReweMatchResult,
@@ -178,6 +181,28 @@ export async function sendReweOrder(credentials: Credentials, order: ReweOrderRe
     body: order,
   });
   return result.order;
+}
+
+/** Schlägt Nährwerte nach: Open Food Facts für REWE-Produkte, sonst der BLS; die KI ordnet zu, das dauert etwas. */
+export async function lookupNutrition(credentials: Credentials, foods: NutritionLookupItem[]): Promise<NutritionResult[]> {
+  const { results } = await request<{ results: NutritionResult[] }>(credentials.serverUrl, '/api/nutrition/lookup', {
+    method: 'POST',
+    token: credentials.token,
+    body: { foods },
+  });
+  return results;
+}
+
+export type BlsEntry = { code: string; name: string; per100: Per100 };
+
+/** Sucht Einträge im BLS, um einem Lebensmittel von Hand Nährwerte zuzuordnen. */
+export async function searchNutrition(credentials: Credentials, query: string, signal?: AbortSignal): Promise<BlsEntry[]> {
+  const { results } = await request<{ results: BlsEntry[] }>(
+    credentials.serverUrl,
+    `/api/nutrition/search?q=${encodeURIComponent(query)}`,
+    { token: credentials.token, signal },
+  );
+  return results;
 }
 
 /** Adresse, unter der der Server das Userscript ausliefert. */

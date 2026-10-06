@@ -8,7 +8,8 @@ import { serve } from '@hono/node-server';
 import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
 import { createHousehold } from './household.ts';
-import { createImporter, type ImporterConfig } from './importer.ts';
+import { createImporter, REQUESTY_BASE_URL, type ImporterConfig } from './importer.ts';
+import { createNutrition } from './nutrition.ts';
 import { createPhotoStore } from './photos.ts';
 import { createReweClient } from './rewe.ts';
 import { createOrderStore } from './rewe-order.ts';
@@ -47,6 +48,12 @@ export async function startServer({
     importer,
     rewe: createReweClient({ db, log }),
     orders: createOrderStore(db),
+    nutrition: createNutrition({
+      db,
+      // Dieselbe KI wie beim Import ordnet Zutaten dem BLS zu.
+      ai: { apiKey: importerConfig.apiKey, models: importerConfig.models, baseUrl: importerConfig.baseUrl ?? REQUESTY_BASE_URL },
+      log,
+    }),
     onDeviceRevoked: (deviceId) => {
       sync.disconnectDevice(deviceId);
       announceSetupCode();

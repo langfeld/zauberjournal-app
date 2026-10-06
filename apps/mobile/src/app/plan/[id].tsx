@@ -25,6 +25,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MEAL_ICONS } from '@/components/category-style';
 import type { IconName } from '@/components/icon';
 import { NotFound } from '@/components/not-found';
+import { PlanEntryNutrition } from '@/components/nutrition';
 import { RecipeBody } from '@/components/recipe-body';
 import { RecipePhoto } from '@/components/recipe-photo';
 import {
@@ -201,7 +202,10 @@ export default function PlanEntryScreen() {
           </Card>
 
           {entry.servings > 0 ? (
-            <RecipeBody view={entry.recipe} servings={entry.servings} distribution={entry.distribution} />
+            <>
+              <PlanEntryNutrition entryId={entry.id} />
+              <RecipeBody view={entry.recipe} servings={entry.servings} distribution={entry.distribution} />
+            </>
           ) : (
             <Hint>Niemand isst mit, deshalb gibt es nichts einzukaufen.</Hint>
           )}

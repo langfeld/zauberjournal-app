@@ -85,7 +85,8 @@ export function parseProducts(data: unknown): ReweProduct[] {
   return (Array.isArray(products) ? products : [])
     .filter(isObject)
     .map((product): ReweProduct => {
-      const listing = at(first(at(product, '_embedded', 'articles')), '_embedded', 'listing');
+      const article = first(at(product, '_embedded', 'articles'));
+      const listing = at(article, '_embedded', 'listing');
       const tags = at(product, 'attributes', 'tags');
       return {
         id: str(product.id),
@@ -98,6 +99,7 @@ export function parseProducts(data: unknown): ReweProduct[] {
         categoryPath: str(at(product, '_embedded', 'categoryPath')),
         tags: isObject(tags) ? Object.keys(tags) : [],
         listingId: str(at(listing, 'id')),
+        ean: str(at(article, 'gtin')),
       };
     })
     .filter((product) => product.id && product.name && product.price > 0 && product.listingId);

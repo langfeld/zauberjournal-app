@@ -9,6 +9,7 @@ import { createApp } from './app.ts';
 import { openDatabase } from './database.ts';
 import { createHousehold } from './household.ts';
 import { createImporter } from './importer.ts';
+import { createNutrition } from './nutrition.ts';
 import { createPhotoStore } from './photos.ts';
 import { ReweError, type ReweClient } from './rewe.ts';
 import { createOrderStore } from './rewe-order.ts';
@@ -38,6 +39,8 @@ function setUp() {
     importer: createImporter({ apiKey: '', models: [], log: () => {} }),
     rewe,
     orders: createOrderStore(db, () => 1000),
+    // Ohne KI und ohne Netz: Open Food Facts kennt nichts, der BLS hilft mit dem besten Treffer.
+    nutrition: createNutrition({ db, fetch: async () => new Response('', { status: 404 }), pauseMs: 0, log: () => {} }),
     onDeviceRevoked: (deviceId) => revoked.push(deviceId),
   });
   const post = (path: string, body: unknown, token?: string) =>
@@ -208,6 +211,22 @@ describe('API', () => {
     const removed = await app.request('/api/rewe/order', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     expect(removed.status).toBe(204);
     expect(await (await get('/api/rewe/order', token)).json()).toEqual({ order: null });
+  });
+
+  it('schlägt Nährwerte nach und sucht im BLS', async () => {
+    const { household, get, post } = setUp();
+    const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;
+    expect((await post('/api/nutrition/lookup', { foods: [] }, token)).status).toBe(400);
+    expect((await post('/api/nutrition/lookup', { foods: [{ id: 'food:x', name: 'Zwiebel' }] })).status).toBe(401);
+
+    const lookup = await post('/api/nutrition/lookup', { foods: [{ id: 'food:zwiebel', name: 'Speisezwiebel', ean: '4000000000000' }] }, token);
+    const { results } = (await lookup.json()) as { results: { id: string; source: string; label: string; per100: { kcal: number } }[] };
+    expect(results).toEqual([expect.objectContaining({ id: 'food:zwiebel', source: 'bls', label: 'Speisezwiebel roh' })]);
+    expect(results[0]?.per100.kcal).toBeGreaterThan(20);
+
+    const search = (await (await get('/api/nutrition/search?q=Kokosmilch', token)).json()) as { results: { name: string }[] };
+    expect(search.results[0]?.name).toBe('Kokosmilch/Kokosnussmilch');
+    expect((await get('/api/nutrition/search?q=', token)).status).toBe(400);
   });
 
   it('liefert das Userscript mit der Adresse des Servers aus', async () => {

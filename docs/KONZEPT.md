@@ -35,7 +35,7 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; vegetarischer Vorschlag; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst ✅ (umgesetzt; siehe Abschnitt 9) |
 | **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE ✅ (umgesetzt; siehe Abschnitte 6, 7 und 12) |
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt ✅ (umgesetzt und am 6. Oktober 2026 auf rewe.de bestätigt; siehe Abschnitt 8 und [BETRIEB.md](BETRIEB.md)) |
-| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat (Vorrat aus dem Einkauf umgesetzt: Einbuchen beim Abschließen der Liste, Abbuchen nach dem Plantag, Frisches läuft ab; offen: Nährwerte, Vegetarisch-Prüfung) |
+| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat (umgesetzt: Vorrat aus dem Einkauf mit Einbuchen beim Abschließen der Liste, Abbuchen nach dem Plantag und Ablauf von Frischem; Nährwerte pro Person und Portion aus BLS und Open Food Facts; offen: Vegetarisch-Prüfung) |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System ✅ (34 Rezepte und 78 REWE-Vorlieben am 5. Oktober 2026 übernommen; Werkzeug siehe [BETRIEB.md](BETRIEB.md)) |
 | **Später** | Kochmodus mit Timern, Planvorschläge, Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN | |
 
@@ -57,7 +57,7 @@ Die Reihenfolge von M3 bis M5 lässt sich tauschen. M3 steht vorne, weil alles W
 │  node:sqlite: Haushaltsdaten, Geräte        │
 │  Dateien: Fotos (Name = zufällige ID)       │
 │  KI-Import (Requesty), REWE-Abgleich,       │
-│  BLS-Nährwerte                              │
+│  Nährwerte (BLS, Open Food Facts)           │
 └───────────────────▲─────────────────────────┘
                     │  HTTPS mit Gerätetoken
       Userscript auf rewe.de (PC oder Firefox Android)
@@ -69,7 +69,8 @@ Die Reihenfolge von M3 bis M5 lässt sich tauschen. M3 steht vorne, weil alles W
 apps/mobile      Expo-App (React Native, Expo Router)
 apps/server      NAS-Dienst (Node 24, Hono)
 packages/core    gemeinsame Logik: Schema, Mengen und Einheiten,
-                 Einkaufslisten-Berechnung, Bewertung beim REWE-Abgleich
+                 Einkaufslisten-Berechnung, Bewertung beim REWE-Abgleich,
+                 Vorrat und Nährwerte
 userscript/      REWE-Userscript (ab M5)
 docs/            Konzept und Entscheidungen
 ```
@@ -89,7 +90,7 @@ Das Repo nutzt npm-Workspaces. Server und `core` brauchen keinen Build-Schritt: 
   - Reihenfolgen laufen über Sortierschlüssel (Bruchindex), nicht über Positionsnummern.
   - Zellen enthalten keine verschachtelten Objekte. Listen bekommen eigene Tabellen.
 - **Fotos** laufen nicht über den Store, sondern als Dateien: Upload und Download gehen über HTTP, im Store steht nur die ID. Die ID ist zufällig wie bei allen Einträgen, damit ein Foto auch offline sofort eine bekommt. Ein Foto ändert sich nie; ein neues Foto bekommt eine neue ID. Die App behält eigene Fotos auf dem Gerät und lädt sie hoch, sobald der Server erreichbar ist. Fotos anderer Geräte lädt sie vom Server und speichert sie zwischen.
-- **Referenzdaten** wie BLS-Nährwerte und Kategorien sind schreibgeschützt. Sie kommen als eigene SQLite-Datei vom Server.
+- **Referenzdaten:** Der BLS liegt nur auf dem Server, als Datei im Image. Die App bekommt daraus nur die Werte der Lebensmittel, die der Haushalt braucht, und merkt sie sich im Store (`foodNutrition`). So rechnet sie auch offline. Die Warengruppen stehen im Code.
 
 ### 5.3 Aufgaben des Servers
 
@@ -98,7 +99,7 @@ Das Repo nutzt npm-Workspaces. Server und `core` brauchen keinen Build-Schritt: 
 3. Fotos speichern und ausliefern.
 4. KI-Import über Requesty.
 5. REWE: Produktsuche, Abgleich, Auftrag fürs Userscript, Rückmeldung.
-6. Referenzdaten (BLS) aufbereiten und ausliefern.
+6. Nährwerte nachschlagen: Open Food Facts per EAN abfragen und vorhalten, Zutaten dem BLS zuordnen (mit KI).
 
 Alle Daten liegen in einem Volume `/data`. Dafür bekommt der Server ein eigenes TrueNAS-Dataset, dessen ZFS-Snapshots als Backup dienen.
 
@@ -115,8 +116,7 @@ Die Feldnamen sind vorläufig. Was schon umgesetzt ist, steht in `packages/core/
 **Personen** (`members`): Name, Ernährungsform (`vegan` | `vegetarisch` | `alles`). Später: streng vegetarisch (schließt auch Lab und Gelatine aus), Abneigungen.
 
 **Lebensmittel** (`foods`): der zentrale Katalog, auf den alles verweist. Seit M4: Name, Warengruppe (für die Sortierung der Einkaufsliste), Ernährungsklasse (`vegan` | `vegetarisch` | `fleisch` | `fisch`) und „immer im Haus“ (siehe Vorrat). Seit M6 die Vorratseinheit (`g` | `ml` | `Stück`); sie entsteht beim ersten Einkauf. Später kommen dazu:
-- Gramm pro Stück, Gramm pro ml (für die Nährwerte)
-- BLS-Code, Hinweise (z. B. tierisches Lab)
+- Hinweise (z. B. tierisches Lab)
 - REWE-Suchbegriff, REWE-Ausschlusswörter
 
 **Zuordnung der Zutaten** (`foodAliases`): Eine Zutat zeigt nicht selbst auf ein Lebensmittel. Ihr Name wird beim Planen und Einkaufen zugeordnet:
@@ -156,11 +156,18 @@ Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten�
   - `chosen`: ein gemerktes Produkt
   - `missing`: Keins der gemerkten Produkte war zu finden; das Produkt ist ein Vorschlag zum Prüfen.
   - `skip`: nicht bei REWE kaufen
+- Seit M6 steht in `reweProducts` auch die EAN; mit ihr fragt der Server Open Food Facts nach den Nährwerten.
 - `reweFavorites`: gemerkte Produkte je Lebensmittel als Rangliste (feste ID `<Lebensmittel>~<Produkt>`, Reihenfolge über Sortierschlüssel, Soft-Delete). Sie enthalten Produkt-ID, Name, Bild, Preis und Packungsangabe für die Anzeige. Wird ein Produkt vergessen, das gerade für den Einkauf gilt, zeigt die App es wieder als Vorschlag zum Prüfen.
+
+**Nährwerte** (seit M6): `foodNutrition`, eine Zeile je Lebensmittel (Zeilen-ID = Lebensmittel), damit `foods` schlank bleibt. Sie enthält:
+- Quelle (`bls` | `off` | `none` = nichts gefunden; leer = noch nicht nachgeschlagen), BLS-Code oder EAN und den Namen des Eintrags
+- die EAN, mit der nachgeschlagen wurde (wechselt das REWE-Produkt, wird neu nachgeschlagen), „von Hand gewählt“ (`pinned`) und den Zeitpunkt
+- das Stückgewicht in Gramm für Zutaten in Stück, Dose, Zehe, Bund usw.
+- die acht Werte der Nährwerttabelle je 100 g: Energie, Fett, gesättigte Fettsäuren, Kohlenhydrate, Zucker, Ballaststoffe, Eiweiß, Salz (leer = unbekannt)
 
 **Einstellungen** (TinyBase-Values): aktive Mahlzeiten (seit M4, je ein Schalter; Standard: nur Abendessen), seit M5 der REWE-Markt (ID, Name, Adresse) und „Bio bevorzugen“. Standardportionen braucht es nicht: Die Portionen ergeben sich aus den Personen.
 
-**Nur auf dem Server, nicht im Store:** Haushalte, Geräte und Tokens, Einladungen, Zwischenspeicher für REWE-Produkte, KI-Protokoll.
+**Nur auf dem Server, nicht im Store:** Haushalte, Geräte und Tokens, Einladungen, Zwischenspeicher für REWE-Produkte und Open Food Facts, der BLS, KI-Protokoll.
 
 ### 6.1 Geteilte Portionen (Wahlkomponenten)
 
@@ -182,7 +189,13 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - Vorrat (M6): Der Bestand wird vom Bedarf abgezogen, wenn sich die Einheit umrechnen lässt (g/kg, ml/cl/dl/l, EL = 15 ml, TL = 5 ml, Gramm = Milliliter; Dose, Glas, Packung usw. = 1 Stück). Deckt er alles, steht die Position unter „Vorrat prüfen“, sonst steht nur der Rest auf der Liste. Von selbst nachgekauft wird nur, was immer im Haus sein soll.
 - **Einbuchen (M6):** Beim Abschließen der Liste kommt in den Vorrat, was Rezepte brauchen oder immer im Haus sein soll (Spülmittel & Co. nicht). Die Mengen kommen aus den REWE-Packungen, sonst aus der Liste; die Seite zeigt alles vorausgewählt, ein Tipp bucht ein. Ist mindestens die Hälfte abgehakt, gilt das als Einkauf im Laden, und nur Abgehaktes ist vorausgewählt. Neue Lebensmittel bekommen die Einheit der Rezepte, wenn der Einkauf dazu passt, sonst die der Packung; bei Gramm und Milliliter zählt die der Packung.
 - **Abbuchen (M6):** Ist der Tag eines eingekauften Gerichts vorbei, gilt es als gekocht und seine Zutaten gehen ab; „gekocht“ lässt sich auch selbst wählen. Gebucht wird beim Setzen, also immer nach dem Einkauf. Bei Stück wird auf ganze Stück aufgerundet (eine angebrochene Dose kommt nicht zurück). Wer den Status zurücksetzt oder den Eintrag entfernt, nimmt die Abbuchung zurück. Für Gekochtes braucht eine offene Liste nichts mehr, sonst zählte der Bedarf doppelt.
-- **Nährwerte (M6):** Menge in Gramm × BLS-Wert pro 100 g, für jede Person passend zu ihren Optionen.
+- **Nährwerte (M6):** Menge in Gramm × Wert je 100 g, im Plan für jede Person passend zu ihren Portionen und Optionen, im Rezept je Portion (mit Wahlkomponente je Option der ersten Gruppe).
+  - **Gramm:** feste Gewichte für g/kg, ml/l (Gramm = Milliliter), EL = 15 g, TL = 5 g, Prise, Handvoll usw.; für Stück, Dose, Zehe, Bund usw. das Stückgewicht des Lebensmittels. Zutaten ohne Menge („Salz“) zählen nicht, bei Spannen zählt die Mitte.
+  - **Lücken:** Was sich nicht umrechnen lässt oder keine Werte hat, steht als „Ohne Werte“ da. Fehlt bei einer Zutat nur ein einzelner Wert, ist die Summe eine Untergrenze und trägt ein „≥“.
+  - **Quellen:** Für Lebensmittel mit REWE-Produkt fragt der Server Open Food Facts per EAN (Zwischenspeicher: gefunden 30 Tage, nicht gefunden 7 Tage). Das gilt nur mit allen Pflichtangaben der Nährwerttabelle; Ballaststoffe sind freiwillig. Sonst gilt ein BLS-Eintrag und nur ohne passenden Eintrag das lückenhafte Produkt.
+  - **Zuordnung zum BLS:** Der Server sucht Kandidaten über die Namen (Kernwort hinten wie beim REWE-Abgleich, Rohes vor Zubereitetem) und lässt die KI wählen, bei Bedarf in einer zweiten Runde mit besserem Suchbegriff („Eier“ → „Hühnerei roh“). Sie schätzt auch das Stückgewicht. Ohne KI gilt nur ein sicherer Treffer.
+  - **Stückgewicht:** Selbst eingetragen geht vor der REWE-Packung („1 Stück ca. 100 g“, nur wenn die Rezepte in Stück zählen), diese vor der Schätzung der KI.
+  - **Ablauf:** Die App schlägt im Hintergrund nach, was Rezepte brauchen und noch keine Werte hat, in Teilen zu 15. Neu nachgeschlagen wird, wenn das REWE-Produkt wechselt oder nach zwei Wochen ohne Treffer. Ein von Hand gewählter BLS-Eintrag bleibt, bis man wieder automatisch zuordnen lässt.
 
 ## 8. REWE
 
@@ -259,7 +272,7 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
 | Server | Node 24, Hono, TinyBase-`WsServer`, `node:sqlite` | klein, TypeScript ohne Build-Schritt |
 | Tests | Vitest | für `core` und Server |
 | KI | Requesty (OpenAI-kompatibel) | Modellwahl, Fallbacks, JSON-Schema |
-| Nährwerte | BLS 4.0 (CC BY 4.0) | kostenlos, deutsche Daten |
+| Nährwerte | BLS 4.0 (CC BY 4.0), Open Food Facts (ODbL) | kostenlos; BLS für Grundlebensmittel, Open Food Facts für gekaufte Produkte |
 | Betrieb | Docker auf TrueNAS, Pangolin | schon vorhanden |
 | Verteilung | APK per GitHub Actions, GitHub-Release, Obtainium; später optional Over-the-air-Updates | ohne Play Store und ohne lokale Android-Werkzeuge |
 
@@ -313,6 +326,9 @@ Entschieden bei der Umsetzung von M6 (Vorrat, 5. und 6. Oktober 2026):
 - **Bestand als Summe von Buchungen** in der Vorratseinheit. Wechselt die Einheit, fängt der Bestand bei null an; die alten Buchungen bleiben erhalten.
 - **Gramm und Milliliter gelten im Vorrat als gleich;** Prise, Zehe, Bund usw. werden nicht gebucht.
 - **Nährwerte aus BLS und Open Food Facts:** BLS (lokal) für Grundlebensmittel, OFF per EAN für die REWE-Produkte des Haushalts (vom Server abgefragt und vorgehalten). Ein lokaler Komplett-Auszug von OFF ist nicht nötig.
+- **BLS auf dem Server, Werte im Store:** Die App lädt nicht den ganzen BLS, sondern merkt sich die Werte ihrer Lebensmittel (`foodNutrition`). Ausgewählt wird mit dem BLS-Auszug in `apps/server/src/data/bls.json`, erzeugt mit `scripts/create-bls-data.py`.
+- **Zuordnung mit KI:** Die Suche über Namen allein trifft zu oft daneben („Eier“, „Spaghetti“, „Salz und Pfeffer“). Der Server schlägt Kandidaten vor, die KI wählt. Niemand muss Lebensmittel von Hand zuordnen; wer will, wählt auf der Seite des Lebensmittels einen anderen Eintrag.
+- **Lückenhafte Produktdaten:** Fehlt bei Open Food Facts eine Pflichtangabe (etwa die gesättigten Fettsäuren bei Kokosmilch), ist der BLS-Eintrag genauer als eine Summe mit Lücke.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.
