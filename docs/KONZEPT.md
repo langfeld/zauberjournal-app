@@ -216,6 +216,7 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Lieblingsessen:** Rezepte mit Herz kommen etwas öfter („Lieblingsessen“); Vorrat, der weg muss, geht trotzdem vor, und die Abwechslung gilt auch für sie.
   - **Aufwand:** Unter der Woche kostet ein Rezept über 45 Minuten ein wenig, mehr nicht.
 - **Passt zu (M8):** Wozu ein Rezept passt, schätzt die KI: beim Import gleich mit (in der Prüfansicht änderbar), für vorhandene Rezepte einmal im Hintergrund, sobald der Server erreichbar ist. Im Editor lässt es sich ändern; was jemand festlegt, überschreibt die KI nie. Die Rezeptliste filtert danach (Favoriten, Frühstück, Mittagessen, Abendessen, Snack, Beilagen & Co., Pausiert); die Filter klappt der Knopf im Suchfeld auf, ein gewählter bleibt sichtbar. Die 34 Rezepte aus dem alten System bekommen dessen Kategorien und Favoriten über das Übernahme-Werkzeug (Dessert wird Snack).
+- **Schnell einplanen und verschieben (M8):** In der Rezeptliste plant langes Drücken ein Rezept auf den nächsten freien Platz einer passenden Mahlzeit, ab 15 Uhr ab morgen; eine Meldung nennt den Tag und bietet „Rückgängig“. In der Monatsansicht nimmt langes Drücken die Gerichte eines Tages auf: Ziehen und Loslassen über einem anderen Tag verschiebt sie, ebenso Loslassen und dann den Tag antippen. Steht dort schon etwas, tauschen die Tage. Gekochtes bleibt, Ziel ist heute oder später; auch hier gibt es „Rückgängig“. Ein kleiner Hinweis steht jeweils dabei.
 
 ## 8. REWE
 

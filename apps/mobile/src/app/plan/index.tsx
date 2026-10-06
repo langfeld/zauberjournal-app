@@ -9,6 +9,7 @@ import {
   formatShortDate,
   listPlanEntries,
   PLAN_STATUS_LABELS,
+  planMoveDay,
   startOfWeek,
   weekday,
   weekdayLabel,
@@ -16,13 +17,17 @@ import {
   type PlanEntryView,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { MEAL_ICONS } from '@/components/category-style';
 import { Icon, type IconName } from '@/components/icon';
+import { PlanMonth } from '@/components/plan-month';
 import { RecipeCover, RecipeThumbnail } from '@/components/recipe-photo';
+import { Snackbar, type SnackbarMessage } from '@/components/snackbar';
 import { Button, IconButton, Segmented, Tag } from '@/components/ui';
+import { applyWrites } from '@/data/recipes';
+import { useStore } from '@/data/store';
 import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
 import { colors, fonts, radius, shadows, spacing, tones, type Tone } from '@/theme';
 
@@ -133,11 +138,16 @@ function WeekDay({ day, today, meals, entries }: { day: string; today: string; m
 }
 
 export default function PlanScreen() {
+  const store = useStore();
   const tables = useAppTables();
   const meals = useActiveMeals();
   const today = useToday();
   const [mode, setMode] = useState<Mode>('week');
   const [anchor, setAnchor] = useState<string | null>(null);
+  /** In der Monatsansicht ist ein Tag zum Verschieben aufgenommen. */
+  const [picking, setPicking] = useState(false);
+  const [message, setMessage] = useState<SnackbarMessage | null>(null);
+  const hideMessage = useCallback(() => setMessage(null), []);
 
   const start = mode === 'week' ? (anchor ?? today) : startOfWeek(anchor ?? today);
   const dayCount = mode === 'week' ? WEEK_DAYS : MONTH_WEEKS * 7;
@@ -152,16 +162,36 @@ export default function PlanScreen() {
     return map;
   }, [entries]);
 
+  const changeMode = (next: Mode) => {
+    setMode(next);
+    setPicking(false);
+  };
   const showDay = (day: string) => {
-    setMode('week');
+    changeMode('week');
     setAnchor(day);
+  };
+
+  const moveDay = (from: string, to: string) => {
+    const writes = planMoveDay(tables, from, to);
+    if (!store || writes.length === 0) return;
+    applyWrites(store, writes);
+    const swapped = writes.some((write) => write.cells.date === from);
+    const title = (byDay.get(from) ?? []).find((entry) => entry.status !== 'cooked')?.title;
+    // Rückgängig: jeder Eintrag zurück auf seinen Tag
+    const undo = writes.map((write) => ({ ...write, cells: { date: write.cells.date === to ? from : to } }));
+    setMessage({
+      text: swapped
+        ? `${formatDate(from)} und ${formatDate(to)} getauscht`
+        : `${title ? `„${title}“` : 'Die Gerichte'} auf ${formatDate(to)} verschoben`,
+      action: { label: 'Rückgängig', onPress: () => applyWrites(store, undo) },
+    });
   };
 
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ title: 'Plan' }} />
       <View style={styles.toolbar}>
-        <Segmented options={MODES} value={mode} onChange={setMode} />
+        <Segmented options={MODES} value={mode} onChange={changeMode} />
         <View style={styles.spacer} />
         <IconButton
           icon="chevron_left"
@@ -186,48 +216,14 @@ export default function PlanScreen() {
         <Button small variant="ghost" icon="auto_awesome" title="Vorschlagen" onPress={() => router.push('/plan/suggest')} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} scrollEnabled={!picking}>
         {mode === 'week' ? (
           days.map((day) => <WeekDay key={day} day={day} today={today} meals={meals} entries={byDay.get(day) ?? []} />)
         ) : (
-          <View style={styles.month}>
-            <View style={styles.weekRow}>
-              {Array.from({ length: 7 }, (_, index) => (
-                <Text key={index} style={styles.weekdayHeader}>
-                  {weekdayLabel(index)}
-                </Text>
-              ))}
-            </View>
-            {Array.from({ length: MONTH_WEEKS }, (_, week) => (
-              <View key={week} style={styles.weekRow}>
-                {days.slice(week * 7, week * 7 + 7).map((day) => {
-                  const dayEntries = byDay.get(day) ?? [];
-                  const isToday = day === today;
-                  return (
-                    <Pressable
-                      key={day}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${formatDate(day)}: ${dayEntries.map((entry) => entry.title).join(', ') || 'nichts geplant'}`}
-                      onPress={() => showDay(day)}
-                      style={[styles.cell, isToday && styles.todayCell, day < today && styles.past]}>
-                      <View style={[styles.cellDay, isToday && styles.cellDayToday]}>
-                        <Text style={[styles.cellDayText, isToday && styles.dateTextToday]}>{dayOfMonth(day)}</Text>
-                      </View>
-                      {dayEntries.slice(0, 2).map((entry) => (
-                        <Text key={entry.id} numberOfLines={1} style={styles.cellEntry}>
-                          {entry.title}
-                        </Text>
-                      ))}
-                      {dayEntries.length > 2 ? <Text style={styles.cellMore}>+{dayEntries.length - 2}</Text> : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
-            <Text style={styles.hint}>Tipp: Einen Tag antippen, um ihn in der Wochenansicht zu planen.</Text>
-          </View>
+          <PlanMonth days={days} today={today} byDay={byDay} onOpenDay={showDay} onMove={moveDay} onPickChange={setPicking} />
         )}
       </ScrollView>
+      <Snackbar message={message} onHide={hideMessage} />
     </View>
   );
 }
@@ -296,42 +292,4 @@ const styles = StyleSheet.create({
   meta: { fontSize: 13, color: colors.textMuted },
   addRow: { flexDirection: 'row', marginLeft: -spacing.sm },
   pressed: { opacity: 0.7 },
-  month: { gap: 4 },
-  weekRow: { flexDirection: 'row', gap: 4 },
-  weekdayHeader: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 11.5,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-  },
-  cell: {
-    flex: 1,
-    minHeight: 78,
-    padding: 3,
-    gap: 2,
-    borderRadius: radius.sm + 2,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-  },
-  todayCell: { borderColor: colors.primary, borderWidth: 1.5 },
-  past: { opacity: 0.5 },
-  cellDay: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  cellDayToday: { backgroundColor: colors.primary },
-  cellDayText: { fontSize: 12.5, fontWeight: '700', color: colors.text },
-  cellEntry: {
-    paddingHorizontal: 3,
-    paddingVertical: 1,
-    borderRadius: 4,
-    overflow: 'hidden',
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  cellMore: { fontSize: 10, fontWeight: '600', color: colors.textMuted, paddingHorizontal: 3 },
-  hint: { marginTop: spacing.md, fontSize: 14, lineHeight: 20, color: colors.textMuted },
 });

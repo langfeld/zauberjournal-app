@@ -6,8 +6,10 @@ import {
   createDietLookup,
   describePlanEntry,
   listPlanEntries,
+  nextFreeSlot,
   planAddEntry,
   planChoose,
+  planMoveDay,
   planSetServings,
   planUpdateEntry,
 } from './plan.ts';
@@ -28,6 +30,43 @@ function household() {
 }
 
 describe('Plan', () => {
+  it('findet den nächsten freien Platz, auch Einträge ohne Rezept belegen ihn', () => {
+    const { test, salad } = household();
+    const ids = counterIds('e');
+    const add = (date: string, meal: 'lunch' | 'dinner', recipeId = salad, text = '') =>
+      test.apply(planAddEntry(test.tables(), { date, meal, recipeId, text }, 1000, ids).writes);
+    add('2026-10-06', 'dinner');
+    add('2026-10-07', 'dinner', '', 'Reste');
+    add('2026-10-08', 'lunch');
+    expect(nextFreeSlot(test.tables(), '2026-10-06', ['dinner'])).toEqual({ date: '2026-10-08', meal: 'dinner' });
+    // Mehrere Mahlzeiten: die erste freie des Tages
+    expect(nextFreeSlot(test.tables(), '2026-10-08', ['lunch', 'dinner'])).toEqual({ date: '2026-10-08', meal: 'dinner' });
+    expect(nextFreeSlot(test.tables(), '2026-10-06', ['dinner'], 2)).toBeNull();
+  });
+
+  it('verschiebt die Gerichte eines Tages und tauscht mit dem Ziel; Gekochtes bleibt', () => {
+    const { test, salad } = household();
+    const ids = counterIds('e');
+    const add = (date: string, text: string) =>
+      planAddEntry(test.tables(), { date, meal: 'dinner', recipeId: salad, text }, 1000, ids);
+    const monday = add('2026-10-12', 'A');
+    const tuesday = add('2026-10-13', 'B');
+    const cooked = add('2026-10-13', 'C');
+    test.apply([...monday.writes, ...tuesday.writes, ...cooked.writes]);
+    test.apply(planUpdateEntry(test.tables(), cooked.entryId, { status: 'cooked' }));
+    const dayOf = (entryId: string) => test.tables().planEntries[entryId]?.date;
+
+    test.apply(planMoveDay(test.tables(), '2026-10-12', '2026-10-13'));
+    expect([dayOf(monday.entryId), dayOf(tuesday.entryId), dayOf(cooked.entryId)]).toEqual(['2026-10-13', '2026-10-12', '2026-10-13']);
+    // Rückgängig: dieselben Tage andersherum
+    test.apply(planMoveDay(test.tables(), '2026-10-13', '2026-10-12'));
+    expect([dayOf(monday.entryId), dayOf(tuesday.entryId), dayOf(cooked.entryId)]).toEqual(['2026-10-12', '2026-10-13', '2026-10-13']);
+    // Auf einen freien Tag
+    test.apply(planMoveDay(test.tables(), '2026-10-12', '2026-10-15'));
+    expect(dayOf(monday.entryId)).toBe('2026-10-15');
+    expect(planMoveDay(test.tables(), '2026-10-15', '2026-10-15')).toEqual([]);
+  });
+
   it('plant mit allen Personen und wählt die Option nach Ernährungsform', () => {
     const { test, salad } = household();
     const { entryId, writes } = planAddEntry(test.tables(), { date: '2026-10-06', meal: 'dinner', recipeId: salad, text: '' }, 1000, counterIds('e'));

@@ -1,3 +1,4 @@
+import { addDays } from './dates.ts';
 import type { FoodDiet } from './food-catalog.ts';
 import { createFoodResolver, type FoodTables } from './foods.ts';
 import { MEALS, type MealId } from './meals.ts';
@@ -284,4 +285,44 @@ export function planUpdateEntry(
 
 export function planRemoveEntry(entryId: string, now: number): RowWrite[] {
   return [{ table: 'planEntries', rowId: entryId, cells: { deletedAt: now } }];
+}
+
+/** Ab dieser Stunde ist das Essen für heute meist entschieden; Vorschläge und schnelles Einplanen beginnen dann morgen. */
+export const PLAN_FROM_TOMORROW_HOUR = 15;
+
+/**
+ * Der erste freie Platz ab `start`: Tag und Mahlzeit, für die noch nichts im Plan steht, auch kein Eintrag
+ * ohne Rezept. `meals` in der Reihenfolge des Tages; `null`, wenn in `maxDays` Tagen nichts frei ist.
+ */
+export function nextFreeSlot(
+  tables: PlanTables,
+  start: string,
+  meals: readonly MealId[],
+  maxDays = 90,
+): { date: string; meal: MealId } | null {
+  const taken = new Set(
+    Object.values(tables.planEntries)
+      .filter((entry) => isActive(entry))
+      .map((entry) => `${entry.date}~${entry.meal}`),
+  );
+  for (let offset = 0; offset < maxDays; offset++) {
+    const date = addDays(start, offset);
+    const meal = meals.find((id) => !taken.has(`${date}~${id}`));
+    if (meal) return { date, meal };
+  }
+  return null;
+}
+
+/**
+ * Verschiebt die Gerichte eines Tages auf einen anderen. Was dort schon steht, kommt im Tausch auf den ersten
+ * Tag; Gekochtes bleibt, wo es ist. Mit vertauschten Tagen macht derselbe Aufruf es wieder rückgängig.
+ */
+export function planMoveDay(tables: PlanTables, from: string, to: string): RowWrite[] {
+  if (from === to) return [];
+  const movable = (date: string) =>
+    Object.entries(tables.planEntries).filter(([, entry]) => isActive(entry) && entry.date === date && entry.status !== 'cooked');
+  return [
+    ...movable(from).map(([id]): RowWrite => ({ table: 'planEntries', rowId: id, cells: { date: to } })),
+    ...movable(to).map(([id]): RowWrite => ({ table: 'planEntries', rowId: id, cells: { date: from } })),
+  ];
 }

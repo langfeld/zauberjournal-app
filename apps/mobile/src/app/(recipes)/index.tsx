@@ -1,18 +1,37 @@
-import { formatDuration, isRecipePaused, listRecipes, MEALS, type MealId, type RecipeSummary } from '@zauberjournal/core';
+import {
+  addDays,
+  createId,
+  formatDate,
+  formatDuration,
+  formatRelativeDate,
+  isRecipePaused,
+  listRecipes,
+  MEALS,
+  nextFreeSlot,
+  PLAN_FROM_TOMORROW_HOUR,
+  planAddEntry,
+  planRemoveEntry,
+  type MealId,
+  type RecipeSummary,
+} from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, Vibration, View } from 'react-native';
 
 import { MEAL_ICONS } from '@/components/category-style';
 import { Icon, type IconName } from '@/components/icon';
 import { RecipeCover } from '@/components/recipe-photo';
+import { Snackbar, type SnackbarMessage } from '@/components/snackbar';
 import { Button, Chip, EmptyState, IconButton, SearchField } from '@/components/ui';
-import { useRecipeTables } from '@/data/recipes';
-import { useToday } from '@/data/tables';
+import { applyWrites } from '@/data/recipes';
+import { useStore } from '@/data/store';
+import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
 import { colors, fonts, radius, shadows, spacing, tones } from '@/theme';
 
 /** Mindestbreite einer Karte; auf breiten Bildschirmen passen mehr Spalten nebeneinander. */
 const MIN_CARD_WIDTH = 160;
+/** Höhe der Knöpfe am Fuß der Seite, ungefähr */
+const FOOTER_HEIGHT = 76;
 
 type Filter = 'favorite' | MealId | 'none' | 'paused';
 
@@ -30,11 +49,17 @@ function matches(recipe: RecipeSummary, filter: Filter, today: string): boolean 
   return recipe.meals.includes(filter);
 }
 
-function RecipeCard({ recipe, width }: { recipe: RecipeSummary; width: number }) {
+type RecipeCardProps = { recipe: RecipeSummary; width: number; onLongPress: () => void };
+
+function RecipeCard({ recipe, width, onLongPress }: RecipeCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityActions={[{ name: 'longpress', label: 'Am nächsten freien Tag einplanen' }]}
+      onAccessibilityAction={(event) => event.nativeEvent.actionName === 'longpress' && onLongPress()}
       onPress={() => router.push(`/recipes/${recipe.id}`)}
+      delayLongPress={400}
+      onLongPress={onLongPress}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
       <View>
         <RecipeCover photoId={recipe.photo} title={recipe.title} />
@@ -74,8 +99,12 @@ function RecipeCard({ recipe, width }: { recipe: RecipeSummary; width: number })
 }
 
 export default function RecipeListScreen() {
-  const tables = useRecipeTables();
+  const store = useStore();
+  const tables = useAppTables();
+  const meals = useActiveMeals();
   const today = useToday();
+  const [message, setMessage] = useState<SnackbarMessage | null>(null);
+  const hideMessage = useCallback(() => setMessage(null), []);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -88,6 +117,28 @@ export default function RecipeListScreen() {
   const shownFilters = showFilters ? filters : filters.filter((option) => option.id === filter);
   const hasRecipes = Object.keys(tables.recipes).length > 0;
   const { width } = useWindowDimensions();
+
+  /** Lange drücken: auf den nächsten freien Platz einer passenden Mahlzeit, abends ab morgen. */
+  const planNext = (recipe: RecipeSummary, now: number, hour: number) => {
+    if (!store) return;
+    const fitting = meals.filter((meal) => recipe.meals.includes(meal.id));
+    const start = hour < PLAN_FROM_TOMORROW_HOUR ? today : addDays(today, 1);
+    const slot = nextFreeSlot(tables, start, (fitting.length > 0 ? fitting : meals).map((meal) => meal.id));
+    if (!slot) {
+      setMessage({ text: 'In den nächsten drei Monaten ist kein Tag mehr frei.' });
+      return;
+    }
+    const { entryId, writes } = planAddEntry(tables, { ...slot, recipeId: recipe.id, text: '' }, now, createId);
+    applyWrites(store, writes);
+    Vibration.vibrate(15);
+    const relative = formatRelativeDate(slot.date, today);
+    const day = relative === formatDate(slot.date) ? relative : relative.toLocaleLowerCase('de');
+    const meal = meals.length > 1 ? ` (${MEALS.find((option) => option.id === slot.meal)?.label})` : '';
+    setMessage({
+      text: `„${recipe.title}“ für ${day}${meal} eingeplant`,
+      action: { label: 'Rückgängig', onPress: () => applyWrites(store, planRemoveEntry(entryId, now)) },
+    });
+  };
   const columns = Math.max(2, Math.floor((width - spacing.lg * 2 + spacing.md) / (MIN_CARD_WIDTH + spacing.md)));
   const cardWidth = (width - spacing.lg * 2 - spacing.md * (columns - 1)) / columns;
 
@@ -137,11 +188,14 @@ export default function RecipeListScreen() {
               ) : null}
               <Text style={styles.count}>
                 {query || filter ? `${recipes.length} Treffer` : `${recipes.length} ${recipes.length === 1 ? 'Rezept' : 'Rezepte'}`}
+                <Text style={styles.countHint}> · lange drücken zum Einplanen</Text>
               </Text>
             </View>
           ) : null
         }
-        renderItem={({ item }) => <RecipeCard recipe={item} width={cardWidth} />}
+        renderItem={({ item }) => (
+          <RecipeCard recipe={item} width={cardWidth} onLongPress={() => planNext(item, Date.now(), new Date().getHours())} />
+        )}
         ListEmptyComponent={
           hasRecipes && (query || filter) ? (
             <EmptyState icon="search" title="Nichts gefunden">
@@ -162,6 +216,8 @@ export default function RecipeListScreen() {
           <Button variant="secondary" title="Selbst eingeben" onPress={() => router.push('/recipes/new')} />
         </View>
       </View>
+      {/* Über den Knöpfen am Fuß */}
+      <Snackbar message={message} onHide={hideMessage} bottom={FOOTER_HEIGHT + spacing.sm} />
     </View>
   );
 }
@@ -173,6 +229,7 @@ const styles = StyleSheet.create({
   header: { gap: spacing.md, marginBottom: spacing.xs },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
   count: { fontSize: 13, fontWeight: '600', color: colors.textMuted, letterSpacing: 0.3 },
+  countHint: { fontWeight: '400', letterSpacing: 0 },
   card: {
     overflow: 'hidden',
     borderRadius: radius.lg,
