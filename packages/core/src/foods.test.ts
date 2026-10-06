@@ -8,7 +8,9 @@ import {
   listFoods,
   mergeFoods,
   normalizeFoodName,
+  repairFoodDiets,
 } from './foods.ts';
+import type { RowWrite } from './rows.ts';
 import { createTestStore } from './test-helpers.ts';
 
 describe('Lebensmittelnamen', () => {
@@ -67,9 +69,58 @@ describe('classifyFood', () => {
     ['Gelatine', 'dry', 'meat'],
     ['Spülmittel', 'household', ''],
     ['Quinoa-Burger', 'other', ''],
+    // Sieht nur nach Fleisch oder Fisch aus: „Limette“ enthält „Mett“, „Zimtrinde“ „Rind“.
+    ['Limette', 'produce', 'vegan'],
+    ['Kokos-Fruchtfleisch', 'produce', 'vegan'],
+    ['Weizenkleber', 'dry', 'vegan'],
+    ['Muschelnudeln', 'dry', 'vegan'],
+    ['Zimtrinde', 'spices', 'vegan'],
+    ['Rinderbrühe', 'spices', 'meat'],
+    ['Beefsteaktomate', 'produce', 'vegan'],
+    ['Austernpilze', 'produce', 'vegan'],
+    // Fleisch und Fisch ohne die üblichen Wörter
+    ['Gambas', 'fish', 'fish'],
+    ['Meeresfrüchte', 'fish', 'fish'],
+    ['Austernsauce', 'spices', 'fish'],
+    ['Kasseler', 'meat', 'meat'],
+    ['Roastbeef', 'meat', 'meat'],
+    ['Geflügelfond', 'canned', 'meat'],
   ];
   it.each(cases)('%s → %s, %s', (name, category, diet) => {
     expect(classifyFood(name)).toEqual({ category, diet });
+  });
+});
+
+describe('repairFoodDiets', () => {
+  it('bessert Unbekanntes und Fehltreffer nach, lässt Gewähltes stehen', () => {
+    const test = createTestStore();
+    const food = (id: string, name: string, category: string, diet: string, deletedAt: number | null = null): RowWrite => ({
+      table: 'foods',
+      rowId: id,
+      cells: { name, category, diet, stock: '', deletedAt },
+    });
+    test.apply([
+      food('food:limette', 'Limette', 'produce', 'meat'),
+      food('food:mango fruchtfleisch', 'Mango-Fruchtfleisch', 'meat', 'meat'),
+      food('food:gambas', 'Gambas', 'other', ''),
+      // Von Hand gewählt: „Brühe“ heißt in diesem Haushalt Hühnerbrühe, die Tortellini sind vegetarisch.
+      food('food:brühe', 'Brühe', 'spices', 'meat'),
+      food('food:tortellini', 'Tortellini', 'dairy', 'vegetarian'),
+      food('food:hähnchen', 'Hähnchen', 'meat', 'meat'),
+      food('food:alt', 'Limette', 'produce', 'meat', 5),
+    ]);
+    test.apply(repairFoodDiets(test.tables()));
+    const foods = Object.fromEntries(Object.entries(test.tables().foods).map(([id, row]) => [id, [row.category, row.diet]]));
+    expect(foods).toEqual({
+      'food:limette': ['produce', 'vegan'],
+      'food:mango fruchtfleisch': ['produce', 'vegan'],
+      'food:gambas': ['fish', 'fish'],
+      'food:brühe': ['spices', 'meat'],
+      'food:tortellini': ['dairy', 'vegetarian'],
+      'food:hähnchen': ['meat', 'meat'],
+      'food:alt': ['produce', 'meat'],
+    });
+    expect(repairFoodDiets(test.tables())).toEqual([]);
   });
 });
 

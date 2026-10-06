@@ -156,13 +156,29 @@ const MEAT_WORDS = [
   'fleisch', 'hack', 'hähnchen', 'hühnchen', 'huhn', 'hühner', 'pute', 'puten', 'truthahn', 'ente', 'enten', 'gans',
   'gänse', 'rind', 'kalb', 'schwein', 'lamm', 'reh', 'hirsch', 'speck', 'bacon', 'schinken', 'salami', 'wurst',
   'würstchen', 'chorizo', 'pancetta', 'guanciale', 'prosciutto', 'serrano', 'kassler', 'leber', 'gulasch', 'steak',
-  'schnitzel', 'geschnetzeltes', 'frikadelle', 'mett', 'gelatine', 'mortadella', 'lyoner',
+  'schnitzel', 'geschnetzeltes', 'frikadelle', 'mett', 'gelatine', 'mortadella', 'lyoner', 'kasseler', 'hammel',
+  'beef', 'geflügel', 'gehacktes', 'eisbein', 'ochsenschwanz', 'cabanossi', 'kabanossi', 'landjäger', 'krakauer',
+  'wildschwein', 'sülze', 'aspik', 'bratensoße', 'bratensauce', 'bratenfond', 'bratensaft',
 ];
 const FISH_WORDS = [
   'fisch', 'lachs', 'forelle', 'kabeljau', 'seelachs', 'dorsch', 'hering', 'makrele', 'sardelle', 'anchovis',
   'sardine', 'garnele', 'shrimp', 'scampi', 'krabbe', 'muschel', 'tintenfisch', 'calamari', 'pulpo', 'oktopus',
   'zander', 'rotbarsch', 'pangasius', 'scholle', 'seezunge', 'heilbutt', 'matjes', 'kaviar', 'surimi', 'worcester',
+  'karpfen', 'barsch', 'hecht', 'aal', 'saibling', 'seeteufel', 'wels', 'steinbutt', 'sprotte', 'bückling', 'rollmops',
+  'hummer', 'languste', 'krebs', 'auster', 'gamba', 'meeresfrüchte',
 ];
+/**
+ * Wörter, die nur nach Fleisch oder Fisch aussehen, mit ihrer Warengruppe: „Limette“ enthält „Mett“,
+ * „Fruchtfleisch“ ist Obst, „Weizenkleber“ hat mit Leber nichts zu tun, „Zimtrinde“ nichts mit Rind.
+ */
+const LOOKALIKES: Readonly<Record<string, FoodCategory>> = {
+  limette: 'produce',
+  fruchtfleisch: 'produce',
+  hirschhornsalz: 'dry',
+  kleber: 'dry',
+  muschelnudel: 'dry',
+  rinde: 'spices',
+};
 const ANIMAL_PRODUCT_WORDS = [
   'milch', 'sahne', 'rahm', 'schmand', 'crème', 'creme', 'joghurt', 'jogurt', 'quark', 'butter', 'käse',
   'mozzarella', 'burrata', 'parmesan', 'pecorino', 'padano', 'feta', 'halloumi', 'ricotta', 'mascarpone', 'gouda',
@@ -176,7 +192,8 @@ const PLANT_PREFIXES = ['kokos', 'hafer', 'soja', 'mandel', 'reis', 'cashew', 'e
 /** Steht eins davon im Namen, ist es kein Fleisch: „Sojahack“, „Fleischtomate“, „Blumenkohlsteak“. */
 const PLANT_MARKERS = [
   'vegan', 'vegetar', 'veggie', 'soja', 'tofu', 'seitan', 'tempeh', 'lupine', 'jackfruit', 'fleischtomate',
-  'blumenkohl', 'sellerie', 'aubergine', 'kohlrabi', 'gemüse', 'pilz', 'champignon',
+  'steaktomate', 'blumenkohl', 'sellerie', 'aubergine', 'kohlrabi', 'gemüse', 'pilz', 'champignon', 'seitling',
+  'fleischersatz',
 ];
 /** Kategorien, deren Lebensmittel ohne tierische Schlüsselwörter als vegan gelten. */
 const PLANT_CATEGORIES: readonly FoodCategory[] = ['produce', 'dry', 'canned', 'spices', 'drinks'];
@@ -194,6 +211,21 @@ export function stemVariants(word: string): string[] {
 
 function wordHas(word: string, keyword: string): boolean {
   return stemVariants(word).some((variant) => variant === keyword || variant.startsWith(keyword) || variant.endsWith(keyword));
+}
+
+/** Warengruppe eines Worts, das nur nach Fleisch oder Fisch aussieht („Limetten“); sonst `null`. */
+function lookalikeCategory(word: string): FoodCategory | null {
+  for (const variant of stemVariants(word)) {
+    for (const [lookalike, category] of Object.entries(LOOKALIKES)) {
+      if (variant.endsWith(lookalike)) return category;
+    }
+  }
+  return null;
+}
+
+/** Ob ein normalisierter Name ein Wort enthält, das nur nach Fleisch oder Fisch aussieht. */
+export function hasLookalike(normalized: string): boolean {
+  return normalized.split(' ').some((word) => lookalikeCategory(word) !== null);
 }
 
 function animalProductDiet(word: string): FoodDiet | null {
@@ -214,6 +246,8 @@ function categoryOf(normalized: string): FoodCategory | null {
   }
   const last = words.at(-1) ?? '';
   if (EGG.test(last)) return 'dairy';
+  const lookalike = lookalikeCategory(last);
+  if (lookalike) return lookalike;
   for (const variant of stemVariants(last)) {
     const match = KEYWORDS.find((keyword) =>
       keyword.exact ? variant === keyword.text : !keyword.text.includes(' ') && variant.endsWith(keyword.text),
@@ -231,7 +265,8 @@ export function classifyNormalizedFood(normalized: string): { category: FoodCate
   const words = normalized.split(' ').filter(Boolean);
   const plant = PLANT_MARKERS.some((marker) => normalized.includes(marker));
   const hits = (keywords: readonly string[]) =>
-    !plant && words.some((word) => !EGG.test(word) && keywords.some((keyword) => wordHas(word, keyword)));
+    !plant &&
+    words.some((word) => !EGG.test(word) && !lookalikeCategory(word) && keywords.some((keyword) => wordHas(word, keyword)));
 
   let diet: FoodDiet = '';
   // Fisch vor Fleisch: „Thunfischsteak“ ist Fisch.

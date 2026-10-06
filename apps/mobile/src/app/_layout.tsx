@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { AppTabs } from '@/components/app-tabs';
 import { AutoCook } from '@/data/auto-cook';
 import { ConnectionProvider } from '@/data/connection';
+import { FoodDietRepair } from '@/data/food-diets';
 import { NutritionSync } from '@/data/nutrition-sync';
 import { createAppPersister } from '@/data/persister';
 import { createAppStore, Provider, useCreateMergeableStore, useCreatePersister } from '@/data/store';
@@ -42,6 +43,7 @@ export default function RootLayout() {
       <ConnectionProvider store={store}>
         <StatusBar style="dark" />
         <AutoCook />
+        <FoodDietRepair />
         <NutritionSync />
         <AppTabs />
       </ConnectionProvider>

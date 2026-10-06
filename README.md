@@ -2,7 +2,7 @@
 
 Private Kochbuch-App für Android mit Wochenplan, Einkaufsliste, REWE-Anbindung und Vorrat. Die Daten liegen auf dem eigenen NAS.
 
-Status: **M6 – Vorrat & Nährwerte**. Konzept und Ausbaustufen: [docs/KONZEPT.md](docs/KONZEPT.md) · Server, Pangolin und App-Builds: [docs/BETRIEB.md](docs/BETRIEB.md)
+Status: **M0 bis M7 umgesetzt**. Konzept und Ausbaustufen: [docs/KONZEPT.md](docs/KONZEPT.md) · Server, Pangolin und App-Builds: [docs/BETRIEB.md](docs/BETRIEB.md)
 
 ## Aufbau
 

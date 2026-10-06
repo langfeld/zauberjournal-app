@@ -1,5 +1,5 @@
-import { classifyNormalizedFood, stemVariants, type FoodCategory, type FoodDiet } from './food-catalog.ts';
-import { changedCells, isActive, type RowWrite, type Table } from './rows.ts';
+import { classifyNormalizedFood, hasLookalike, stemVariants, type FoodCategory, type FoodDiet } from './food-catalog.ts';
+import { changedCells, isActive, type CellValue, type RowWrite, type Table } from './rows.ts';
 
 /** Einfacher Vorrat: leer = nicht geführt, `have` = da, `buy` = nachkaufen. */
 export type FoodStock = '' | 'have' | 'buy';
@@ -192,6 +192,28 @@ export function listFoods(tables: FoodTables): FoodView[] {
 export function updateFood(tables: FoodTables, foodId: string, cells: Partial<Omit<FoodRow, 'deletedAt'>>): RowWrite[] {
   const write = changedCells('foods', foodId, tables.foods[foodId], cells);
   return write ? [write] : [];
+}
+
+/**
+ * Bessert die Ernährungsklasse gespeicherter Lebensmittel nach, wenn die Schlüsselwörter dazugelernt haben:
+ * „unbekannt“ bekommt die Klasse, die sie jetzt kennen, und was nur nach Fleisch oder Fisch aussieht
+ * („Limette“), verliert diese Klasse. Alle anderen Klassen bleiben, weil sie von Hand gewählt sein können.
+ */
+export function repairFoodDiets(tables: Pick<FoodTables, 'foods'>): RowWrite[] {
+  return Object.entries(tables.foods).flatMap(([id, food]) => {
+    if (!isActive(food)) return [];
+    const key = normalizeFoodName(food.name);
+    const { category, diet } = classifyNormalizedFood(key);
+    let cells: Record<string, CellValue> | null = null;
+    if (!food.diet && diet) cells = food.category === 'other' ? { diet, category } : { diet };
+    const animal = (value: string) => value === 'meat' || value === 'fish';
+    if (animal(food.diet) && !animal(diet) && hasLookalike(key)) {
+      // Die Warengruppe stimmte dann meist auch nicht („Fruchtfleisch“ unter Fleisch & Wurst).
+      cells = animal(food.category) ? { diet, category } : { diet };
+    }
+    const write = cells ? changedCells('foods', id, food, cells) : null;
+    return write ? [write] : [];
+  });
 }
 
 /** Legt ein Lebensmittel nach Namen an oder findet es; z. B. beim Hinzufügen zum Vorrat. */

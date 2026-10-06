@@ -35,9 +35,9 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; vegetarischer Vorschlag; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst ✅ (umgesetzt; siehe Abschnitt 9) |
 | **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE ✅ (umgesetzt; siehe Abschnitte 6, 7 und 12) |
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt ✅ (umgesetzt und am 6. Oktober 2026 auf rewe.de bestätigt; siehe Abschnitt 8 und [BETRIEB.md](BETRIEB.md)) |
-| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat (umgesetzt: Vorrat aus dem Einkauf mit Einbuchen beim Abschließen der Liste, Abbuchen nach dem Plantag und Ablauf von Frischem; Nährwerte pro Person und Portion aus BLS und Open Food Facts; offen: Vegetarisch-Prüfung) |
+| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat ✅ (umgesetzt: Vorrat aus dem Einkauf mit Einbuchen beim Abschließen der Liste, Abbuchen nach dem Plantag und Ablauf von Frischem; Nährwerte pro Person und Portion aus BLS und Open Food Facts. Die Vegetarisch-Prüfung ist auf später verschoben, siehe Abschnitt 12) |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System ✅ (34 Rezepte und 78 REWE-Vorlieben am 5. Oktober 2026 übernommen; Werkzeug siehe [BETRIEB.md](BETRIEB.md)) |
-| **Später** | Kochmodus mit Timern, Planvorschläge, Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN | |
+| **Später** | Kochmodus mit Timern, Planvorschläge, Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN, Vegetarisch-Prüfung | |
 
 Die Reihenfolge von M3 bis M5 lässt sich tauschen. M3 steht vorne, weil alles Weitere auf Rezepten aufbaut.
 
@@ -113,7 +113,7 @@ Alle Daten liegen in einem Volume `/data`. Dafür bekommt der Server ein eigenes
 
 Die Feldnamen sind vorläufig. Was schon umgesetzt ist, steht in `packages/core/src/schema.ts`; die Werte dort sind englisch (z. B. `vegetarian` statt `vegetarisch`).
 
-**Personen** (`members`): Name, Ernährungsform (`vegan` | `vegetarisch` | `alles`). Später: streng vegetarisch (schließt auch Lab und Gelatine aus), Abneigungen.
+**Personen** (`members`): Name, Ernährungsform (`vegan` | `vegetarisch` | `alles`). Später: Abneigungen. Gelatine zählt schon als Fleisch; tierisches Lab soll höchstens ein Hinweis werden (12).
 
 **Lebensmittel** (`foods`): der zentrale Katalog, auf den alles verweist. Seit M4: Name, Warengruppe (für die Sortierung der Einkaufsliste), Ernährungsklasse (`vegan` | `vegetarisch` | `fleisch` | `fisch`) und „immer im Haus“ (siehe Vorrat). Seit M6 die Vorratseinheit (`g` | `ml` | `Stück`); sie entsteht beim ersten Einkauf. Später kommen dazu:
 - Hinweise (z. B. tierisches Lab)
@@ -125,6 +125,8 @@ Die Feldnamen sind vorläufig. Was schon umgesetzt ist, steht in `packages/core/
 3. sonst ein neues Lebensmittel. Warengruppe und Ernährungsklasse kommen dann aus einer Schlüsselwortliste („Hähnchenbrust“ → Fleisch, „Kokosmilch“ → Konserven, vegan).
 
 Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten“ zählen nicht. Werden zwei Lebensmittel zusammengeführt (z. B. „Lauchzwiebeln“ und „Frühlingszwiebeln“), merkt sich der Katalog das als Zuordnung. Das gilt dann für alle Rezepte.
+
+Die Ernährungsklasse bestimmt, welche Option eine vegetarische Person bekommt. Fehltreffer wiegen deshalb schwer. Wörter, die nur nach Fleisch oder Fisch aussehen („Limette“ enthält „Mett“, „Fruchtfleisch“, „Weizenkleber“), stehen in einer eigenen Liste. Lernen die Schlüsselwörter dazu, bessert die App gespeicherte Lebensmittel nach (seit M6): „unbekannt“ bekommt die neue Klasse, ein solcher Fehltreffer verliert die falsche. Von Hand Gewähltes bleibt.
 
 **Rezepte**
 - `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-ID, Tags, Notizen, `deletedAt`
@@ -176,7 +178,7 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
 - **Einplanen:** Die App wählt für jede Person automatisch. Eine vegetarische Person bekommt die erste vegetarische Option, alle anderen die erste Option. Die Wahl lässt sich ändern. Rezepte ohne Wahlkomponente haben einfach Portionen.
 - **Einkaufsliste:** Die Basis wird mit der Summe aller Portionen multipliziert. Die Zutaten einer Option werden mit den Portionen der Personen multipliziert, die diese Option gewählt haben.
 - **Kochansicht:** gemeinsame Schritte plus parallele Stränge. Dazu kommt der Hinweis, die vegetarische Komponente zuerst zu braten oder eigene Pfanne und eigenes Brett zu nehmen.
-- **Vegetarisch geeignet** ist ein Rezept, wenn alle Basiszutaten vegetarisch sind und jede Gruppe mindestens eine vegetarische Option hat.
+- **Vegetarisch geeignet** ist ein Rezept, wenn alle Basiszutaten vegetarisch sind und jede Gruppe mindestens eine vegetarische Option hat (für die Vegetarisch-Prüfung, später).
 
 ## 7. Berechnungen in `packages/core`, mit Tests
 
@@ -319,7 +321,7 @@ Entschieden bei der Umsetzung von M5:
 - **Abgleich auf dem Server, Auswahl in der App:** Der Server sucht und bewertet; die App sucht für die Auswahl selbst über den Server und bewertet mit derselben Logik aus `packages/core`.
 - **Ein Markt für den Haushalt,** gewählt per PLZ im Haushalt oder in der Einkaufsliste.
 
-Entschieden bei der Umsetzung von M6 (Vorrat, 5. und 6. Oktober 2026):
+Entschieden bei der Umsetzung von M6 (5. und 6. Oktober 2026):
 - **Vorrat aus dem Einkauf statt Pflege von Hand:** Niemand soll eine lange Liste durchgehen. Gekauftes kommt beim Abschließen der Liste dazu, Gekochtes geht ab. Die erste Fassung (Menge nur für ausgewählte Lebensmittel) hat der User verworfen.
 - **Gekocht nach dem Plantag:** Eingekaufte Gerichte gelten danach von selbst als gekocht; wer nicht gekocht hat, stellt „geplant“ ein.
 - **Frisches läuft je Warengruppe ab,** statt eine Mindesthaltbarkeit zu erfassen.
@@ -329,6 +331,8 @@ Entschieden bei der Umsetzung von M6 (Vorrat, 5. und 6. Oktober 2026):
 - **BLS auf dem Server, Werte im Store:** Die App lädt nicht den ganzen BLS, sondern merkt sich die Werte ihrer Lebensmittel (`foodNutrition`). Ausgewählt wird mit dem BLS-Auszug in `apps/server/src/data/bls.json`, erzeugt mit `scripts/create-bls-data.py`.
 - **Zuordnung mit KI:** Die Suche über Namen allein trifft zu oft daneben („Eier“, „Spaghetti“, „Salz und Pfeffer“). Der Server schlägt Kandidaten vor, die KI wählt. Niemand muss Lebensmittel von Hand zuordnen; wer will, wählt auf der Seite des Lebensmittels einen anderen Eintrag.
 - **Lückenhafte Produktdaten:** Fehlt bei Open Food Facts eine Pflichtangabe (etwa die gesättigten Fettsäuren bei Kokosmilch), ist der BLS-Eintrag genauer als eine Summe mit Lücke.
+- **Keine Vegetarisch-Prüfung vorerst:** Die automatische vegetarische Option reicht dem Haushalt. Eine Warnung im Plan (Fleisch in der Basis, keine vegetarische Option), Markierungen in der Rezeptliste und ein Hinweis auf tierisches Lab kommen erst, wenn etwas durchrutscht. Lab soll dann nur ein Hinweis sein, keine Warnung.
+- **Schlüsselwörter an echten Namen geprüft:** Mit den Namen des BLS: Was dort zu Obst, Gemüse, Getreide usw. gehört, darf nicht als Fleisch oder Fisch gelten, und häufige Fleisch- und Fischnamen müssen erkannt werden (Gambas, Meeresfrüchte, Kasseler).
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.
