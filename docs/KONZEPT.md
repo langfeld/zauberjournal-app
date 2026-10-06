@@ -37,7 +37,8 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt ✅ (umgesetzt und am 6. Oktober 2026 auf rewe.de bestätigt; siehe Abschnitt 8 und [BETRIEB.md](BETRIEB.md)) |
 | **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat ✅ (umgesetzt: Vorrat aus dem Einkauf mit Einbuchen beim Abschließen der Liste, Abbuchen nach dem Plantag und Ablauf von Frischem; Nährwerte pro Person und Portion aus BLS und Open Food Facts. Die Vegetarisch-Prüfung ist auf später verschoben, siehe Abschnitt 12) |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System ✅ (34 Rezepte und 78 REWE-Vorlieben am 5. Oktober 2026 übernommen; Werkzeug siehe [BETRIEB.md](BETRIEB.md)) |
-| **Später** | Kochmodus mit Timern, Planvorschläge, Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN, Vegetarisch-Prüfung | |
+| **M8 Kochen & Vorschläge** | Kochmodus mit Timern; Planvorschläge aus Vorrat, Abwechslung und Aufwand | Kochmodus umgesetzt (Abschnitt 7); Planvorschläge in Abstimmung |
+| **Später** | Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN, Vegetarisch-Prüfung | |
 
 Die Reihenfolge von M3 bis M5 lässt sich tauschen. M3 steht vorne, weil alles Weitere auf Rezepten aufbaut.
 
@@ -177,7 +178,7 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
 
 - **Einplanen:** Die App wählt für jede Person automatisch. Eine vegetarische Person bekommt die erste vegetarische Option, alle anderen die erste Option. Die Wahl lässt sich ändern. Rezepte ohne Wahlkomponente haben einfach Portionen.
 - **Einkaufsliste:** Die Basis wird mit der Summe aller Portionen multipliziert. Die Zutaten einer Option werden mit den Portionen der Personen multipliziert, die diese Option gewählt haben.
-- **Kochansicht:** gemeinsame Schritte plus parallele Stränge. Dazu kommt der Hinweis, die vegetarische Komponente zuerst zu braten oder eigene Pfanne und eigenes Brett zu nehmen.
+- **Kochansicht:** gemeinsame Schritte plus parallele Stränge. Dazu kommt der Hinweis, die vegetarische Komponente zuerst zu braten oder eigene Pfanne und eigenes Brett zu nehmen. Umgesetzt im Kochmodus (M8, Abschnitt 7).
 - **Vegetarisch geeignet** ist ein Rezept, wenn alle Basiszutaten vegetarisch sind und jede Gruppe mindestens eine vegetarische Option hat (für die Vegetarisch-Prüfung, später).
 
 ## 7. Berechnungen in `packages/core`, mit Tests
@@ -198,6 +199,11 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Zuordnung zum BLS:** Der Server sucht Kandidaten über die Namen (Kernwort hinten wie beim REWE-Abgleich, Rohes vor Zubereitetem) und lässt die KI wählen, bei Bedarf in einer zweiten Runde mit besserem Suchbegriff („Eier“ → „Hühnerei roh“). Sie schätzt auch das Stückgewicht. Ohne KI gilt nur ein sicherer Treffer.
   - **Stückgewicht:** Selbst eingetragen geht vor der REWE-Packung („1 Stück ca. 100 g“, nur wenn die Rezepte in Stück zählen), diese vor der Schätzung der KI.
   - **Ablauf:** Die App schlägt im Hintergrund nach, was Rezepte brauchen und noch keine Werte hat, in Teilen zu 15. Neu nachgeschlagen wird, wenn das REWE-Produkt wechselt oder nach zwei Wochen ohne Treffer. Ein von Hand gewählter BLS-Eintrag bleibt, bis man wieder automatisch zuordnen lässt.
+- **Kochmodus (M8):** aus dem Planeintrag (Portionen und Optionen aller, die mitessen) oder aus dem Rezept (wie dort eingestellt). Erst die Zutaten, dann ein Schritt je Seite, groß geschrieben; der Bildschirm bleibt an.
+  - **Schritte:** Schritte einer Option nur, wenn jemand sie bekommt, mit „Nur Halloumi · 1 Portion“. Entstehen Fleisch oder Fisch und Vegetarisches zugleich, steht vorne der Hinweis auf getrennte Pfanne und eigenes Brett.
+  - **Zutaten je Schritt:** die Zutaten, die der Schritt nennt, mit Menge für die Portionen. Erkannt wird über die Namen: „Zwiebel“ = „Zwiebeln“, „Hähnchenstreifen“ = „Hähnchenbrustfilet“ (Formwörter wie Streifen, Würfel, Zehen zählen nicht), „Öl“ = „Olivenöl“. Ein Schritt einer Option nennt nur Zutaten der Basis und dieser Option.
+  - **Timer:** aus Zeitangaben im Schritt („15 Minuten“, „10–15 Min.“, „eine halbe Stunde“, „1 Std. 20 Min.“); bei Spannen gilt die untere Grenze. Ohne Zahl („einige Minuten“) gibt es keinen Timer. Mehrere Timer laufen nebeneinander, auch wenn man den Kochmodus verlässt. Der Alarm ist eine geplante Benachrichtigung und klingelt deshalb auch bei gesperrtem Handy; ohne Erlaubnis vibriert nur die offene App.
+  - **Zum Schluss:** Aus dem Plan lässt sich das Gericht als gekocht eintragen; die Zutaten gehen dann vom Vorrat ab.
 
 ## 8. REWE
 
@@ -275,6 +281,7 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
 | Tests | Vitest | für `core` und Server |
 | KI | Requesty (OpenAI-kompatibel) | Modellwahl, Fallbacks, JSON-Schema |
 | Nährwerte | BLS 4.0 (CC BY 4.0), Open Food Facts (ODbL) | kostenlos; BLS für Grundlebensmittel, Open Food Facts für gekaufte Produkte |
+| Kochtimer | expo-notifications (geplante Benachrichtigung, exakte Alarme), expo-keep-awake | Alarm auch bei gesperrtem Handy |
 | Betrieb | Docker auf TrueNAS, Pangolin | schon vorhanden |
 | Verteilung | APK per GitHub Actions, GitHub-Release, Obtainium; später optional Over-the-air-Updates | ohne Play Store und ohne lokale Android-Werkzeuge |
 
@@ -333,6 +340,10 @@ Entschieden bei der Umsetzung von M6 (5. und 6. Oktober 2026):
 - **Lückenhafte Produktdaten:** Fehlt bei Open Food Facts eine Pflichtangabe (etwa die gesättigten Fettsäuren bei Kokosmilch), ist der BLS-Eintrag genauer als eine Summe mit Lücke.
 - **Keine Vegetarisch-Prüfung vorerst:** Die automatische vegetarische Option reicht dem Haushalt. Eine Warnung im Plan (Fleisch in der Basis, keine vegetarische Option), Markierungen in der Rezeptliste und ein Hinweis auf tierisches Lab kommen erst, wenn etwas durchrutscht. Lab soll dann nur ein Hinweis sein, keine Warnung.
 - **Schlüsselwörter an echten Namen geprüft:** Mit den Namen des BLS: Was dort zu Obst, Gemüse, Getreide usw. gehört, darf nicht als Fleisch oder Fisch gelten, und häufige Fleisch- und Fischnamen müssen erkannt werden (Gambas, Meeresfrüchte, Kasseler).
+
+Entschieden bei der Umsetzung von M8 (6. Oktober 2026):
+- **Timer als geplante Benachrichtigung:** Ein Küchentimer muss auch klingeln, wenn das Handy gesperrt ist oder eine andere App offen. Dafür braucht die App die Erlaubnis für Benachrichtigungen und für exakte Alarme (`USE_EXACT_ALARM`); ohne Play Store ist das kein Hindernis.
+- **Bei Spannen die untere Grenze:** Bei „10–15 Minuten“ klingelt der Timer nach 10 Minuten; dann lieber einmal nachsehen.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.

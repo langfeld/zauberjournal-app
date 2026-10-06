@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Erzeugt App-Icon, Startbildschirm und Favicon unter apps/mobile/assets/images.
+"""Erzeugt App-Icon, Startbildschirm, Favicon und Benachrichtigungssymbol unter apps/mobile/assets/images.
 
 Motiv: ein aufgeschlagenes Rezeptbuch mit Funkeln, beides aus Material Symbols, auf Kräutergrün.
 Aufruf im Repo-Root nach `npm install` (die Schriften kommen aus node_modules):
@@ -68,6 +68,17 @@ def motif(size: int, extent: float, book=CREAM, sparkle=SAFFRON) -> Image.Image:
     return image
 
 
+def notification_icon(size: int) -> Image.Image:
+    """Das Buch allein, weiß auf durchsichtigem Grund: Android zeigt bei Benachrichtigungen nur die Form."""
+    image = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    left, _, right, _ = draw.textbbox((0, 0), BOOK, font=ImageFont.truetype(str(SYMBOL_FONT), size))
+    # Das Buch füllt 88 % der Breite.
+    font = ImageFont.truetype(str(SYMBOL_FONT), int(size * size * 0.88 / (right - left)))
+    centered(draw, BOOK, font, (size / 2, size / 2), (255, 255, 255))
+    return image
+
+
 def save(image: Image.Image, name: str, size: int = SIZE) -> None:
     image.resize((size, size), Image.LANCZOS).save(OUT / name)
     print(f'{name}: {size}×{size}')
@@ -104,6 +115,9 @@ def main() -> None:
     ImageDraw.Draw(corners).rounded_rectangle((0, 0, big - 1, big - 1), radius=big * 0.24, fill=255)
     favicon.paste(icon, (0, 0), corners)
     save(favicon, 'favicon.png', 48)
+
+    # Symbol der Benachrichtigungen (Kochtimer), eingetragen beim Plugin expo-notifications in app.json.
+    save(notification_icon(big), 'notification-icon.png', 96)
 
 
 if __name__ == '__main__':

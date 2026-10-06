@@ -127,6 +127,8 @@ Ohne Terminal geht es auf GitHub: *Releases → Draft a new release*, bei „Cho
 
 [Obtainium](https://obtainium.imranr.dev/) auf beiden Handys installieren, *App hinzufügen* wählen und die URL des GitHub-Repos eintragen. Obtainium installiert die APK aus dem neuesten Release und meldet künftige Versionen.
 
+Beim ersten Timer im Kochmodus fragt Android, ob die App Benachrichtigungen zeigen darf. Mit Erlaubnis klingelt der Timer auch bei gesperrtem Handy; ohne vibriert er nur, solange die App offen ist. Nachträglich erlauben lässt es sich in den Android-Einstellungen unter Apps → Zauberjournal → Benachrichtigungen.
+
 Die fertige App verbindet sich nur über **HTTPS**, also über Pangolin. Unverschlüsseltes `http://` zum NAS im Heimnetz blockiert Android in fertigen Apps.
 
 ## 5. Entwicklung

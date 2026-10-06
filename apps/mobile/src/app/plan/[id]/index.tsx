@@ -112,6 +112,9 @@ export default function PlanEntryScreen() {
       <Stack.Screen options={{ title: mealLabel(entry.meal) }} />
       {entry.recipe ? <RecipePhoto photoId={entry.recipe.photo} style={styles.photo} alt={`Foto: ${entry.title}`} /> : null}
       <Text style={styles.title}>{entry.title}</Text>
+      {entry.recipe && entry.servings > 0 ? (
+        <Button icon="skillet" title="Kochen" onPress={() => router.push(`/plan/${entry.id}/cook`)} />
+      ) : null}
 
       <Card>
         <View style={styles.dateRow}>

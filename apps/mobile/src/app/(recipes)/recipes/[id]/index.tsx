@@ -9,7 +9,7 @@ import { NotFound } from '@/components/not-found';
 import { RecipeNutrition } from '@/components/nutrition';
 import { RecipeBody } from '@/components/recipe-body';
 import { RecipeCover } from '@/components/recipe-photo';
-import { Card, Stepper, Tag } from '@/components/ui';
+import { Button, Card, Stepper, Tag } from '@/components/ui';
 import { useRecipeTables } from '@/data/recipes';
 import { colors, fonts, radius, spacing, tones } from '@/theme';
 
@@ -86,6 +86,16 @@ export default function RecipeDetailScreen() {
             </View>
           ))}
         </Card>
+        <Button
+          icon="skillet"
+          title="Kochen"
+          onPress={() =>
+            router.push({
+              pathname: '/recipes/[id]/cook',
+              params: { id: view.id, servings: String(total), distribution: JSON.stringify(current) },
+            })
+          }
+        />
 
         <RecipeBody view={view} servings={total} distribution={current} />
         <RecipeNutrition recipeId={view.id} />

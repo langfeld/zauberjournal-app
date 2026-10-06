@@ -19,21 +19,19 @@ type RecipeBodyProps = {
   distribution: Distribution;
 };
 
-/** Zutaten und Zubereitung für die gewünschten Portionen; Schritte nur für Optionen, die jemand bekommt. */
-export function RecipeBody({ view, servings, distribution }: RecipeBodyProps) {
-  const optionServings = new Map<string, number>();
-  const optionNames = new Map<string, string>();
+function optionServingsOf(view: RecipeView, distribution: Distribution): Map<string, number> {
+  const servings = new Map<string, number>();
   for (const group of view.groups) {
-    for (const option of group.options) {
-      optionServings.set(option.id, distribution[group.id]?.[option.id] ?? 0);
-      optionNames.set(option.id, option.name);
-    }
+    for (const option of group.options) servings.set(option.id, distribution[group.id]?.[option.id] ?? 0);
   }
-  const steps = view.steps.filter((step) => !step.optionId || (optionServings.get(step.optionId) ?? 0) > 0);
+  return servings;
+}
 
+/** Zutaten für die gewünschten Portionen: die Basis und jede Option, die jemand bekommt. */
+export function RecipeIngredients({ view, servings, distribution }: RecipeBodyProps) {
+  const optionServings = optionServingsOf(view, distribution);
   return (
     <>
-      <SectionTitle>Zutaten</SectionTitle>
       {view.ingredients.length > 0 ? (
         <Card style={styles.ingredients}>
           <IngredientRows items={view.ingredients.map((item) => displayIngredient(item, servings / view.servings))} />
@@ -55,6 +53,20 @@ export function RecipeBody({ view, servings, distribution }: RecipeBodyProps) {
           );
         }),
       )}
+    </>
+  );
+}
+
+/** Zutaten und Zubereitung für die gewünschten Portionen; Schritte nur für Optionen, die jemand bekommt. */
+export function RecipeBody({ view, servings, distribution }: RecipeBodyProps) {
+  const optionServings = optionServingsOf(view, distribution);
+  const optionNames = new Map(view.groups.flatMap((group) => group.options.map((option) => [option.id, option.name] as const)));
+  const steps = view.steps.filter((step) => !step.optionId || (optionServings.get(step.optionId) ?? 0) > 0);
+
+  return (
+    <>
+      <SectionTitle>Zutaten</SectionTitle>
+      <RecipeIngredients view={view} servings={servings} distribution={distribution} />
 
       {steps.length > 0 ? <SectionTitle>Zubereitung</SectionTitle> : null}
       <View>
