@@ -12,7 +12,7 @@ import {
   parseStockAmount,
   setStaple,
   setStockUnit,
-  SHELF_LIFE_DAYS,
+  shelfLifeDays,
   STOCK_UNITS,
   stockBookings,
   stockStates,
@@ -117,7 +117,7 @@ export default function FoodScreen() {
   // Ohne Vorratseinheit wählt man sie beim ersten Eintragen; vorgeschlagen ist die der Rezepte.
   const unit: StockUnit = food.stockUnit || chosenUnit || stockUnitFromRecipes(tables, id) || 'g';
   const level = state?.level ?? 0;
-  const shelfLife = SHELF_LIFE_DAYS[food.category as FoodCategory];
+  const shelfLife = shelfLifeDays(food);
   const bookings = food.stockUnit ? stockBookings(tables, id).slice(0, MAX_BOOKINGS) : [];
   const newStock = parseStockAmount(stockText);
   const changeUnit = async (next: StockUnit) => {

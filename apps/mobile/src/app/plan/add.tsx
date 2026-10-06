@@ -1,5 +1,6 @@
 import {
   createId,
+  createPlanner,
   formatDate,
   isDateKey,
   listRecipes,
@@ -14,6 +15,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MEAL_ICONS } from '@/components/category-style';
 import { Icon } from '@/components/icon';
 import { RecipeThumbnail } from '@/components/recipe-photo';
+import { SuggestionCard } from '@/components/suggestion-card';
 import { AddField, Chip, EmptyState, SearchField, SectionTitle } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
@@ -33,6 +35,7 @@ export default function AddPlanEntryScreen() {
   const [query, setQuery] = useState('');
   const [text, setText] = useState('');
   const recipes = useMemo(() => listRecipes(tables, query), [tables, query]);
+  const suggestions = useMemo(() => createPlanner(tables, today, meal).suggest(date, { limit: 3 }), [tables, today, meal, date]);
 
   const add = (recipeId: string, entryText = '') => {
     if (!store) return;
@@ -70,6 +73,24 @@ export default function AddPlanEntryScreen() {
               onAdd={() => text.trim() && add('', text)}
               placeholder="Ohne Rezept, z. B. Reste"
             />
+            {suggestions.length > 0 && !query ? (
+              <>
+                <SectionTitle>Vorschläge</SectionTitle>
+                {suggestions.map((suggestion) => (
+                  <SuggestionCard
+                    key={suggestion.recipeId}
+                    suggestion={suggestion}
+                    accessibilityLabel={`${suggestion.title} einplanen`}
+                    onPress={() => add(suggestion.recipeId)}
+                    trailing={
+                      <View style={styles.addIcon}>
+                        <Icon name="add" size={20} color={colors.primary} />
+                      </View>
+                    }
+                  />
+                ))}
+              </>
+            ) : null}
             <SectionTitle>Rezept wählen</SectionTitle>
             <SearchField accessibilityLabel="Rezepte durchsuchen" value={query} onChangeText={setQuery} placeholder="Rezept suchen" />
           </View>

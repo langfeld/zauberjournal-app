@@ -179,9 +179,12 @@ export default function PlanScreen() {
           onPress={() => setAnchor(addDays(start, step))}
         />
       </View>
-      <Text style={styles.range}>
-        {formatShortDate(start)} – {formatShortDate(end)}
-      </Text>
+      <View style={styles.rangeRow}>
+        <Text style={styles.range}>
+          {formatShortDate(start)} – {formatShortDate(end)}
+        </Text>
+        <Button small variant="ghost" icon="auto_awesome" title="Vorschlagen" onPress={() => router.push('/plan/suggest')} />
+      </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {mode === 'week' ? (
@@ -239,9 +242,15 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   spacer: { flex: 1 },
+  rangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+    paddingTop: spacing.xs,
+  },
   range: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.3,

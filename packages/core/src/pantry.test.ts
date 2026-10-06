@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { timeOfDay } from './dates.ts';
-import { createFoodResolver, ensureFood, updateFood, type StockUnit } from './foods.ts';
+import { classifyFood, createFoodResolver, ensureFood, updateFood, type StockUnit } from './foods.ts';
 import {
   addToPantry,
   correctStock,
@@ -10,6 +10,7 @@ import {
   parseStockAmount,
   setStaple,
   setStockUnit,
+  shelfLifeDays,
   stockBookings,
   stockOf,
   stockUnitFromRecipes,
@@ -80,6 +81,12 @@ describe('Vorrat', () => {
     expect(toStockAmount(2, 'EL', 'g')).toBe(30);
     expect(formatStock(1500, 'g')).toBe('1500 g');
     expect(formatStock(0.5, 'Stück')).toBe('0,5 Stück');
+  });
+
+  it('lässt Lagergemüse länger zählen als anderes Frisches', () => {
+    const days = (name: string) => shelfLifeDays({ name, category: classifyFood(name).category });
+    expect(['Zwiebeln', 'Rote Zwiebel', 'Knoblauchzehen', 'Kartoffeln', 'Zitronen'].map(days)).toEqual([28, 28, 28, 28, 28]);
+    expect(['Frühlingszwiebeln', 'Spinat', 'Milch', 'Hähnchenbrust', 'Reis'].map(days)).toEqual([7, 7, 14, 3, null]);
   });
 
   it('liest Mengen aus Eingaben mit Komma, Punkt oder Tausenderpunkt', () => {

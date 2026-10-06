@@ -1,6 +1,6 @@
 import { addDays, dayOf, daysBetween } from './dates.ts';
-import type { FoodCategory } from './food-catalog.ts';
-import { createFoodResolver, type FoodStock, type FoodTables, type StockUnit } from './foods.ts';
+import { stemVariants, type FoodCategory } from './food-catalog.ts';
+import { createFoodResolver, normalizeFoodName, type FoodStock, type FoodTables, type StockUnit } from './foods.ts';
 import { parseIngredientLine } from './ingredient-line.ts';
 import { formatNumber } from './quantity.ts';
 import type { RecipeTables } from './recipe.ts';
@@ -42,6 +42,22 @@ export type PantryTables = FoodTables & { pantryBookings: Table<PantryBookingRow
  * (Nudeln, Konserven, Tiefkühl …); ihr Bestand zählt, bis er aufgebraucht ist.
  */
 export const SHELF_LIFE_DAYS: Partial<Record<FoodCategory, number>> = { produce: 7, bakery: 4, dairy: 14, meat: 3, fish: 2 };
+
+/** Gemüse und Obst, das im Keller oder Kühlschrank Wochen hält. */
+const LONG_KEEPING = ['zwiebel', 'schalotte', 'knoblauch', 'knoblauchzehe', 'kartoffel', 'möhre', 'karotte', 'ingwer', 'kürbis', 'zitrone', 'limette', 'apfel'];
+/** Ausnahmen davon: Frühlingszwiebeln halten nur ein paar Tage. */
+const SHORT_KEEPING = ['frühlingszwiebel', 'lauchzwiebel'];
+const LONG_KEEPING_DAYS = 28;
+
+/** Tage, die ein Rest nach dem letzten Einkauf zählt; `null` = hält lange (Nudeln, Konserven …). */
+export function shelfLifeDays(food: { category: FoodCategory; name: string }): number | null {
+  const days = SHELF_LIFE_DAYS[food.category];
+  if (days === undefined) return null;
+  if (food.category !== 'produce') return days;
+  const variants = stemVariants(normalizeFoodName(food.name).split(' ').at(-1) ?? '');
+  const has = (words: readonly string[]) => variants.some((variant) => words.some((word) => variant.endsWith(word)));
+  return has(LONG_KEEPING) && !has(SHORT_KEEPING) ? LONG_KEEPING_DAYS : days;
+}
 
 // ─── Umrechnen ───
 
@@ -158,7 +174,7 @@ export function stockStates(tables: PantryTables, today: string): Map<string, St
   const states = new Map<string, StockState>();
   for (const [id, food] of Object.entries(tables.foods)) {
     if (!isActive(food) || !food.stockUnit) continue;
-    const shelfLife = SHELF_LIFE_DAYS[food.category] ?? null;
+    const shelfLife = shelfLifeDays(food);
     let level = 0;
     let refilled: string | null = null;
     const expired = (day: string) => shelfLife !== null && refilled !== null && daysBetween(refilled, day) > shelfLife;

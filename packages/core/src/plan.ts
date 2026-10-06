@@ -71,7 +71,8 @@ export function optionDiet(option: ChoiceOptionView, dietOf: DietLookup): FoodDi
   return result;
 }
 
-function suits(diet: FoodDiet, member: MemberDiet): boolean {
+/** Ob etwas dieser Ernährungsklasse zu einer Person passt; Unbekanntes passt. */
+export function dietSuits(diet: FoodDiet, member: MemberDiet): boolean {
   if (member === 'vegan') return diet === 'vegan' || diet === '';
   if (member === 'vegetarian') return diet !== 'meat' && diet !== 'fish';
   return true;
@@ -81,8 +82,8 @@ function suits(diet: FoodDiet, member: MemberDiet): boolean {
 export function defaultOptionId(group: ChoiceGroupView, diet: MemberDiet | 'guest', dietOf: DietLookup): string {
   if (diet === 'vegetarian' || diet === 'vegan') {
     const diets = group.options.map((option) => optionDiet(option, dietOf));
-    let index = diets.findIndex((value) => suits(value, diet));
-    if (index < 0 && diet === 'vegan') index = diets.findIndex((value) => suits(value, 'vegetarian'));
+    let index = diets.findIndex((value) => dietSuits(value, diet));
+    if (index < 0 && diet === 'vegan') index = diets.findIndex((value) => dietSuits(value, 'vegetarian'));
     if (index >= 0) return group.options[index]!.id;
   }
   return group.options[0]?.id ?? '';

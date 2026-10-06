@@ -37,7 +37,7 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt ✅ (umgesetzt und am 6. Oktober 2026 auf rewe.de bestätigt; siehe Abschnitt 8 und [BETRIEB.md](BETRIEB.md)) |
 | **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat ✅ (umgesetzt: Vorrat aus dem Einkauf mit Einbuchen beim Abschließen der Liste, Abbuchen nach dem Plantag und Ablauf von Frischem; Nährwerte pro Person und Portion aus BLS und Open Food Facts. Die Vegetarisch-Prüfung ist auf später verschoben, siehe Abschnitt 12) |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System ✅ (34 Rezepte und 78 REWE-Vorlieben am 5. Oktober 2026 übernommen; Werkzeug siehe [BETRIEB.md](BETRIEB.md)) |
-| **M8 Kochen & Vorschläge** | Kochmodus mit Timern; Planvorschläge aus Vorrat, Abwechslung und Aufwand | Kochmodus umgesetzt (Abschnitt 7); Planvorschläge in Abstimmung |
+| **M8 Kochen & Vorschläge** | Kochmodus mit Timern; Planvorschläge aus Vorrat, Abwechslung und Aufwand | Kochen mit Timern und Vorschläge für den Plan ✅ (umgesetzt, Abschnitt 7) |
 | **Später** | Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN, Vegetarisch-Prüfung | |
 
 Die Reihenfolge von M3 bis M5 lässt sich tauschen. M3 steht vorne, weil alles Weitere auf Rezepten aufbaut.
@@ -149,7 +149,7 @@ Die Ernährungsklasse bestimmt, welche Option eine vegetarische Person bekommt. 
 **Vorrat**
 - „Immer im Haus“ (`foods.stock`, seit M4 als einfacher Vorrat): leer = nein, `have` = ja, `buy` = nachkaufen. Ohne Menge gilt `have` als da; mit Menge zählt der Bestand, und ist er leer, kommt das Lebensmittel von selbst auf die Liste.
 - Seit M6 der Bestand: die Summe der Buchungen in `pantryBookings` in der Vorratseinheit des Lebensmittels (`foods.stockUnit`). Eine Buchung enthält Lebensmittel, Menge (+/−), Einheit, Grund (`purchase` | `cooked` | `correction`), Zeitpunkt und Bezug (Liste oder Planeintrag). Einkauf und Kochen haben feste IDs (`<Liste>~<Lebensmittel>`, `<Planeintrag>~<Lebensmittel>`), damit zwei Handys nichts doppelt buchen.
-- Gezählt wird der Reihe nach: Ein Abgang leert höchstens, und Reste von Frischem laufen ab (Tage nach dem letzten Zugang: Obst & Gemüse 7, Brot 4, Kühlregal 14, Fleisch 3, Fisch 2; alles andere hält).
+- Gezählt wird der Reihe nach: Ein Abgang leert höchstens, und Reste von Frischem laufen ab (Tage nach dem letzten Zugang: Obst & Gemüse 7, Brot 4, Kühlregal 14, Fleisch 3, Fisch 2; alles andere hält). Lagergemüse und -obst wie Zwiebeln, Knoblauch, Kartoffeln, Möhren, Ingwer, Kürbis, Zitronen und Äpfel zählt 28 Tage (seit M8), Frühlingszwiebeln nicht.
 - Vorerst nicht: Lagerort, Mindesthaltbarkeit und „geöffnet am“. Für Verdorbenes trägt man den Bestand neu ein.
 
 **REWE** (seit M5):
@@ -204,6 +204,12 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Zutaten je Schritt:** die Zutaten, die der Schritt nennt, mit Menge für die Portionen. Erkannt wird über die Namen: „Zwiebel“ = „Zwiebeln“, „Hähnchenstreifen“ = „Hähnchenbrustfilet“ (Formwörter wie Streifen, Würfel, Zehen zählen nicht), „Öl“ = „Olivenöl“. Ein Schritt einer Option nennt nur Zutaten der Basis und dieser Option.
   - **Timer:** aus Zeitangaben im Schritt („15 Minuten“, „10–15 Min.“, „eine halbe Stunde“, „1 Std. 20 Min.“); bei Spannen gilt die untere Grenze. Ohne Zahl („einige Minuten“) gibt es keinen Timer. Mehrere Timer laufen nebeneinander, auch wenn man den Kochmodus verlässt. Der Alarm ist eine geplante Benachrichtigung und klingelt deshalb auch bei gesperrtem Handy; ohne Erlaubnis vibriert nur die offene App.
   - **Zum Schluss:** Aus dem Plan lässt sich das Gericht als gekocht eintragen; die Zutaten gehen dann vom Vorrat ab.
+- **Planvorschläge (M8):** Jedes Rezept bekommt für einen Tag Punkte, und jeder Vorschlag nennt bis zu drei Gründe dafür. Es gibt sie beim Hinzufügen eines Gerichts (die besten drei über der Rezeptliste) und unter „Vorschlagen“ im Plan: Man wählt, für wie viele freie Tage ab heute oder morgen. Belegte Tage (auch mit „Reste“ ohne Rezept) bleiben, wie sie sind, und zählen nicht mit. Jeder freie Tag bekommt einen Vorschlag, der sich tauschen oder weglassen lässt; erst „Einplanen“ trägt die Gerichte ein.
+  - **Freier Vorrat:** Bestand plus das, was offene Einkaufslisten bringen (in ganzen REWE-Packungen), abzüglich dessen, was geplante Gerichte brauchen, das frühere zuerst. Im Entwurf behält jeder Tag seine Zutaten; die folgenden rechnen mit dem, was übrig bleibt. So zählt der Rest einer Packung („Rest vom Einkauf: Quark“), aber keine Zutat wird doppelt verplant.
+  - **Punkte:** Frisches aus dem Vorrat zählt viel, kurz vor dem Ablauf noch mehr („Spinat · noch 2 Tage“). Was nach dem Einkauf übrig bleibt, zählt etwas weniger, Haltbares kaum. Grundzutaten, die in mindestens jedem fünften Rezept stecken (Zwiebeln, Butter, Zucker), zählen wenig und werden nur kurz vor dem Ablauf genannt. „Alles da“ oder „nur 1 Zutat fehlt“ gibt einen Bonus.
+  - **Abwechslung:** Steht das Rezept in derselben Woche schon im Plan, rutscht es weit nach hinten. Was es in den letzten zwei Wochen gab, rutscht ein Stück nach hinten; was es lange nicht gab („zuletzt vor 6 Wochen“), rückt vor. Ähnliches bis zu zwei Tage davor oder danach (dieselbe Grundlage wie Nudeln oder Reis, dasselbe Fleisch) kostet Punkte.
+  - **Passt für alle:** Isst jemand vegetarisch oder vegan mit, kommen Rezepte ohne passende Möglichkeit ganz nach hinten, mit dem Hinweis „nicht vegetarisch“ oder „nicht vegan“; Rezepte mit Optionen für beide zeigen „für beide“.
+  - **Mahlzeit und Aufwand:** Wofür ein Rezept schon im Plan stand, zählt; sonst der Titel (Pancakes und Kuchen nicht zum Abendessen). Unter der Woche kostet ein Rezept über 45 Minuten ein wenig, mehr nicht.
 
 ## 8. REWE
 
@@ -344,6 +350,10 @@ Entschieden bei der Umsetzung von M6 (5. und 6. Oktober 2026):
 Entschieden bei der Umsetzung von M8 (6. Oktober 2026):
 - **Timer als geplante Benachrichtigung:** Ein Küchentimer muss auch klingeln, wenn das Handy gesperrt ist oder eine andere App offen. Dafür braucht die App die Erlaubnis für Benachrichtigungen und für exakte Alarme (`USE_EXACT_ALARM`); ohne Play Store ist das kein Hindernis.
 - **Bei Spannen die untere Grenze:** Bei „10–15 Minuten“ klingelt der Timer nach 10 Minuten; dann lieber einmal nachsehen.
+- **Vorschläge nach Regeln statt KI:** Die Regeln laufen auf dem Handy, offline, sofort und kostenlos, und jeder Vorschlag sagt, warum. Wünsche in Worten („diese Woche was mit Kürbis“) könnte später die KI verstehen.
+- **„Vorschlagen“ für eine wählbare Zahl freier Tage statt eines Wochenplans:** Wie weit der Haushalt vorausplant, ist jedes Mal anders. Gezählt werden freie Tage, damit „3 Tage“ auch drei Gerichte ergibt, wenn die nächsten Tage schon belegt sind.
+- **Nichtvegetarisches nach hinten statt ausblenden;** der Aufwand spielt nur eine kleine Rolle, weil die meisten Rezepte ähnlich lange dauern.
+- **Lagergemüse hält länger:** Zwiebeln, Kartoffeln & Co. liefen im Vorrat nach 7 Tagen ab und galten bei den Vorschlägen als Rest, der weg muss. Jetzt zählen sie 28 Tage.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.
