@@ -1,21 +1,28 @@
-import type {
-  FoodDuplicateGroup,
-  ImportedRecipe,
-  MealRequestItem,
-  MealResult,
-  NutritionLookupItem,
-  NutritionResult,
-  Per100,
-  ReweMarket,
-  ReweMatchRequestItem,
-  ReweMatchResult,
-  ReweOrder,
-  ReweOrderRequest,
-  ReweProduct,
+import {
+  APP_NAME,
+  type FoodDuplicateGroup,
+  type ImportedRecipe,
+  type MealRequestItem,
+  type MealResult,
+  type NutritionLookupItem,
+  type NutritionResult,
+  type Per100,
+  type ReweMarket,
+  type ReweMatchRequestItem,
+  type ReweMatchResult,
+  type ReweOrder,
+  type ReweOrderRequest,
+  type ReweProduct,
 } from '@zauberjournal/core';
 
-/** Zugangsdaten dieses Geräts für den Server des Haushalts. */
+/** Zugangsdaten dieses Geräts für den Server des Haushalts; `serverUrl` ist die Adresse, die gerade gilt. */
 export type Credentials = { serverUrl: string; deviceId: string; token: string };
+
+/**
+ * Was das Gerät dauerhaft speichert: `serverUrl` ist hier die Adresse für unterwegs, `homeUrl` die im WLAN zu
+ * Hause (fehlt = keine). Welche gerade gilt, wählt der Sync bei jedem Verbindungsaufbau.
+ */
+export type DeviceAccess = Credentials & { homeUrl?: string };
 
 export type DeviceInfo = {
   id: string;
@@ -95,6 +102,57 @@ export function removeDevice(credentials: Credentials, deviceId: string): Promis
     method: 'DELETE',
     token: credentials.token,
   });
+}
+
+/** Bricht `run` nach `timeoutMs` ab. */
+async function withTimeout<T>(timeoutMs: number, run: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await run(controller.signal);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function answersAsZauberjournal(serverUrl: string, signal: AbortSignal): Promise<boolean> {
+  const health = await request<{ name?: unknown }>(serverUrl, '/api/health', { signal });
+  return health.name === APP_NAME;
+}
+
+/** Ob unter `serverUrl` in `timeoutMs` ein Zauberjournal-Server antwortet; ohne Token. */
+export async function isZauberjournalServer(serverUrl: string, timeoutMs: number): Promise<boolean> {
+  try {
+    return await withTimeout(timeoutMs, (signal) => answersAsZauberjournal(serverUrl, signal));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * `ok`: Unter der Adresse antwortet der eigene Server und kennt dieses Gerät. `foreign`: Dort antwortet etwas
+ * anderes, oder ein Server, der das Gerät nicht kennt. `unreachable`: keine Antwort.
+ */
+export type ServerCheck = 'ok' | 'foreign' | 'unreachable';
+
+/**
+ * Prüft die Adresse in `credentials.serverUrl`. Das Token geht erst mit, wenn sich dort ein Zauberjournal-Server
+ * gemeldet hat: In fremden WLANs kann unter derselben Adresse ein ganz anderes Gerät stehen.
+ */
+export async function checkServer(credentials: Credentials, timeoutMs: number): Promise<ServerCheck> {
+  try {
+    return await withTimeout(timeoutMs, async (signal) => {
+      if (!(await answersAsZauberjournal(credentials.serverUrl, signal))) return 'foreign';
+      const { device } = await request<{ device?: { id?: unknown } }>(credentials.serverUrl, '/api/session', {
+        token: credentials.token,
+        signal,
+      });
+      return device?.id === credentials.deviceId ? 'ok' : 'foreign';
+    });
+  } catch (error) {
+    // 5xx kommt auch von Pangolin, wenn der Server dahinter fehlt; das zählt als nicht erreichbar.
+    return error instanceof ApiError && error.status >= 400 && error.status < 500 ? 'foreign' : 'unreachable';
+  }
 }
 
 /** Prüft, ob das Gerät noch angemeldet ist: `ok`, `revoked` (abgemeldet) oder `offline`. */
@@ -231,9 +289,9 @@ export async function searchNutrition(credentials: Credentials, query: string, s
   return results;
 }
 
-/** Adresse, unter der der Server das Userscript ausliefert. */
-export function userscriptUrl(credentials: Credentials): string {
-  return `${credentials.serverUrl}/rewe.user.js`;
+/** Adresse, unter der der Server das Userscript ausliefert; er trägt dabei die Adresse ein, über die es geladen wurde. */
+export function userscriptUrl(serverUrl: string): string {
+  return `${serverUrl}/rewe.user.js`;
 }
 
 export function photoUrl(credentials: Credentials, photoId: string): string {

@@ -1,6 +1,6 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { HouseholdSettings } from '@/components/household-settings';
 import { Icon } from '@/components/icon';
@@ -48,7 +48,7 @@ function NotConnected() {
 }
 
 export default function HouseholdScreen() {
-  const { credentials, status, disconnect } = useConnection();
+  const { credentials, route, status, disconnect } = useConnection();
   const [devices, setDevices] = useState<DeviceInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,12 +97,20 @@ export default function HouseholdScreen() {
       <Stack.Screen options={{ title: 'Haushalt' }} />
       <Card>
         <SyncStatusLine status={status} />
-        <View style={styles.server}>
-          <Icon name="dns" size={18} color={colors.textMuted} />
-          <Text style={styles.meta} numberOfLines={1}>
-            {credentials.serverUrl}
-          </Text>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Verbindung: Adressen für unterwegs und zu Hause"
+          onPress={() => router.push('/household/connection')}
+          style={({ pressed }) => [styles.server, pressed && styles.pressed]}>
+          <Icon name={route === 'home' ? 'wifi' : 'public'} size={20} color={colors.primary} />
+          <View style={styles.serverText}>
+            <Text style={styles.serverLabel}>{route === 'home' ? 'Zu Hause im WLAN' : 'Unterwegs über das Internet'}</Text>
+            <Text style={styles.meta} numberOfLines={1}>
+              {credentials.serverUrl}
+            </Text>
+          </View>
+          <Icon name="chevron_right" size={22} color={colors.textMuted} />
+        </Pressable>
       </Card>
 
       {status === 'revoked' ? (
@@ -149,7 +157,17 @@ export default function HouseholdScreen() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
   body: { fontSize: 15, lineHeight: 22, color: colors.text },
-  server: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  server: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  serverText: { flex: 1, gap: 1 },
+  serverLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
+  pressed: { opacity: 0.7 },
   meta: { flexShrink: 1, fontSize: 14, color: colors.textMuted },
   devices: { paddingVertical: spacing.xs, gap: 0 },
   device: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },

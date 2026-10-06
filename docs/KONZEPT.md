@@ -83,7 +83,7 @@ Das Repo nutzt npm-Workspaces. Server und `core` brauchen keinen Build-Schritt: 
 - **Ein Store pro Haushalt:** Jeder Haushalt ist ein TinyBase-`MergeableStore`. Jede Zelle trägt einen hybriden Zeitstempel. Beim Zusammenführen gewinnt pro Feld die letzte Änderung.
 - **App:** Der Store liegt im Speicher und wird in expo-sqlite gesichert. Die App funktioniert vollständig offline.
 - **Server:** Er hält denselben Store pro Haushalt und speichert ihn mit `node:sqlite`. Der Server ist ein normaler Teilnehmer. Er kann also selbst lesen und schreiben, zum Beispiel Ergebnisse des REWE-Abgleichs.
-- **Transport:** WebSocket über Pangolin. Beim Verbindungsaufbau prüft der Server das Gerätetoken und bestimmt den Haushalt selbst. Ein Client kann keinen fremden Haushalt wählen.
+- **Transport:** WebSocket über Pangolin, zu Hause auf Wunsch direkt im WLAN (zweite Adresse je Gerät; die App versucht sie bei jedem Verbindungsaufbau zuerst). Beim Verbindungsaufbau prüft der Server das Gerätetoken und bestimmt den Haushalt selbst. Ein Client kann keinen fremden Haushalt wählen.
 - **Regeln fürs Datenmodell,** damit beim Sync möglichst wenig Konflikte entstehen:
   - IDs sind zufällige Zeichenketten, keine fortlaufenden Nummern. Ausnahme: Zeilen, die sich aus anderen Daten ergeben, bekommen eine feste ID aus ihrem Schlüssel. Das gilt für Lebensmittel aus Zutatennamen (`food:zwiebel`), für Esser und Wahlen im Plan und für die Positionen der Einkaufsliste aus dem Plan. So legen zwei Geräte dieselbe Zeile an statt zwei.
   - Hauptobjekte werden nicht gelöscht, sondern mit `deletedAt` markiert. Sonst kann eine gleichzeitige Bearbeitung „halbe“ Zeilen erzeugen.
@@ -107,7 +107,7 @@ Alle Daten liegen in einem Volume `/data`. Dafür bekommt der Server ein eigenes
 ### 5.4 Zugriff und Sicherheit
 
 - **Pangolin:** Die API bekommt eine eigene Subdomain, dort **ohne** Pangolin-Login. Dessen Anmeldeseite können weder App noch Userscript bedienen. Abgesichert wird im Dienst selbst: Jedes Gerät hat ein eigenes Token, das sich widerrufen lässt. Pangolin selbst aktuell halten.
-- **Pairing:** Ein Server gehört genau einem Haushalt. Das erste Handy richtet ihn mit dem Einrichtungscode ein, den der Server beim Start in sein Protokoll schreibt. Weitere Geräte scannen einen QR-Code mit Server-URL und Einladung. Die Einladung gilt 15 Minuten und nur einmal. Für den Notfall erzeugt `cli.mjs invite` im Container einen Code.
+- **Pairing:** Ein Server gehört genau einem Haushalt. Das erste Handy richtet ihn mit dem Einrichtungscode ein, den der Server beim Start in sein Protokoll schreibt. Weitere Geräte scannen einen QR-Code mit Server-URL (und Adresse für zu Hause, falls eingetragen) und Einladung. Die Einladung gilt 15 Minuten und nur einmal. Für den Notfall erzeugt `cli.mjs invite` im Container einen Code.
 - **Userscript:** Es bekommt ebenfalls ein Gerätetoken. Das Token wird in der App erzeugt und einmal im Script eingegeben. Im Script-Code steht kein Schlüssel.
 
 ## 6. Datenmodell (Store eines Haushalts)

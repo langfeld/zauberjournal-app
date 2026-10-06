@@ -25,8 +25,10 @@ export * from './members.ts';
 export {
   createPairingLink,
   formatCode,
+  isLocalHost,
   normalizeServerUrl,
   parsePairingLink,
+  serverUrlProblem,
   type PairingInfo,
 } from './pairing.ts';
 export * from './plan.ts';

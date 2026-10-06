@@ -1,4 +1,4 @@
-import { normalizeServerUrl } from '@zauberjournal/core';
+import { normalizeServerUrl, serverUrlProblem } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
@@ -23,10 +23,16 @@ export default function SetupScreen() {
       setError('Bitte alle Felder ausfüllen.');
       return;
     }
+    const url = normalizeServerUrl(serverUrl);
+    const invalid = serverUrlProblem(url);
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await connect(await setupHousehold(normalizeServerUrl(serverUrl), setupCode, deviceName.trim()));
+      await connect(await setupHousehold(url, setupCode, deviceName.trim()));
       if (router.canGoBack()) router.back();
       else router.replace('/household');
     } catch (problem) {

@@ -32,12 +32,12 @@ function Step({ number, title, children }: { number: number; title: string; chil
  * Als Route in Haushalt und Einkauf.
  */
 export function ReweUserscriptScreen() {
-  const { credentials } = useConnection();
+  const { credentials, access } = useConnection();
   const [invite, setInvite] = useState<{ code: string; expiresAt: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!credentials) {
+  if (!credentials || !access) {
     return (
       <ScrollView contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: 'Userscript einrichten' }} />
@@ -46,7 +46,8 @@ export function ReweUserscriptScreen() {
     );
   }
 
-  const url = userscriptUrl(credentials);
+  // Die Adresse für unterwegs: So läuft das Userscript auch, wenn der Rechner nicht zu Hause ist.
+  const url = userscriptUrl(access.serverUrl);
   const open = () => {
     Linking.openURL(url).catch(() => setError('Der Link ließ sich nicht öffnen. Teil ihn stattdessen.'));
   };
@@ -121,7 +122,7 @@ export function ReweUserscriptScreen() {
           />
         )}
         <Text style={styles.meta} selectable>
-          Server: {credentials.serverUrl}
+          Server: {access.serverUrl}
         </Text>
       </Step>
 

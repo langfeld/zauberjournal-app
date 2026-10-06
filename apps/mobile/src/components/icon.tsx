@@ -65,6 +65,7 @@ const GLYPHS = {
   person_off: 0xe510,
   photo_camera: 0xe412,
   photo_library: 0xe413,
+  public: 0xe80b,
   qr_code: 0xef6b,
   qr_code_scanner: 0xf206,
   radio_button_unchecked: 0xe836,
@@ -93,6 +94,7 @@ const GLYPHS = {
   today: 0xe8df,
   tune: 0xe429,
   warning: 0xe002,
+  wifi: 0xe63e,
 } as const;
 
 export type IconName = keyof typeof GLYPHS;

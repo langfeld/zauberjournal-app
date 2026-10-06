@@ -1,21 +1,26 @@
-import { normalizeServerUrl, parsePairingLink } from '@zauberjournal/core';
+import { normalizeServerUrl, parsePairingLink, serverUrlProblem } from '@zauberjournal/core';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 
 import { QrScanner } from '@/components/qr-scanner';
 import { Button, EmptyState, Hint, Notice, TextField } from '@/components/ui';
-import { joinHousehold } from '@/data/api';
+import { isZauberjournalServer, joinHousehold } from '@/data/api';
 import { useConnection } from '@/data/connection';
 import { suggestedDeviceName } from '@/lib/device-name';
 import { errorMessage } from '@/lib/error-message';
 import { spacing, tones } from '@/theme';
 
+/** So lange darf die Adresse für zu Hause beim Beitreten brauchen. */
+const HOME_TIMEOUT_MS = 2000;
+
 export default function JoinScreen() {
-  // Kommt auch über den Link aus dem QR-Code: zauberjournal://household/join?server=…&code=…
-  const params = useLocalSearchParams<{ server?: string; code?: string }>();
+  // Kommt auch über den Link aus dem QR-Code: zauberjournal://household/join?server=…&home=…&code=…
+  const params = useLocalSearchParams<{ server?: string; home?: string; code?: string }>();
   const { credentials, connect } = useConnection();
   const [serverUrl, setServerUrl] = useState(params.server ?? '');
+  // Nur aus dem QR-Code; abtippen lässt sie sich später unter „Haushalt → Verbindung“.
+  const [homeUrl, setHomeUrl] = useState(params.home ?? '');
   const [code, setCode] = useState(params.code ?? '');
   const [deviceName, setDeviceName] = useState(suggestedDeviceName);
   const [scanning, setScanning] = useState(false);
@@ -41,6 +46,7 @@ export default function JoinScreen() {
       return false;
     }
     setServerUrl(info.serverUrl);
+    setHomeUrl(info.homeUrl ?? '');
     setCode(info.code);
     setError(null);
     setScanning(false);
@@ -52,10 +58,20 @@ export default function JoinScreen() {
       setError('Bitte alle Felder ausfüllen.');
       return;
     }
+    const away = normalizeServerUrl(serverUrl);
+    const invalid = serverUrlProblem(away);
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
+    const home = homeUrl && !serverUrlProblem(homeUrl) ? homeUrl : '';
     setBusy(true);
     setError(null);
     try {
-      await connect(await joinHousehold(normalizeServerUrl(serverUrl), code, deviceName.trim()));
+      // Zu Hause klappt das Beitreten so auch ohne Internet.
+      const base = home && (await isZauberjournalServer(home, HOME_TIMEOUT_MS)) ? home : away;
+      const joined = await joinHousehold(base, code, deviceName.trim());
+      await connect(home ? { ...joined, serverUrl: away, homeUrl: home } : { ...joined, serverUrl: away });
       if (router.canGoBack()) router.back();
       else router.replace('/household');
     } catch (problem) {
@@ -85,6 +101,7 @@ export default function JoinScreen() {
           autoCorrect={false}
           keyboardType="url"
         />
+        {homeUrl ? <Hint>Dazu für zu Hause im WLAN: {homeUrl}</Hint> : null}
         <TextField
           label="Einladungscode"
           icon="qr_code"

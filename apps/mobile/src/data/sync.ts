@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { createWsSynchronizer } from 'tinybase/synchronizers/synchronizer-ws-client/with-schemas';
 
-import { checkSession, type Credentials } from './api';
+import { checkServer, checkSession, type Credentials, type DeviceAccess } from './api';
 import { openSyncSocket } from './socket';
 import type { AppStore } from './store';
 
@@ -16,12 +16,24 @@ import type { AppStore } from './store';
 export type SyncStatus = 'off' | 'connecting' | 'online' | 'offline' | 'revoked';
 
 const MAX_RETRY_DELAY_MS = 30_000;
+/** So lange darf die Adresse für zu Hause brauchen; im WLAN antwortet der Server viel schneller. */
+const HOME_TIMEOUT_MS = 2000;
 
-/** Hält die Sync-Verbindung offen, solange die App im Vordergrund ist, und verbindet bei Abbrüchen neu. */
-export function useSync(store: AppStore, credentials: Credentials | null): SyncStatus {
+/** Die Adresse für zu Hause, wenn dort der eigene Server antwortet und dieses Gerät kennt; sonst die für unterwegs. */
+async function chooseServerUrl(access: DeviceAccess): Promise<string> {
+  if (!access.homeUrl) return access.serverUrl;
+  const home = await checkServer({ ...access, serverUrl: access.homeUrl }, HOME_TIMEOUT_MS);
+  return home === 'ok' ? access.homeUrl : access.serverUrl;
+}
+
+/**
+ * Hält die Sync-Verbindung offen, solange die App im Vordergrund ist, und verbindet bei Abbrüchen neu. Bei jedem
+ * Aufbau, also auch nach dem Öffnen der App, wählt sie die Adresse neu und meldet sie an `onServerUrl`.
+ */
+export function useSync(store: AppStore, access: DeviceAccess | null, onServerUrl: (serverUrl: string) => void): SyncStatus {
   // Der Status gehört zu bestimmten Zugangsdaten; bei neuen Zugangsdaten gilt wieder „verbinde“.
-  const [state, setState] = useState<{ credentials: Credentials | null; status: SyncStatus }>({
-    credentials: null,
+  const [state, setState] = useState<{ access: DeviceAccess | null; status: SyncStatus }>({
+    access: null,
     status: 'connecting',
   });
   const [active, setActive] = useState(AppState.currentState !== 'background');
@@ -32,14 +44,16 @@ export function useSync(store: AppStore, credentials: Credentials | null): SyncS
   }, []);
 
   useEffect(() => {
-    if (!credentials || !active) return;
+    if (!access || !active) return;
 
     let stopped = false;
     let attempt = 0;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let destroyCurrent: (() => void) | undefined;
+    /** Mit der zuletzt gewählten Adresse */
+    let credentials: Credentials = access;
     const report = (status: SyncStatus) => {
-      if (!stopped) setState({ credentials, status });
+      if (!stopped) setState({ access, status });
     };
 
     const retryLater = async () => {
@@ -55,6 +69,9 @@ export function useSync(store: AppStore, credentials: Credentials | null): SyncS
 
     const connect = async () => {
       try {
+        credentials = { ...access, serverUrl: await chooseServerUrl(access) };
+        if (stopped) return;
+        onServerUrl(credentials.serverUrl);
         const socket = openSyncSocket(credentials);
         const synchronizer = await createWsSynchronizer(store, socket);
         if (stopped) {
@@ -82,8 +99,8 @@ export function useSync(store: AppStore, credentials: Credentials | null): SyncS
       clearTimeout(retryTimer);
       destroyCurrent?.();
     };
-  }, [store, credentials, active]);
+  }, [store, access, active, onServerUrl]);
 
-  if (!credentials) return 'off';
-  return state.credentials === credentials ? state.status : 'connecting';
+  if (!access) return 'off';
+  return state.access === access ? state.status : 'connecting';
 }

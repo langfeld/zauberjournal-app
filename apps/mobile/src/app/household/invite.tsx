@@ -11,7 +11,7 @@ import { errorMessage } from '@/lib/error-message';
 import { colors, fonts, radius, shadows, spacing } from '@/theme';
 
 export default function InviteScreen() {
-  const { credentials } = useConnection();
+  const { credentials, access } = useConnection();
   const [invite, setInvite] = useState<{ code: string; expiresAt: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Hochzählen erzeugt einen neuen Code.
@@ -35,7 +35,7 @@ export default function InviteScreen() {
     };
   }, [credentials, round]);
 
-  if (!credentials) return <Redirect href="/household" />;
+  if (!credentials || !access) return <Redirect href="/household" />;
 
   const validUntil = invite
     ? new Date(invite.expiresAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
@@ -49,7 +49,7 @@ export default function InviteScreen() {
         <>
           <View style={styles.qr}>
             <QRCode
-              value={createPairingLink({ serverUrl: credentials.serverUrl, code: invite.code })}
+              value={createPairingLink({ serverUrl: access.serverUrl, homeUrl: access.homeUrl, code: invite.code })}
               size={232}
               color={colors.text}
               backgroundColor={colors.surface}
@@ -64,7 +64,8 @@ export default function InviteScreen() {
             Serveradresse und den Code eintippen.
           </Text>
           <Text style={styles.meta} selectable>
-            Server: {credentials.serverUrl}
+            Server: {access.serverUrl}
+            {access.homeUrl ? `\nZu Hause: ${access.homeUrl}` : ''}
           </Text>
           <Button variant="secondary" icon="sync" title="Neuen Code erzeugen" onPress={() => setRound((value) => value + 1)} />
         </>

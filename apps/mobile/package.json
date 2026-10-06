@@ -7,6 +7,7 @@
     "@expo-google-fonts/material-symbols": "^0.4.48",
     "@zauberjournal/core": "*",
     "expo": "~57.0.26",
+    "expo-build-properties": "~57.0.22",
     "expo-camera": "~57.0.6",
     "expo-constants": "~57.0.20",
     "expo-device": "~57.0.2",

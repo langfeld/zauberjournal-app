@@ -61,7 +61,8 @@ Pangolin selbst aktuell halten.
 ## 3. Geräte verbinden
 
 - **Erstes Gerät:** App → *Haushalt* → *Einrichten*. Dort Server-Adresse (`https://kochbuch.<deine-domain>`), den Einrichtungscode aus dem Log und einen Gerätenamen eintragen. Rezepte, die schon auf dem Gerät liegen, wandern in den Haushalt.
-- **Weitere Geräte:** auf einem verbundenen Gerät *Haushalt → Gerät hinzufügen*. Das zeigt einen QR-Code, der 15 Minuten gilt und nur einmal verwendbar ist. Auf dem neuen Gerät *Haushalt → Beitreten → QR-Code scannen*.
+- **Weitere Geräte:** auf einem verbundenen Gerät *Haushalt → Gerät hinzufügen*. Das zeigt einen QR-Code, der 15 Minuten gilt und nur einmal verwendbar ist. Auf dem neuen Gerät *Haushalt → Beitreten → QR-Code scannen*. Der QR-Code enthält auch die Adresse für zu Hause, falls eingetragen.
+- **Zu Hause ohne Umweg:** *Haushalt →* Zeile mit der Adresse *→ Verbindung*. Dort steht die Adresse für unterwegs (Pangolin), darunter lässt sich eine für zu Hause eintragen, z. B. `http://<TrueNAS-IP>:3000`. Die App versucht beim Öffnen und nach jedem Verbindungsabbruch zuerst die Adresse für zu Hause und nimmt sonst die für unterwegs. Eingetragen wird sie je Handy.
 - **Gerät entfernen:** *Haushalt → Geräte → Entfernen*. Das Gerät wird sofort getrennt und behält seine Rezepte nur noch lokal.
 
 ### REWE-Userscript
@@ -129,7 +130,7 @@ Ohne Terminal geht es auf GitHub: *Releases → Draft a new release*, bei „Cho
 
 Beim ersten Timer im Kochmodus fragt Android, ob die App Benachrichtigungen zeigen darf. Mit Erlaubnis klingelt der Timer auch bei gesperrtem Handy; ohne vibriert er nur, solange die App offen ist. Nachträglich erlauben lässt es sich in den Android-Einstellungen unter Apps → Zauberjournal → Benachrichtigungen.
 
-Die fertige App verbindet sich nur über **HTTPS**, also über Pangolin. Unverschlüsseltes `http://` zum NAS im Heimnetz blockiert Android in fertigen Apps.
+Unverschlüsseltes `http://` nimmt die App nur für Adressen im eigenen Netz an (z. B. `192.168.…`, `10.…`, `….local`). Adressen im Internet brauchen **HTTPS**. Bevor das Token an die Adresse für zu Hause geht, prüft die App ohne Token, ob dort wirklich ein Zauberjournal-Server antwortet; in fremden WLANs kann unter derselben IP ein anderes Gerät stehen.
 
 ## 5. Entwicklung
 
