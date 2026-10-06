@@ -1,12 +1,13 @@
-import { buildRecipeView, formatDuration, resizeDistribution, shiftServing, type Distribution } from '@zauberjournal/core';
+import { buildRecipeView, formatDuration, planRecipeFavorite, resizeDistribution, shiftServing, type Distribution } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { useRecipeTables } from '@/data/recipes';
+import { applyWrites, useRecipeTables } from '@/data/recipes';
+import { useStore } from '@/data/store';
 import { colors, fonts, radius, spacing, tones } from '@/theme';
 
-import { HeaderButton, HeaderRight } from './header';
+import { HeaderButton, HeaderFavorite, HeaderRight } from './header';
 import { Icon } from './icon';
 import { NotFound } from './not-found';
 import { RecipeNutrition } from './nutrition';
@@ -23,6 +24,7 @@ type RecipeDetailProps = {
 
 /** Ein Rezept mit Foto, Portionen, Zutaten, Schritten und Nährwerten. */
 export function RecipeDetail({ id, preview }: RecipeDetailProps) {
+  const store = useStore();
   const tables = useRecipeTables();
   const view = useMemo(() => buildRecipeView(tables, id), [tables, id]);
   const [servings, setServings] = useState<number | null>(null);
@@ -43,13 +45,17 @@ export function RecipeDetail({ id, preview }: RecipeDetailProps) {
       <Stack.Screen
         options={{
           title: '',
-          headerRight: preview
-            ? undefined
-            : () => (
-                <HeaderRight>
-                  <HeaderButton icon="edit" title="Bearbeiten" onPress={() => router.push(`/recipes/${view.id}/edit`)} />
-                </HeaderRight>
-              ),
+          headerRight: () => (
+            <HeaderRight>
+              <HeaderFavorite
+                favorite={view.favorite}
+                onPress={() => store && applyWrites(store, planRecipeFavorite(view.id, !view.favorite))}
+              />
+              {preview ? null : (
+                <HeaderButton icon="edit" title="Bearbeiten" onPress={() => router.push(`/recipes/${view.id}/edit`)} />
+              )}
+            </HeaderRight>
+          ),
         }}
       />
       {view.photo ? <RecipeCover photoId={view.photo} title={view.title} aspectRatio={4 / 3} /> : null}

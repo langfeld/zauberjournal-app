@@ -13,9 +13,10 @@ const REASON_STYLES: Record<SuggestionReasonKind, { icon: IconName; tone: Tone }
   leftover: { icon: 'kitchen', tone: tones.wheat },
   stock: { icon: 'kitchen', tone: tones.green },
   shopping: { icon: 'shopping_basket', tone: tones.teal },
+  favorite: { icon: 'favorite', tone: tones.rose },
   longAgo: { icon: 'event', tone: tones.sky },
   forAll: { icon: 'group', tone: tones.green },
-  unsuitable: { icon: 'warning', tone: tones.rose },
+  unsuitable: { icon: 'warning', tone: tones.terracotta },
   planned: { icon: 'today', tone: tones.stone },
 };
 

@@ -27,6 +27,8 @@ export type RecipeRow = {
   mealsBy: RecipeMealsBy;
   /** Vor diesem Tag nicht vorschlagen; leer = keine Pause */
   pausedUntil: string;
+  /** Lieblingsessen */
+  favorite: boolean;
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;
@@ -110,6 +112,7 @@ export type RecipeView = {
   meals: MealId[];
   mealsBy: RecipeMealsBy;
   pausedUntil: string;
+  favorite: boolean;
   ingredients: IngredientItem[];
   groups: ChoiceGroupView[];
   steps: StepItem[];
@@ -161,6 +164,7 @@ export function buildRecipeView(tables: RecipeTables, recipeId: string): RecipeV
     meals: recipeMealIds(recipe),
     mealsBy: recipe.mealsBy ?? '',
     pausedUntil: recipe.pausedUntil ?? '',
+    favorite: recipe.favorite ?? false,
     ingredients: ingredientsOf(tables, recipeId, ''),
     groups,
     steps: activeSorted(tables.recipeSteps, (row) => row.recipeId === recipeId).map(([id, row]) => ({
@@ -181,6 +185,7 @@ export type RecipeSummary = {
   meals: MealId[];
   mealsBy: RecipeMealsBy;
   pausedUntil: string;
+  favorite: boolean;
 };
 
 function normalizeForSearch(text: string): string {
@@ -219,6 +224,7 @@ export function listRecipes(tables: RecipeTables, query = ''): RecipeSummary[] {
         meals: recipeMealIds(recipe),
         mealsBy: recipe.mealsBy ?? '',
         pausedUntil: recipe.pausedUntil ?? '',
+        favorite: recipe.favorite ?? false,
       };
     })
     .sort((a, b) => a.title.localeCompare(b.title, 'de', { sensitivity: 'base' }));
@@ -550,6 +556,11 @@ export function planRecipeSave(
   if (!recipeWrite && childWrites.length === 0) return { recipeId: id, writes: [] };
   const recipeCells = { ...(recipeWrite?.cells ?? {}), updatedAt: now };
   return { recipeId: id, writes: [{ table: 'recipes', rowId: id, cells: recipeCells }, ...childWrites] };
+}
+
+/** Merkt ein Rezept als Lieblingsessen vor oder nimmt es wieder heraus. */
+export function planRecipeFavorite(recipeId: string, favorite: boolean): RowWrite[] {
+  return [{ table: 'recipes', rowId: recipeId, cells: { favorite } }];
 }
 
 /** Löscht ein Rezept weich; Zutaten und Schritte bleiben unverändert und hängen am gelöschten Rezept. */

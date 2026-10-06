@@ -132,7 +132,7 @@ Füllwörter wie „große“ oder „frische“ und Angaben wie „zum Braten�
 Die Ernährungsklasse bestimmt, welche Option eine vegetarische Person bekommt. Fehltreffer wiegen deshalb schwer. Wörter, die nur nach Fleisch oder Fisch aussehen („Limette“ enthält „Mett“, „Fruchtfleisch“, „Weizenkleber“), stehen in einer eigenen Liste. Lernen die Schlüsselwörter dazu, bessert die App gespeicherte Lebensmittel nach (seit M6): „unbekannt“ bekommt die neue Klasse, ein solcher Fehltreffer verliert die falsche. Von Hand Gewähltes bleibt.
 
 **Rezepte**
-- `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-ID, Tags, Notizen, `deletedAt`. Seit M8 außerdem „Passt zu“: je Mahlzeit des Plans ein Feld (`mealBreakfast` … `mealSnack`), dazu `mealsBy`, wer das festgelegt hat (leer = noch niemand, `ai`, `person`), und `pausedUntil`, vor welchem Tag das Rezept nicht vorgeschlagen wird
+- `recipes`: Titel, Beschreibung, Basisportionen, Zeiten, Quelle, Foto-ID, Tags, Notizen, `deletedAt`. Seit M8 außerdem „Passt zu“: je Mahlzeit des Plans ein Feld (`mealBreakfast` … `mealSnack`), dazu `mealsBy`, wer das festgelegt hat (leer = noch niemand, `ai`, `person`), `pausedUntil`, vor welchem Tag das Rezept nicht vorgeschlagen wird, und `favorite` für Lieblingsessen (Herz in der Rezeptansicht, Filter „Favoriten“ in der Liste)
 - `recipeIngredients`: Rezept, Sortierschlüssel, Zeilenart (`ingredient` oder `heading`; Zwischenüberschriften wie „Für das Dressing“ sind eigene Zeilen), Menge und optionale Obergrenze bei Spannen („2–3“) für die Basisportionen, Einheit, Name, Zusatz („fein gehackt“), Option (leer = für alle). Das Lebensmittel ergibt sich aus dem Namen (siehe Zuordnung oben).
 - `recipeSteps`: Rezept, Sortierschlüssel, Text, Option (leer = für alle)
 - `choiceGroups`: Rezept, Name („Protein“)
@@ -213,8 +213,9 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Passt für alle:** Isst jemand vegetarisch oder vegan mit, kommen Rezepte ohne passende Möglichkeit ganz nach hinten, mit dem Hinweis „nicht vegetarisch“ oder „nicht vegan“; Rezepte mit Optionen für beide zeigen „für beide“.
   - **Mahlzeit:** Vorgeschlagen wird nur, was laut „Passt zu“ zur Mahlzeit passt; ohne Mahlzeit (Beilage, Sauce) nie. Solange das bei einem Rezept noch niemand festgelegt hat, zählt, wofür es schon im Plan stand, sonst der Titel (Pancakes und Kuchen nicht zum Abendessen, Flammkuchen schon).
   - **Pause:** Ein Rezept lässt sich für 2 Wochen, 1 Monat, 3 oder 6 Monate oder bis auf Weiteres aus den Vorschlägen nehmen, direkt am Vorschlag („Pausieren“) oder im Rezept unter „Für den Plan“. Einplanen von Hand geht weiter; die Rezeptliste zeigt Pausiertes unter dem Filter „Pausiert“.
+  - **Lieblingsessen:** Rezepte mit Herz kommen etwas öfter („Lieblingsessen“); Vorrat, der weg muss, geht trotzdem vor, und die Abwechslung gilt auch für sie.
   - **Aufwand:** Unter der Woche kostet ein Rezept über 45 Minuten ein wenig, mehr nicht.
-- **Passt zu (M8):** Wozu ein Rezept passt, schätzt die KI: beim Import gleich mit (in der Prüfansicht änderbar), für vorhandene Rezepte einmal im Hintergrund, sobald der Server erreichbar ist. Im Editor lässt es sich ändern; was jemand festlegt, überschreibt die KI nie. Die Rezeptliste filtert danach (Frühstück, Mittagessen, Abendessen, Snack, Beilagen & Co., Pausiert). Die 34 Rezepte aus dem alten System bekommen dessen Kategorien über das Übernahme-Werkzeug (Dessert wird Snack).
+- **Passt zu (M8):** Wozu ein Rezept passt, schätzt die KI: beim Import gleich mit (in der Prüfansicht änderbar), für vorhandene Rezepte einmal im Hintergrund, sobald der Server erreichbar ist. Im Editor lässt es sich ändern; was jemand festlegt, überschreibt die KI nie. Die Rezeptliste filtert danach (Frühstück, Mittagessen, Abendessen, Snack, Beilagen & Co., Pausiert). Die 34 Rezepte aus dem alten System bekommen dessen Kategorien und Favoriten über das Übernahme-Werkzeug (Dessert wird Snack).
 
 ## 8. REWE
 

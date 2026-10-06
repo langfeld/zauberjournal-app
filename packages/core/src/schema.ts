@@ -42,6 +42,8 @@ export const tablesSchema = {
     mealsBy: { enum: RECIPE_MEALS_BY, default: '' },
     /** Vor diesem Tag (`JJJJ-MM-TT`) nicht vorschlagen; leer = keine Pause. */
     pausedUntil: { type: 'string', default: '' },
+    /** Lieblingsessen (seit M8): kommt in den Vorschlägen etwas öfter. */
+    favorite: { type: 'boolean', default: false },
     createdAt: { type: 'number', default: 0 },
     updatedAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,

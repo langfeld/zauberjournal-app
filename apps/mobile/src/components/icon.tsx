@@ -42,6 +42,7 @@ const GLYPHS = {
   event: 0xe878,
   expand_less: 0xe5ce,
   expand_more: 0xe5cf,
+  favorite: 0xe87d,
   grocery: 0xef97,
   group: 0xe7ef,
   group_add: 0xe7f0,

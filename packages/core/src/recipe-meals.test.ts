@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildRecipeView, emptyRecipeDraft, listRecipes, planRecipeSave, recipeViewToDraft } from './recipe.ts';
+import { buildRecipeView, emptyRecipeDraft, listRecipes, planRecipeFavorite, planRecipeSave, recipeViewToDraft } from './recipe.ts';
 import {
   applyMealResults,
   isRecipePaused,
@@ -43,9 +43,10 @@ describe('Mahlzeiten und Pause je Rezept', () => {
     test.apply(planRecipeSave(test.tables(), recipeId, { ...stale, notes: 'scharf' }, 2000, ids).writes);
     expect(buildRecipeView(test.tables(), recipeId)).toMatchObject({ meals: ['dinner'], mealsBy: 'ai', notes: 'scharf' });
 
-    // Von Hand: keine Mahlzeit, also kein eigenes Gericht
+    // Von Hand: keine Mahlzeit, also kein eigenes Gericht. Das Herz bleibt beim Speichern, wie es ist.
+    test.apply(planRecipeFavorite(recipeId, true));
     test.apply(planRecipeSave(test.tables(), recipeId, { ...stale, meals: [], mealsBy: 'person' }, 3000, ids).writes);
-    expect(listRecipes(test.tables())[0]).toMatchObject({ meals: [], mealsBy: 'person' });
+    expect(listRecipes(test.tables())[0]).toMatchObject({ meals: [], mealsBy: 'person', favorite: true });
   });
 
   it('pausiert Rezepte für eine Zeit oder bis auf Weiteres', () => {

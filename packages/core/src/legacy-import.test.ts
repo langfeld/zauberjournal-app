@@ -4,13 +4,13 @@ import {
   hasRecipeTitled,
   legacyFavoriteWrites,
   legacyIngredientNames,
-  legacyMealWrites,
+  legacyRecipeUpdates,
   legacyRecipeDraft,
   readLegacyExport,
   type LegacyRecipe,
   type LegacyRewePreference,
 } from './legacy-import.ts';
-import { buildRecipeView, emptyRecipeDraft, planRecipeSave } from './recipe.ts';
+import { buildRecipeView, emptyRecipeDraft, planRecipeFavorite, planRecipeSave } from './recipe.ts';
 import { recipeMealCells } from './recipe-meals.ts';
 import { forgetReweFavorite, reweFavoritesOf } from './rewe-shopping.ts';
 import { counterIds, createTestStore } from './test-helpers.ts';
@@ -135,9 +135,10 @@ describe('Übernahme aus dem alten Zauberjournal', () => {
     expect(hasRecipeTitled(test.tables(), 'Waffeln')).toBe(false);
   });
 
-  it('übernimmt die Kategorien als Mahlzeiten, auch für Rezepte, die es schon gibt', () => {
+  it('übernimmt Kategorien als Mahlzeiten und Favoriten, auch für Rezepte, die es schon gibt', () => {
     const recipe = recipes()[0]!;
     expect(recipe.meals).toEqual(['breakfast']);
+    expect(recipe.favorite).toBe(true);
     expect(legacyRecipeDraft(recipe, counterIds('d'))).toMatchObject({ meals: ['breakfast'], mealsBy: 'person' });
     // Desserts gelten als Snack; Kategorien ohne Mahlzeit zählen nicht.
     const categories = (...names: string[]) => names.map((name) => ({ name }));
@@ -153,10 +154,14 @@ describe('Übernahme aus dem alten Zauberjournal', () => {
     const { recipeId, writes } = planRecipeSave(test.tables(), null, { ...emptyRecipeDraft(), title: 'Kräuter-Waffeln' }, 1000, counterIds('r'));
     test.apply(writes);
     test.apply([{ table: 'recipes', rowId: recipeId, cells: recipeMealCells(['dinner'], 'ai') }]);
-    test.apply(legacyMealWrites(test.tables(), recipes()));
-    expect(buildRecipeView(test.tables(), recipeId)).toMatchObject({ meals: ['breakfast'], mealsBy: 'person' });
+    const updates = legacyRecipeUpdates(test.tables(), recipes());
+    expect(updates).toMatchObject({ meals: 1, favorites: 1 });
+    test.apply(updates.writes);
+    expect(buildRecipeView(test.tables(), recipeId)).toMatchObject({ meals: ['breakfast'], mealsBy: 'person', favorite: true });
+    // Ein zweiter Lauf ändert nichts mehr; Mahlzeiten, die der Haushalt selbst festgelegt hat, bleiben.
     test.apply([{ table: 'recipes', rowId: recipeId, cells: recipeMealCells(['lunch'], 'person') }]);
-    expect(legacyMealWrites(test.tables(), recipes())).toEqual([]);
+    test.apply(planRecipeFavorite(recipeId, true));
+    expect(legacyRecipeUpdates(test.tables(), recipes()).writes).toEqual([]);
   });
 
   it('lässt die Zwischenüberschrift weg, wenn alle Zutaten zu einer Gruppe gehören', () => {

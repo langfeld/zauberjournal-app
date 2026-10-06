@@ -5,6 +5,7 @@ import { createFoodResolver, ensureFood } from './foods.ts';
 import { addMember } from './members.ts';
 import { bookPurchase } from './pantry-bookings.ts';
 import { planAddEntry } from './plan.ts';
+import { planRecipeFavorite } from './recipe.ts';
 import { createShoppingList, syncShoppingList } from './shopping.ts';
 import { pauseRecipe, recipeMealCells } from './recipe-meals.ts';
 import { createPlanner, draftDates, type Suggestion } from './suggestions.ts';
@@ -150,6 +151,28 @@ describe('Planvorschläge', () => {
     const dinner = titles(suggest(TODAY));
     expect(dinner.slice(0, 3).sort()).toEqual(['Flammkuchen', 'Gemüsecurry', 'Salatteller']);
     expect(dinner.slice(3).sort()).toEqual(['Erdbeerkuchen', 'Protein-Pancakes']);
+  });
+
+  it('bringt Lieblingsessen etwas öfter, Vorrat, der weg muss, geht vor', () => {
+    const { recipe, buy, plan, suggest, test } = setUp();
+    recipe('Linsensuppe', ['200 g rote Linsen']);
+    const curry = recipe('Gemüsecurry', ['400 ml Kokosmilch']);
+    const bowl = recipe('Bowl', ['150 g Reis']);
+    test.apply([...planRecipeFavorite(curry, true), ...planRecipeFavorite(bowl, true)]);
+    expect(reasonsOf(suggest(TODAY), 'Gemüsecurry')).toEqual(['Lieblingsessen']);
+    expect(titles(suggest(TODAY)).at(-1)).toBe('Linsensuppe');
+
+    // Dasselbe höchstens alle drei Wochen, und nicht zwei Lieblingsessen hintereinander
+    plan(curry, '2026-09-25');
+    plan(bowl, '2026-10-11');
+    const suggestions = suggest(TODAY);
+    expect(reasonsOf(suggestions, 'Gemüsecurry')).toEqual([]);
+    expect(reasonsOf(suggest('2026-10-12'), 'Gemüsecurry')).toEqual([]);
+    expect(reasonsOf(suggest('2026-10-20'), 'Gemüsecurry')).toContain('Lieblingsessen');
+
+    recipe('Spinatpasta', ['200 g Spinat', '250 g Nudeln']);
+    buy('Spinat', 200, '2026-10-05');
+    expect(titles(suggest(TODAY))[0]).toBe('Spinatpasta');
   });
 
   it('schlägt nur vor, was zur Mahlzeit passt und gerade nicht pausiert ist', () => {

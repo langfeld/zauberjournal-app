@@ -12,8 +12,8 @@ import { findUnit } from './units.ts';
 /**
  * Übernahme aus dem alten Zauberjournal (Stufe M7): Rezepte und REWE-Vorlieben aus dessen JSON-Export.
  * Hier steht nur die Umrechnung; Fotos, Sync und Server erledigt `apps/server/src/import-legacy.ts`.
- * Von den Kategorien zählen die, die eine Mahlzeit meinen (seit M8). Schwierigkeit, Favoriten-Markierung und
- * Kochzeiten je Schritt gibt es in der App nicht; sie fallen weg.
+ * Von den Kategorien zählen die, die eine Mahlzeit meinen, dazu die Favoriten (beides seit M8). Schwierigkeit
+ * und Kochzeiten je Schritt gibt es in der App nicht; sie fallen weg.
  */
 
 export type LegacyIngredient = {
@@ -32,6 +32,7 @@ export type LegacyRecipe = {
   title: string;
   /** Mahlzeiten aus den Kategorien; `null`, wenn keine Kategorie eine Mahlzeit meint */
   meals: MealId[] | null;
+  favorite: boolean;
   description: string;
   servings: number | null;
   prepMinutes: number | null;
@@ -115,6 +116,7 @@ function readRecipe(value: Json): LegacyRecipe {
   return {
     title: text(value.title),
     meals: readMeals(value.categories),
+    favorite: value.is_favorite === 1 || value.is_favorite === true,
     description: text(value.description),
     servings: positive(value.servings),
     prepMinutes: positive(value.prep_time),
@@ -203,18 +205,31 @@ export function legacyRecipeDraft(recipe: LegacyRecipe, createId: () => string):
 }
 
 /**
- * Mahlzeiten aus dem alten System für Rezepte, die es schon gibt (gleicher Titel). Was die KI geschätzt hat,
- * weicht; was hier jemand festgelegt hat, bleibt.
+ * Trägt Mahlzeiten und Favoriten aus dem alten System bei Rezepten nach, die es schon gibt (gleicher Titel).
+ * Was die KI geschätzt hat, weicht; was hier jemand festgelegt hat, bleibt. Favoriten kommen nur dazu.
  */
-export function legacyMealWrites(tables: RecipeTables, recipes: readonly LegacyRecipe[]): RowWrite[] {
-  return recipes.flatMap((recipe) => {
+export function legacyRecipeUpdates(
+  tables: RecipeTables,
+  recipes: readonly LegacyRecipe[],
+): { writes: RowWrite[]; meals: number; favorites: number } {
+  let meals = 0;
+  let favorites = 0;
+  const writes = recipes.flatMap((recipe): RowWrite[] => {
     const wanted = recipe.title.trim().toLocaleLowerCase('de');
     const found = Object.entries(tables.recipes).find(
       ([, row]) => isActive(row) && row.title.trim().toLocaleLowerCase('de') === wanted,
     );
-    if (!recipe.meals || !found || found[1].mealsBy === 'person') return [];
-    return [{ table: 'recipes', rowId: found[0], cells: recipeMealCells(recipe.meals, 'person') }];
+    if (!found) return [];
+    const [id, row] = found;
+    const cells = {
+      ...(recipe.meals && row.mealsBy !== 'person' ? recipeMealCells(recipe.meals, 'person') : {}),
+      ...(recipe.favorite && !row.favorite ? { favorite: true } : {}),
+    };
+    if ('mealsBy' in cells) meals++;
+    if ('favorite' in cells) favorites++;
+    return Object.keys(cells).length > 0 ? [{ table: 'recipes', rowId: id, cells }] : [];
   });
+  return { writes, meals, favorites };
 }
 
 /** Zutatennamen, wie sie nach dem Speichern im Rezept stehen. */

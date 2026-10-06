@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing, tones } from '@/theme';
 
 import { Icon, type IconName } from './icon';
 
@@ -43,6 +43,23 @@ export function HeaderButton({ title, icon, onPress, primary }: HeaderButtonProp
   );
 }
 
+type HeaderFavoriteProps = { favorite: boolean; onPress: () => void };
+
+/** Herz in der Kopfzeile: ein Rezept als Lieblingsessen merken oder wieder herausnehmen. */
+export function HeaderFavorite({ favorite, onPress }: HeaderFavoriteProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={favorite ? 'Lieblingsessen, antippen zum Entfernen' : 'Als Lieblingsessen merken'}
+      accessibilityState={{ selected: favorite }}
+      hitSlop={6}
+      onPress={onPress}
+      style={({ pressed }) => [styles.iconButton, favorite && styles.favorite, pressed && styles.pressed]}>
+      <Icon name="favorite" size={20} color={favorite ? tones.rose.foreground : colors.primary} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   right: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginRight: Platform.OS === 'web' ? spacing.lg : 0 },
   title: { fontFamily: fonts.display, fontSize: 21, lineHeight: 28, color: colors.text },
@@ -56,6 +73,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   buttonPrimary: { backgroundColor: colors.primary },
+  iconButton: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+  favorite: { backgroundColor: tones.rose.background },
   buttonText: { fontSize: 14, fontWeight: '700' },
   pressed: { opacity: 0.75 },
 });

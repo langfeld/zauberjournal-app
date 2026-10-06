@@ -9,20 +9,22 @@ import { RecipeCover } from '@/components/recipe-photo';
 import { Button, Chip, EmptyState, SearchField } from '@/components/ui';
 import { useRecipeTables } from '@/data/recipes';
 import { useToday } from '@/data/tables';
-import { colors, fonts, radius, shadows, spacing } from '@/theme';
+import { colors, fonts, radius, shadows, spacing, tones } from '@/theme';
 
 /** Mindestbreite einer Karte; auf breiten Bildschirmen passen mehr Spalten nebeneinander. */
 const MIN_CARD_WIDTH = 160;
 
-type Filter = MealId | 'none' | 'paused';
+type Filter = 'favorite' | MealId | 'none' | 'paused';
 
 const FILTERS: { id: Filter; label: string; icon: IconName }[] = [
+  { id: 'favorite', label: 'Favoriten', icon: 'favorite' },
   ...MEALS.map((meal) => ({ id: meal.id, label: meal.label, icon: MEAL_ICONS[meal.id] })),
   { id: 'none', label: 'Beilagen & Co.', icon: 'restaurant' },
   { id: 'paused', label: 'Pausiert', icon: 'snooze' },
 ];
 
 function matches(recipe: RecipeSummary, filter: Filter, today: string): boolean {
+  if (filter === 'favorite') return recipe.favorite;
   if (filter === 'paused') return isRecipePaused(recipe, today);
   if (filter === 'none') return recipe.mealsBy !== '' && recipe.meals.length === 0;
   return recipe.meals.includes(filter);
@@ -34,7 +36,14 @@ function RecipeCard({ recipe, width }: { recipe: RecipeSummary; width: number })
       accessibilityRole="button"
       onPress={() => router.push(`/recipes/${recipe.id}`)}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
-      <RecipeCover photoId={recipe.photo} title={recipe.title} />
+      <View>
+        <RecipeCover photoId={recipe.photo} title={recipe.title} />
+        {recipe.favorite ? (
+          <View style={styles.favorite}>
+            <Icon name="favorite" size={16} color={tones.rose.foreground} />
+          </View>
+        ) : null}
+      </View>
       <View style={styles.cardText}>
         <Text style={styles.title} numberOfLines={2}>
           {recipe.title}
@@ -159,6 +168,17 @@ const styles = StyleSheet.create({
     boxShadow: shadows.card,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  favorite: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    backgroundColor: tones.rose.background,
+  },
   cardText: { padding: spacing.md, paddingTop: spacing.sm + 2, gap: spacing.xs + 2 },
   title: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },

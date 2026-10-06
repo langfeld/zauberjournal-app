@@ -17,7 +17,16 @@ import { computeShoppingNeeds, type ShoppingTables } from './shopping.ts';
  * zur Mahlzeit passt und nicht pausiert ist.
  */
 
-export type SuggestionReasonKind = 'unsuitable' | 'planned' | 'expiring' | 'leftover' | 'shopping' | 'longAgo' | 'stock' | 'forAll';
+export type SuggestionReasonKind =
+  | 'unsuitable'
+  | 'planned'
+  | 'expiring'
+  | 'leftover'
+  | 'shopping'
+  | 'favorite'
+  | 'longAgo'
+  | 'stock'
+  | 'forAll';
 
 export type SuggestionReason = { kind: SuggestionReasonKind; text: string };
 
@@ -38,6 +47,10 @@ const MAX_REASONS = 3;
 /** Grundzutaten wie Butter oder Zucker stecken in vielen Rezepten; ein Rest davon macht kein Gericht interessanter. */
 const BASIC_MIN_RECIPES = 5;
 const BASIC_SHARE = 0.2;
+/** Lieblingsessen kommen etwas öfter; Vorrat, der weg muss, geht trotzdem vor. */
+const FAVORITE_BONUS = 1.5;
+/** … aber dasselbe höchstens alle drei Wochen */
+const FAVORITE_DAYS = 21;
 /** Was höchstens so lange hält, verdirbt bald: Reste davon zählen viel. */
 const PERISHABLE_DAYS = 14;
 /** So weit sucht ein Entwurf höchstens nach freien Tagen. */
@@ -93,6 +106,7 @@ type Candidate = {
   /** Mahlzeiten, zu denen es passt; `null`, solange niemand sie festgelegt hat (dann zählen Plan und Titel) */
   meals: MealId[] | null;
   pausedUntil: string;
+  favorite: boolean;
 };
 
 /** Freier Vorrat eines Lebensmittels: Bestand (läuft bei Frischem ab) und was ein Einkauf noch bringt. */
@@ -171,6 +185,7 @@ function buildCandidates(tables: ShoppingTables): Candidate[] {
       kind,
       meals: row.mealsBy ? recipeMealIds(row) : null,
       pausedUntil: row.pausedUntil ?? '',
+      favorite: row.favorite ?? false,
     });
   }
   for (const candidate of candidates) {
@@ -266,9 +281,16 @@ function evaluate(candidate: Candidate, date: string, context: Context): Suggest
   } else if (candidate.mixed) {
     reasons.push({ kind: 'forAll', text: memberCount === 2 ? 'für beide' : 'für alle', weight: 0.1 });
   }
-
   // Schon geplant, gerade erst gehabt oder lange nicht mehr?
   const same = dated.filter((entry) => entry.recipeId === candidate.id);
+  // Lieblingsessen etwas öfter, aber nicht ständig und nicht zwei Tage hintereinander
+  const favoriteNearby = dated.some(
+    (entry) => entry.recipeId !== candidate.id && byId.get(entry.recipeId)?.favorite && Math.abs(daysBetween(entry.date, date)) <= 1,
+  );
+  if (candidate.favorite && !favoriteNearby && !same.some((entry) => Math.abs(daysBetween(entry.date, date)) < FAVORITE_DAYS)) {
+    score += FAVORITE_BONUS;
+    reasons.push({ kind: 'favorite', text: 'Lieblingsessen', weight: FAVORITE_BONUS });
+  }
   const near = same.find((entry) => entry.date >= today && Math.abs(daysBetween(entry.date, date)) <= 6);
   if (near) {
     score -= 10;
