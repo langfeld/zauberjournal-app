@@ -1,8 +1,9 @@
 import { activeMeals, todayKey, type Meal, type ShoppingTables } from '@zauberjournal/core';
 import { useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
+import type { Store } from 'tinybase/with-schemas';
 
-import { useTable, useValue } from './store';
+import { useTable, useValue, type AppSchemas } from './store';
 
 /** Alle Tabellen des Haushalts für Plan, Einkauf und Vorrat; rendert neu, sobald sich eine ändert. */
 export function useAppTables(): ShoppingTables {
@@ -63,6 +64,32 @@ export function useAppTables(): ShoppingTables {
       foodNutrition,
     ],
   );
+}
+
+/**
+ * Dieselben Tabellen wie `useAppTables`, einmal gelesen statt abonniert: für Aktionen wie langes Drücken auf
+ * Seiten, die sonst nicht bei jeder Änderung im Plan neu rendern sollen.
+ */
+export function readAppTables(store: Store<AppSchemas>): ShoppingTables {
+  return {
+    recipes: store.getTable('recipes'),
+    recipeIngredients: store.getTable('recipeIngredients'),
+    recipeSteps: store.getTable('recipeSteps'),
+    choiceGroups: store.getTable('choiceGroups'),
+    choiceOptions: store.getTable('choiceOptions'),
+    members: store.getTable('members'),
+    foods: store.getTable('foods'),
+    foodAliases: store.getTable('foodAliases'),
+    planEntries: store.getTable('planEntries'),
+    planEaters: store.getTable('planEaters'),
+    planChoices: store.getTable('planChoices'),
+    shoppingLists: store.getTable('shoppingLists'),
+    shoppingItems: store.getTable('shoppingItems'),
+    reweProducts: store.getTable('reweProducts'),
+    reweFavorites: store.getTable('reweFavorites'),
+    pantryBookings: store.getTable('pantryBookings'),
+    foodNutrition: store.getTable('foodNutrition'),
+  };
 }
 
 /** Mahlzeiten, die der Plan zeigt (Einstellung im Haushalt). */

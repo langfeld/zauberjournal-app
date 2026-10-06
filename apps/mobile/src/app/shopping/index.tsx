@@ -17,7 +17,7 @@ import {
   type ShoppingListEntry,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
@@ -51,7 +51,8 @@ function EntryCard({ entry }: { entry: ShoppingListEntry }) {
 
 export default function ShoppingScreen() {
   const store = useStore();
-  const tables = useAppTables();
+  // Der Tab läuft auch im Hintergrund mit; so zeichnet React erst die sichtbare Seite und rechnet die Liste danach.
+  const tables = useDeferredValue(useAppTables());
   const today = useToday();
   const lists = useMemo(() => listOpenShoppingLists(tables), [tables]);
   const [selected, setSelected] = useState<string | null>(null);

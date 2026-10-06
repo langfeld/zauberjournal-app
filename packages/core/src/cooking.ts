@@ -108,7 +108,7 @@ function withoutCut(word: string): string {
   return cut ? word.slice(0, -cut.length) : word;
 }
 
-function forms(word: string): string[] {
+function forms(word: string): readonly string[] {
   return stemVariants(word);
 }
 

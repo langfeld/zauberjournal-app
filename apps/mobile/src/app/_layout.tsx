@@ -13,6 +13,7 @@ import { FoodDietRepair } from '@/data/food-diets';
 import { MealSync } from '@/data/meal-sync';
 import { NutritionSync } from '@/data/nutrition-sync';
 import { createAppPersister } from '@/data/persister';
+import { startDeferredSave } from '@/data/saving';
 import { createAppStore, Provider, useCreateMergeableStore, useCreatePersister } from '@/data/store';
 
 SplashScreen.preventAutoHideAsync();
@@ -25,7 +26,11 @@ export default function RootLayout() {
     store,
     async () => {
       const persister = createAppPersister(store);
-      await persister.startAutoPersisting();
+      // Nur diese App schreibt in ihren Speicher: einmal laden, danach nur speichern. Mit `startAutoPersisting`
+      // hielte TinyBase das eigene Speichern für eine fremde Änderung, lüde jedes Mal alles neu und schickte
+      // es komplett an den Server.
+      await persister.load();
+      startDeferredSave(store, persister);
       return persister;
     },
     [],

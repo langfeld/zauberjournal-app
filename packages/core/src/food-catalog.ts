@@ -198,8 +198,28 @@ const PLANT_MARKERS = [
 /** Kategorien, deren Lebensmittel ohne tierische Schlüsselwörter als vegan gelten. */
 const PLANT_CATEGORIES: readonly FoodCategory[] = ['produce', 'dry', 'canned', 'spices', 'drinks'];
 
+/** So viele Ergebnisse merkt sich `memoize` höchstens; die Namen eines Haushalts passen gut hinein. */
+const MEMO_LIMIT = 5000;
+
+/**
+ * Merkt sich die Ergebnisse einer Funktion, die nur von ihrem Text abhängt. Die App ordnet nach jeder Änderung
+ * alle Zutaten neu zu; ohne das rechnet sie dieselben Namen jedes Mal wieder durch.
+ */
+function memoize<T>(compute: (text: string) => T): (text: string) => T {
+  const results = new Map<string, T>();
+  return (text) => {
+    let result = results.get(text);
+    if (result === undefined) {
+      if (results.size >= MEMO_LIMIT) results.clear();
+      result = compute(text);
+      results.set(text, result);
+    }
+    return result;
+  };
+}
+
 /** Mögliche Grundformen eines Worts: ohne Pluralendung und ohne Umlaute („Zwiebeln“ → „zwiebel“, „Äpfel“ → „apfel“). */
-export function stemVariants(word: string): string[] {
+export const stemVariants = memoize((word: string): readonly string[] => {
   const variants = new Set([word]);
   const strip = (suffix: string) => {
     if (word.endsWith(suffix) && word.length - suffix.length >= 2) variants.add(word.slice(0, -suffix.length));
@@ -207,7 +227,7 @@ export function stemVariants(word: string): string[] {
   for (const suffix of ['en', 'n', 'e', 'er', 's']) strip(suffix);
   for (const variant of [...variants]) variants.add(variant.replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u'));
   return [...variants];
-}
+});
 
 function wordHas(word: string, keyword: string): boolean {
   return stemVariants(word).some((variant) => variant === keyword || variant.startsWith(keyword) || variant.endsWith(keyword));
@@ -261,7 +281,7 @@ function categoryOf(normalized: string): FoodCategory | null {
  * Ordnet einen normalisierten Lebensmittelnamen einer Warengruppe und Ernährungsklasse zu.
  * Unbekanntes landet in „Sonstiges“ mit unbekannter Ernährungsklasse.
  */
-export function classifyNormalizedFood(normalized: string): { category: FoodCategory; diet: FoodDiet } {
+export const classifyNormalizedFood = memoize((normalized: string): Readonly<{ category: FoodCategory; diet: FoodDiet }> => {
   const words = normalized.split(' ').filter(Boolean);
   const plant = PLANT_MARKERS.some((marker) => normalized.includes(marker));
   const hits = (keywords: readonly string[]) =>
@@ -284,5 +304,6 @@ export function classifyNormalizedFood(normalized: string): { category: FoodCate
   if (category === 'meat' && diet === 'fish') category = 'fish';
   if (category === 'meat' && plant) category = 'dairy';
   if (diet === '' && (plant || PLANT_CATEGORIES.includes(category))) diet = 'vegan';
-  return { category, diet };
-}
+  // Gemerkt und damit geteilt: nicht verändern
+  return Object.freeze({ category, diet });
+});

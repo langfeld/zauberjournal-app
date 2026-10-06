@@ -16,6 +16,14 @@ export const SYNC_PATH = '/api/sync';
 const ROOM = 'household';
 
 /**
+ * TinyBase sieht sonst jede Sekunde nach, ob sich die Datenbank geändert hat, und hält dabei auch das eigene
+ * Speichern und jedes „zuletzt gesehen“ eines Geräts für eine fremde Änderung. Dann lädt es den ganzen
+ * Haushalt neu und schickt ihn als Änderung an alle Geräte, rund 400 KB nach jeder Kleinigkeit. In die
+ * Tabelle schreibt aber nur dieser Server; einmal am Tag nachsehen genügt.
+ */
+const RELOAD_SECONDS = 24 * 60 * 60;
+
+/**
  * Sync per WebSocket (TinyBase). Der Server ist selbst Teilnehmer und speichert den Stand in SQLite,
  * damit Geräte auch dann synchronisieren können, wenn nie zwei gleichzeitig online sind.
  */
@@ -24,7 +32,13 @@ export function createSyncServer(db: DatabaseSync, authenticate: (token: string)
   const socketsByDevice = new Map<string, Set<WebSocket>>();
 
   const wsServer = createWsServer(webSocketServer, (pathId) =>
-    pathId === ROOM ? createSqliteNodePersister(createMergeableStore(), db, 'tinybase_household') : undefined,
+    pathId === ROOM
+      ? createSqliteNodePersister(createMergeableStore(), db, {
+          mode: 'json',
+          storeTableName: 'tinybase_household',
+          autoLoadIntervalSeconds: RELOAD_SECONDS,
+        })
+      : undefined,
   );
 
   const track = (deviceId: string, socket: WebSocket) => {

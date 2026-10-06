@@ -28,17 +28,28 @@ function temporaryDir(): string {
   return dir;
 }
 
-async function connect(server: RunningServer, token: string): Promise<{ store: MergeableStore; socket: WebSocket }> {
+/** `onReceive` erfährt die Größe jeder ankommenden Sync-Nachricht. */
+async function connect(
+  server: RunningServer,
+  token: string,
+  onReceive?: (size: number) => void,
+): Promise<{ store: MergeableStore; socket: WebSocket }> {
   const store = createMergeableStore();
   const socket = new WebSocket(`ws://127.0.0.1:${server.port}/api/sync`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  const synchronizer = await createWsSynchronizer(store, socket);
+  const synchronizer = await createWsSynchronizer(store, socket, 1, undefined, (_from, _request, _message, body) =>
+    onReceive?.(JSON.stringify(body ?? null).length),
+  );
   await synchronizer.startSync();
   cleanups.push(async () => {
     await synchronizer.destroy();
   });
   return { store, socket };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function waitFor(check: () => boolean, timeoutMs = 3000): Promise<void> {
@@ -69,6 +80,28 @@ describe('Sync', () => {
     await waitFor(() => a.store.getCell('recipes', 'r1', 'servings') === 4);
   });
 
+  it('schickt nach einer Änderung nur diese weiter, nicht den ganzen Haushalt', async () => {
+    const server = await start(temporaryDir());
+    const { first, second } = setUpDevices(server);
+    const sizes: number[] = [];
+    const a = await connect(server, first.token);
+    const b = await connect(server, second.token, (size) => sizes.push(size));
+    a.store.transaction(() => {
+      for (let i = 0; i < 200; i++) a.store.setRow('recipes', `r${i}`, { title: `Rezept ${i}`, servings: 2 });
+    });
+    await waitFor(() => b.store.getRowIds('recipes').length === 200);
+    await sleep(1500);
+
+    sizes.length = 0;
+    a.store.setCell('recipes', 'r1', 'title', 'Linsensuppe');
+    // Auch das „zuletzt gesehen“ einer Anfrage mit Token ist eine Änderung an der Datenbank.
+    await fetch(`http://127.0.0.1:${server.port}/api/session`, { headers: { Authorization: `Bearer ${first.token}` } });
+    await waitFor(() => b.store.getCell('recipes', 'r1', 'title') === 'Linsensuppe');
+    // Früher las der Server seine Datenbank nach spätestens einer Sekunde neu und schickte alles noch einmal.
+    await sleep(2500);
+    expect(Math.max(...sizes)).toBeLessThan(1000);
+  }, 10_000);
+
   it('weist Verbindungen ohne gültiges Token ab', async () => {
     const server = await start(temporaryDir());
     const status = await new Promise<number>((resolve) => {
@@ -88,7 +121,7 @@ describe('Sync', () => {
     const a = await connect(server, first.token);
     a.store.setCell('recipes', 'r1', 'title', 'Linsensuppe');
     // Kurz warten, bis der Server den Stand gespeichert hat.
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await sleep(300);
     await server.close();
 
     const restarted = await start(dataDir);

@@ -60,17 +60,22 @@ export function normalizeFoodName(name: string): string {
 }
 
 /**
+ * Vergleichsformen eines Suchschlüssels: die Wörter vor dem letzten, dazu je eine Grundform des letzten
+ * („rote zwiebeln“ → „rote zwiebeln“, „rote zwiebel“). Gleiche Formen heißen gleiches Lebensmittel.
+ */
+function matchForms(key: string): string[] {
+  const head = key.slice(0, key.lastIndexOf(' ') + 1);
+  return stemVariants(key.slice(head.length)).map((variant) => head + variant);
+}
+
+/**
  * Prüft, ob zwei Suchschlüssel dasselbe Lebensmittel meinen: gleiche Wörter, nur das letzte darf
  * in Einzahl oder Mehrzahl stehen („zwiebeln“ = „zwiebel“, „rote zwiebel“ ≠ „zwiebel“).
  */
 export function foodKeysMatch(a: string, b: string): boolean {
   if (a === b) return true;
-  const wordsA = a.split(' ');
-  const wordsB = b.split(' ');
-  if (wordsA.length !== wordsB.length) return false;
-  for (let i = 0; i < wordsA.length - 1; i++) if (wordsA[i] !== wordsB[i]) return false;
-  const stems = new Set(stemVariants(wordsA.at(-1)!));
-  return stemVariants(wordsB.at(-1)!).some((variant) => stems.has(variant));
+  const forms = new Set(matchForms(a));
+  return matchForms(b).some((form) => forms.has(form));
 }
 
 /** Warengruppe und Ernährungsklasse für einen Namen, solange das Lebensmittel nicht im Katalog steht. */
@@ -111,17 +116,24 @@ export type FoodResolver = {
  * 3. sonst ein neues Lebensmittel mit Warengruppe und Ernährungsklasse aus dem Katalog.
  */
 export function createFoodResolver(tables: FoodTables): FoodResolver {
-  type Candidate = { key: string; foodId: string };
-  const candidates: Candidate[] = [];
+  /** Lebensmittel je Vergleichsform (`matchForms`), damit nicht jeder Name mit allen verglichen werden muss */
+  const byForm = new Map<string, string[]>();
+  const addCandidate = (key: string, foodId: string) => {
+    for (const form of matchForms(key)) {
+      const ids = byForm.get(form);
+      if (ids) ids.push(foodId);
+      else byForm.set(form, [foodId]);
+    }
+  };
   const known = new Map<string, Omit<ResolvedFood, 'id' | 'isNew'>>();
   for (const [id, food] of Object.entries(tables.foods)) {
     if (!isActive(food)) continue;
     known.set(id, { name: food.name, category: food.category, diet: food.diet, stock: food.stock ?? '' });
-    candidates.push({ key: normalizeFoodName(food.name), foodId: id });
-    if (id.startsWith(FOOD_ID_PREFIX)) candidates.push({ key: id.slice(FOOD_ID_PREFIX.length), foodId: id });
+    addCandidate(normalizeFoodName(food.name), id);
+    if (id.startsWith(FOOD_ID_PREFIX)) addCandidate(id.slice(FOOD_ID_PREFIX.length), id);
   }
   for (const [key, alias] of Object.entries(tables.foodAliases)) {
-    if (known.has(alias.foodId)) candidates.push({ key, foodId: alias.foodId });
+    if (known.has(alias.foodId)) addCandidate(key, alias.foodId);
   }
 
   const created = new Map<string, ResolvedFood>();
@@ -135,7 +147,7 @@ export function createFoodResolver(tables: FoodTables): FoodResolver {
 
     let result: ResolvedFood;
     const aliasId = tables.foodAliases[key]?.foodId;
-    const matches = candidates.filter((candidate) => foodKeysMatch(key, candidate.key)).map((candidate) => candidate.foodId);
+    const matches = matchForms(key).flatMap((form) => byForm.get(form) ?? []);
     const foodId = aliasId && known.has(aliasId) ? aliasId : matches.sort()[0];
     if (foodId) {
       result = created.get(foodId) ?? { id: foodId, isNew: false, ...known.get(foodId)! };
@@ -143,7 +155,7 @@ export function createFoodResolver(tables: FoodTables): FoodResolver {
       const id = foodIdForKey(key);
       result = { id, name: cleanFoodName(ingredientName), ...classifyNormalizedFood(key), stock: '', isNew: true };
       created.set(id, result);
-      candidates.push({ key, foodId: id });
+      addCandidate(key, id);
     }
     cache.set(key, result);
     return result;

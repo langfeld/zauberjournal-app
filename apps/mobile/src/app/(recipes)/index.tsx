@@ -23,9 +23,9 @@ import { Icon, type IconName } from '@/components/icon';
 import { RecipeCover } from '@/components/recipe-photo';
 import { Snackbar, type SnackbarMessage } from '@/components/snackbar';
 import { Button, Chip, EmptyState, IconButton, SearchField } from '@/components/ui';
-import { applyWrites } from '@/data/recipes';
+import { applyWrites, useRecipeTables } from '@/data/recipes';
 import { useStore } from '@/data/store';
-import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
+import { readAppTables, useActiveMeals, useToday } from '@/data/tables';
 import { colors, fonts, radius, shadows, spacing, tones } from '@/theme';
 
 /** Mindestbreite einer Karte; auf breiten Bildschirmen passen mehr Spalten nebeneinander. */
@@ -100,7 +100,8 @@ function RecipeCard({ recipe, width, onLongPress }: RecipeCardProps) {
 
 export default function RecipeListScreen() {
   const store = useStore();
-  const tables = useAppTables();
+  // Nur die Rezepte: Änderungen im Plan sollen die Liste nicht neu zeichnen.
+  const tables = useRecipeTables();
   const meals = useActiveMeals();
   const today = useToday();
   const [message, setMessage] = useState<SnackbarMessage | null>(null);
@@ -123,12 +124,13 @@ export default function RecipeListScreen() {
     if (!store) return;
     const fitting = meals.filter((meal) => recipe.meals.includes(meal.id));
     const start = hour < PLAN_FROM_TOMORROW_HOUR ? today : addDays(today, 1);
-    const slot = nextFreeSlot(tables, start, (fitting.length > 0 ? fitting : meals).map((meal) => meal.id));
+    const current = readAppTables(store);
+    const slot = nextFreeSlot(current, start, (fitting.length > 0 ? fitting : meals).map((meal) => meal.id));
     if (!slot) {
       setMessage({ text: 'In den nächsten drei Monaten ist kein Tag mehr frei.' });
       return;
     }
-    const { entryId, writes } = planAddEntry(tables, { ...slot, recipeId: recipe.id, text: '' }, now, createId);
+    const { entryId, writes } = planAddEntry(current, { ...slot, recipeId: recipe.id, text: '' }, now, createId);
     applyWrites(store, writes);
     Vibration.vibrate(15);
     const relative = formatRelativeDate(slot.date, today);

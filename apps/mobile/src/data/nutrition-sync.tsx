@@ -1,11 +1,25 @@
-import { applyNutritionResults, foodsNeedingNutrition, type ShoppingTables } from '@zauberjournal/core';
-import { useEffect, useRef } from 'react';
+import { applyNutritionResults, foodsNeedingNutrition, type NutritionTables, type RecipeTables } from '@zauberjournal/core';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { lookupNutrition } from './api';
 import { useConnection } from './connection';
 import { applyWrites } from './recipes';
-import { useStore } from './store';
-import { useAppTables } from './tables';
+import { useStore, useTable } from './store';
+
+type Tables = NutritionTables & Pick<RecipeTables, 'recipeIngredients'>;
+
+/** Nur was das Nachschlagen braucht; so rechnet es nicht bei jeder Änderung im Plan oder Einkauf mit. */
+function useNutritionTables(): Tables {
+  const foods = useTable('foods');
+  const foodAliases = useTable('foodAliases');
+  const foodNutrition = useTable('foodNutrition');
+  const reweProducts = useTable('reweProducts');
+  const recipeIngredients = useTable('recipeIngredients');
+  return useMemo(
+    () => ({ foods, foodAliases, foodNutrition, reweProducts, recipeIngredients }),
+    [foods, foodAliases, foodNutrition, reweProducts, recipeIngredients],
+  );
+}
 
 /** So viele Lebensmittel je Anfrage; die KI braucht für jede Runde etwas Zeit. */
 const CHUNK_SIZE = 15;
@@ -18,9 +32,9 @@ const RETRY_MS = 30 * 60 * 1000;
  */
 export function NutritionSync() {
   const store = useStore();
-  const tables = useAppTables();
+  const tables = useNutritionTables();
   const { credentials } = useConnection();
-  const latest = useRef<ShoppingTables>(tables);
+  const latest = useRef<Tables>(tables);
   const busy = useRef(false);
   const failedAt = useRef(0);
   const attempted = useRef(new Map<string, number>());
