@@ -1,4 +1,4 @@
-import { dayOf, formatShortDate } from './dates.ts';
+import { compareDates, dayOf, formatShortDate } from './dates.ts';
 import { FOOD_CATEGORIES, type FoodCategory } from './food-catalog.ts';
 import { createFoodResolver, type FoodResolver, type FoodStock, type StockUnit } from './foods.ts';
 import { parseIngredientLine } from './ingredient-line.ts';
@@ -9,6 +9,7 @@ import { formatAmount, roundScaledAmount } from './quantity.ts';
 import type { IngredientItem } from './recipe.ts';
 import { packsFor, parsePackSize, type ReweFavoriteRow, type ReweProductRow, type ReweState } from './rewe.ts';
 import { activeSorted, changedCells, isActive, type RowWrite, type Table } from './rows.ts';
+import { compareText } from './text.ts';
 import { unitLabel } from './units.ts';
 
 export type ShoppingListStatus = 'open' | 'done';
@@ -165,14 +166,10 @@ export function computeShoppingNeeds(tables: PlanTables, entryIds: readonly stri
         category: sum.category,
         amount,
         unit: unit === '' && amount !== null ? 'Stück' : unit,
-        sources: [...sum.sources.values()].sort((a, b) => a.date.localeCompare(b.date)),
+        sources: [...sum.sources.values()].sort((a, b) => compareDates(a.date, b.date)),
       };
     })
-    .sort(
-      (a, b) =>
-        (order.get(a.category) ?? 99) - (order.get(b.category) ?? 99) ||
-        a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }),
-    );
+    .sort((a, b) => (order.get(a.category) ?? 99) - (order.get(b.category) ?? 99) || compareText(a.name, b.name));
 }
 
 /** Planeinträge einer Einkaufsliste. */
@@ -460,7 +457,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
       const entry = buildPlanEntry(tables, id, dietOf);
       return entry ? [{ entryId: id, date: entry.date, title: entry.title, photo: entry.recipe?.photo ?? '' }] : [];
     })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => compareDates(a.date, b.date));
   const photos = new Map(entries.map((entry) => [entry.entryId, entry.photo]));
   const photoOf = (entryId: string) => photos.get(entryId) ?? '';
   const favorites = favoriteProductIds(tables);
@@ -497,7 +494,7 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
           : null,
       };
     })
-    .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+    .sort((a, b) => compareText(a.name, b.name));
 
   const open = items.filter((item) => !item.checked);
   const toBuy = open.filter((item) => !isPantryCheck(item));

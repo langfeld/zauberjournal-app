@@ -53,4 +53,5 @@ export {
 } from './schema.ts';
 export * from './shopping.ts';
 export { assignSortKeys, compareSortKeys } from './sort-keys.ts';
+export { compareText } from './text.ts';
 export { findUnit, unitLabel, unitRounding, UNITS, type UnitDefinition, type UnitRounding } from './units.ts';

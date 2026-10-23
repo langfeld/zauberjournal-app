@@ -16,8 +16,8 @@ export default function FoodsScreen() {
   const today = useToday();
   const [query, setQuery] = useState('');
   const foods = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase('de');
-    return listFoods(tables).filter((food) => !needle || food.name.toLocaleLowerCase('de').includes(needle));
+    const needle = query.trim().toLowerCase();
+    return listFoods(tables).filter((food) => !needle || food.name.toLowerCase().includes(needle));
   }, [tables, query]);
   const levels = useMemo(() => stockLevels(tables, today), [tables, today]);
 

@@ -1,5 +1,6 @@
 import { classifyNormalizedFood, hasLookalike, stemVariants, type FoodCategory, type FoodDiet } from './food-catalog.ts';
 import { changedCells, isActive, type CellValue, type RowWrite, type Table } from './rows.ts';
+import { compareText, memoize } from './text.ts';
 
 /** Einfacher Vorrat: leer = nicht geführt, `have` = da, `buy` = nachkaufen. */
 export type FoodStock = '' | 'have' | 'buy';
@@ -36,8 +37,11 @@ const FILLER_WORDS = new Set([
 /** Ab diesen Wörtern beschreibt der Rest die Verwendung: „Öl zum Braten“, „Butter für die Form“. */
 const CUT_WORDS = new Set(['zum', 'zur', 'für', 'nach', 'oder', 'als']);
 
-/** Lebensmittelname aus einem Zutatennamen, ohne Klammern und Füllwörter, z. B. „große Zwiebel“ → „Zwiebel“. */
-export function cleanFoodName(name: string): string {
+/**
+ * Lebensmittelname aus einem Zutatennamen, ohne Klammern und Füllwörter, z. B. „große Zwiebel“ → „Zwiebel“.
+ * Gemerkt, weil jede Zuordnung alle Namen des Katalogs und der Rezepte durchgeht.
+ */
+export const cleanFoodName = memoize((name: string): string => {
   const words = name
     .replace(/\([^)]*\)/g, ' ')
     .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
@@ -45,19 +49,19 @@ export function cleanFoodName(name: string): string {
     .filter(Boolean);
   const kept: string[] = [];
   for (const word of words) {
-    const lower = word.toLocaleLowerCase('de');
+    const lower = word.toLowerCase();
     if (CUT_WORDS.has(lower) && kept.length > 0) break;
     if (!FILLER_WORDS.has(lower)) kept.push(word);
   }
   const cleaned = kept.join(' ');
   // Ein einzelnes Wort ist ein Hauptwort: groß schreiben („zwiebel“ → „Zwiebel“).
-  return kept.length === 1 ? cleaned.charAt(0).toLocaleUpperCase('de') + cleaned.slice(1) : cleaned;
-}
+  return kept.length === 1 ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : cleaned;
+});
 
-/** Suchschlüssel eines Lebensmittelnamens: klein geschrieben, Bindestriche als Leerzeichen. */
-export function normalizeFoodName(name: string): string {
-  return cleanFoodName(name).toLocaleLowerCase('de').replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
-}
+/** Suchschlüssel eines Lebensmittelnamens: klein geschrieben, Bindestriche als Leerzeichen; ebenfalls gemerkt. */
+export const normalizeFoodName = memoize((name: string): string =>
+  cleanFoodName(name).toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim(),
+);
 
 /**
  * Vergleichsformen eines Suchschlüssels: die Wörter vor dem letzten, dazu je eine Grundform des letzten
@@ -198,7 +202,7 @@ export function listFoods(tables: FoodTables): FoodView[] {
       stock: food.stock ?? '',
       stockUnit: food.stockUnit ?? '',
     }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+    .sort((a, b) => compareText(a.name, b.name));
 }
 
 export function updateFood(tables: FoodTables, foodId: string, cells: Partial<Omit<FoodRow, 'deletedAt'>>): RowWrite[] {

@@ -5,6 +5,7 @@ import { parseIngredientLine } from './ingredient-line.ts';
 import { formatNumber } from './quantity.ts';
 import type { RecipeTables } from './recipe.ts';
 import { changedCells, isActive, type RowWrite, type Table } from './rows.ts';
+import { compareText } from './text.ts';
 import { unitLabel } from './units.ts';
 
 /**
@@ -120,21 +121,27 @@ export function formatStock(amount: number, unit: StockUnit): string {
 }
 
 /**
- * Vorratseinheit, in der die Rezepte ein Lebensmittel meistens angeben, z. B. Stück für Zwiebeln;
- * `null`, wenn kein Rezept es mit umrechenbarer Menge nennt.
+ * Vorratseinheit je Lebensmittel, in der die Rezepte es meistens angeben, z. B. Stück für Zwiebeln; wer in keinem
+ * Rezept mit umrechenbarer Menge steht, fehlt. Alle auf einmal: Jede Zuordnung geht alle Zutaten durch.
  */
-export function stockUnitFromRecipes(tables: FoodTables & Pick<RecipeTables, 'recipeIngredients'>, foodId: string): StockUnit | null {
+export function recipeStockUnits(tables: FoodTables & Pick<RecipeTables, 'recipeIngredients'>): Map<string, StockUnit> {
   const resolver = createFoodResolver(tables);
-  const counts = new Map<StockUnit, number>();
+  const counts = new Map<string, Map<StockUnit, number>>();
   for (const row of Object.values(tables.recipeIngredients)) {
     if (!isActive(row) || row.kind !== 'ingredient' || typeof row.amount !== 'number') continue;
     const unit = stockUnitOf(row.unit);
-    if (!unit || resolver.resolve(row.name)?.id !== foodId) continue;
-    counts.set(unit, (counts.get(unit) ?? 0) + 1);
+    const food = unit ? resolver.resolve(row.name) : null;
+    if (!unit || !food) continue;
+    const byUnit = counts.get(food.id) ?? new Map<StockUnit, number>();
+    byUnit.set(unit, (byUnit.get(unit) ?? 0) + 1);
+    counts.set(food.id, byUnit);
   }
-  let best: StockUnit | null = null;
-  for (const [unit, count] of counts) if (best === null || count > (counts.get(best) ?? 0)) best = unit;
-  return best;
+  return new Map([...counts].map(([foodId, byUnit]) => [foodId, [...byUnit].sort((a, b) => b[1] - a[1])[0]![0]]));
+}
+
+/** Vorratseinheit eines Lebensmittels aus den Rezepten; `null`, wenn kein Rezept es mit umrechenbarer Menge nennt. */
+export function stockUnitFromRecipes(tables: FoodTables & Pick<RecipeTables, 'recipeIngredients'>, foodId: string): StockUnit | null {
+  return recipeStockUnits(tables).get(foodId) ?? null;
 }
 
 /** Lebensmittel, die ein Rezept braucht; nur sie und was „immer im Haus“ ist, kommen in den Vorrat. */
@@ -247,7 +254,7 @@ export function pantryOverview(tables: PantryTables, today: string): PantryEntry
       daysLeft: state?.expiresOn ? daysBetween(today, state.expiresOn) : null,
     });
   }
-  return entries.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+  return entries.sort((a, b) => compareText(a.name, b.name));
 }
 
 // ─── Schreiben ───

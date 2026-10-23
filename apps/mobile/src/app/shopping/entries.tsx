@@ -1,5 +1,6 @@
 import {
   addDays,
+  compareDates,
   createDietLookup,
   createId,
   createShoppingList,
@@ -39,7 +40,7 @@ export default function ShoppingEntriesScreen() {
     const all = new Map([...onList, ...upcoming].map((entry) => [entry.id, entry]));
     return [...all.values()]
       .filter((entry) => entry.recipe && (entry.status !== 'cooked' || entry.shoppingListId === listId))
-      .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+      .sort((a, b) => compareDates(a.date, b.date) || a.createdAt - b.createdAt);
   }, [tables, today, listId]);
 
   const openLists = useMemo(

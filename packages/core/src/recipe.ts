@@ -4,6 +4,7 @@ import { formatAmount, scaleAmount } from './quantity.ts';
 import { recipeMealCells, recipeMealIds, type RecipeMealsBy } from './recipe-meals.ts';
 import { activeSorted, changedCells, isActive, type CellValue, type RowWrite, type Table } from './rows.ts';
 import { assignSortKeys } from './sort-keys.ts';
+import { compareText } from './text.ts';
 import { unitLabel } from './units.ts';
 
 // ─── Zeilen, wie sie im Store liegen ───
@@ -189,7 +190,7 @@ export type RecipeSummary = {
 };
 
 function normalizeForSearch(text: string): string {
-  return text.toLocaleLowerCase('de').trim();
+  return text.toLowerCase().trim();
 }
 
 /** Rezeptliste, alphabetisch; die Suche prüft Titel, Zutaten und Optionen. */
@@ -227,7 +228,7 @@ export function listRecipes(tables: RecipeTables, query = ''): RecipeSummary[] {
         favorite: recipe.favorite ?? false,
       };
     })
-    .sort((a, b) => a.title.localeCompare(b.title, 'de', { sensitivity: 'base' }));
+    .sort((a, b) => compareText(a.title, b.title));
 }
 
 // ─── Anzeige mit Portionen ───

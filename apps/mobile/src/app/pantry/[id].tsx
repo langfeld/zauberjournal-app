@@ -90,10 +90,10 @@ export default function FoodScreen() {
   const [chosenUnit, setChosenUnit] = useState<StockUnit | null>(null);
   const food = tables.foods[id];
   const others = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase('de');
+    const needle = query.trim().toLowerCase();
     if (!needle) return [];
     return listFoods(tables)
-      .filter((other) => other.id !== id && other.name.toLocaleLowerCase('de').includes(needle))
+      .filter((other) => other.id !== id && other.name.toLowerCase().includes(needle))
       .slice(0, 8);
   }, [tables, id, query]);
   const state = useMemo(() => stockStates(tables, today).get(id), [tables, today, id]);

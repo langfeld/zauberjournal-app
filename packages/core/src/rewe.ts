@@ -48,7 +48,7 @@ function toNumber(text: string): number {
 
 /** Liest die Packungsgröße aus der Angabe der Suche, notfalls aus dem Namen („Zwiebeln 1,5kg“). */
 export function parsePackSize(grammage: string, name = ''): PackSize | null {
-  const text = (grammage.split('(')[0] ?? '').trim().toLocaleLowerCase('de');
+  const text = (grammage.split('(')[0] ?? '').trim().toLowerCase();
   let match = new RegExp(`^(\\d+)\\s*x\\s*${NUMBER}\\s*${METRIC_UNIT}$`).exec(text);
   if (match) return { amount: Number(match[1]) * toNumber(match[2]!) * METRIC_FACTORS[match[3]!]!, unit: 'g' };
   match = new RegExp(`^${NUMBER}\\s*${METRIC_UNIT}$`).exec(text);
@@ -59,7 +59,7 @@ export function parsePackSize(grammage: string, name = ''): PackSize | null {
     if (match[2]) pack.approxGrams = toNumber(match[2]) * METRIC_FACTORS[match[3]!]!;
     return pack;
   }
-  const fromName = new RegExp(`${NUMBER}\\s*${METRIC_UNIT}\\b`).exec(name.toLocaleLowerCase('de'));
+  const fromName = new RegExp(`${NUMBER}\\s*${METRIC_UNIT}\\b`).exec(name.toLowerCase());
   return fromName ? { amount: toNumber(fromName[1]!) * METRIC_FACTORS[fromName[2]!]!, unit: 'g' } : null;
 }
 
@@ -167,7 +167,7 @@ const FORM_PARTS = new Set([
 
 function words(text: string): string[] {
   return text
-    .toLocaleLowerCase('de')
+    .toLowerCase()
     .replace(/ß/g, 'ss')
     .split(/[^a-z0-9äöü]+/)
     .filter(Boolean);

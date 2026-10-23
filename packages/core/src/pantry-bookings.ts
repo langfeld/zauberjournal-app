@@ -1,10 +1,11 @@
 import type { FoodCategory } from './food-catalog.ts';
 import { createFoodResolver, type StockUnit } from './foods.ts';
-import { bookingId, foodsInRecipes, pantryBooking, stockUnitFromRecipes, stockUnitOf, toStockAmount } from './pantry.ts';
+import { bookingId, foodsInRecipes, pantryBooking, recipeStockUnits, stockUnitOf, toStockAmount } from './pantry.ts';
 import { planUpdateEntry, type PlanStatus } from './plan.ts';
 import { isLooseCategory, parsePackSize, type PackSize } from './rewe.ts';
 import { isActive, type RowWrite } from './rows.ts';
 import { buildShoppingListView, computeShoppingNeeds, isPantryCheck, type ShoppingItemRow, type ShoppingItemView, type ShoppingTables } from './shopping.ts';
+import { compareText } from './text.ts';
 
 /**
  * Buchungen aus Einkauf und Küche: Nach dem Einkauf kommt das Gekaufte in den Vorrat, beim Kochen geht ab,
@@ -46,7 +47,7 @@ function packContent(pack: PackSize | null, packs: number, unit: StockUnit, cate
 function naturalPackUnit(pack: PackSize | null, grammage: string, name: string): StockUnit | null {
   if (!pack) return null;
   if (pack.unit === 'Stück') return 'Stück';
-  const text = `${grammage.split('(')[0]} ${name}`.toLocaleLowerCase('de');
+  const text = `${grammage.split('(')[0]} ${name}`.toLowerCase();
   return /\d\s*(ml|cl|l)\b/.test(text) ? 'ml' : 'g';
 }
 
@@ -69,6 +70,7 @@ export function purchaseSuggestions(tables: ShoppingTables, listId: string): Pur
   const view = buildShoppingListView(tables, listId);
   if (!view) return [];
   const recipeFoods = foodsInRecipes(tables);
+  const recipeUnits = recipeStockUnits(tables);
   // Was unter „Vorrat prüfen“ abgehakt wurde, war da und wurde nicht gekauft.
   const items = [...view.sections.flatMap((section) => section.items), ...view.done].filter((item) => {
     const food = tables.foods[item.foodId];
@@ -96,7 +98,7 @@ export function purchaseSuggestions(tables: ShoppingTables, listId: string): Pur
         ? naturalPackUnit(pack, rewe.grammage, rewe.name)
         : (rows.map((row) => (row.amount === null ? null : stockUnitOf(row.unit))).find(Boolean) ?? null);
       // Gramm und Milliliter gelten als gleich; dann zeigt der Vorrat die Einheit der Packung („1000 g Zucker“).
-      const fromRecipes = stockUnitFromRecipes(tables, foodId);
+      const fromRecipes = recipeUnits.get(foodId) ?? null;
       const metric = (unit: StockUnit | null) => unit === 'g' || unit === 'ml';
       const first = metric(natural) && metric(fromRecipes) ? [natural, fromRecipes] : [fromRecipes, natural];
       const candidates = [...first, 'g', 'ml', 'Stück'] as (StockUnit | null)[];
@@ -112,7 +114,7 @@ export function purchaseSuggestions(tables: ShoppingTables, listId: string): Pur
       selected: amount !== null && amount > 0 && (!inStore || foodItems.some((item) => item.checked)),
     });
   }
-  return suggestions.sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+  return suggestions.sort((a, b) => compareText(a.name, b.name));
 }
 
 /**

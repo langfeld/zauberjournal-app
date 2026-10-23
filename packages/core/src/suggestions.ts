@@ -1,4 +1,4 @@
-import { addDays, daysBetween, formatShortDate, weekday } from './dates.ts';
+import { addDays, compareDates, daysBetween, formatShortDate, weekday } from './dates.ts';
 import { createFoodResolver, normalizeFoodName, type StockUnit } from './foods.ts';
 import type { MealId } from './meals.ts';
 import { listMembers, type MemberDiet } from './members.ts';
@@ -9,6 +9,7 @@ import { buildRecipeView, type IngredientItem } from './recipe.ts';
 import { isRecipePaused, recipeMealIds } from './recipe-meals.ts';
 import { isActive } from './rows.ts';
 import { computeShoppingNeeds, type ShoppingTables } from './shopping.ts';
+import { compareText } from './text.ts';
 
 /**
  * Planvorschläge (M8): Jedes Rezept bekommt für einen Tag Punkte nach nachvollziehbaren Gründen, die der
@@ -167,7 +168,7 @@ function buildCandidates(tables: ShoppingTables): Candidate[] {
     const unsuitable = strict.every((member) => fits(member.diet)) ? null : fits('vegetarian') ? 'nicht vegan' : 'nicht vegetarisch';
     for (const foodId of used) usage.set(foodId, (usage.get(foodId) ?? 0) + 1);
     const minutes = (row.prepMinutes ?? 0) + (row.cookMinutes ?? 0);
-    const title = view.title.toLocaleLowerCase('de');
+    const title = view.title.toLowerCase();
     const kind: DishKind = BREAKFAST_WORDS.some((word) => title.includes(word))
       ? 'breakfast'
       : SWEET_WORDS.some((word) => title.includes(word)) && !SAVORY_WORDS.some((word) => title.includes(word))
@@ -435,7 +436,7 @@ export function createPlanner(tables: ShoppingTables, today: string, meal: MealI
 
   // Was geplante Gerichte brauchen, ist schon vergeben, das frühere zuerst.
   const pool = basePool(tables, today);
-  const upcoming = entries.filter((entry) => entry.date >= today && entry.status !== 'cooked').sort((a, b) => a.date.localeCompare(b.date));
+  const upcoming = entries.filter((entry) => entry.date >= today && entry.status !== 'cooked').sort((a, b) => compareDates(a.date, b.date));
   for (const entry of upcoming) {
     for (const need of computeShoppingNeeds(tables, [entry.id], resolver)) {
       if (need.amount !== null) reserve(pool, need.foodId, need.amount, need.unit);
@@ -456,7 +457,7 @@ export function createPlanner(tables: ShoppingTables, today: string, meal: MealI
           (candidate.meals === null || candidate.meals.includes(meal)),
       )
       .map((candidate) => evaluate(candidate, date, { today, meal, free, dated: [...dated, ...picks], byId, meals, memberCount }))
-      .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'de'))
+      .sort((a, b) => b.score - a.score || compareText(a.title, b.title))
       .slice(0, limit);
   };
 

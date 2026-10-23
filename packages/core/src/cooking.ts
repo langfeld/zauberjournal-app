@@ -62,7 +62,7 @@ type Found = { start: number; end: number; seconds: number; hours: boolean };
  */
 export function findTimers(text: string): StepTimer[] {
   // Klein geschrieben bleiben die Positionen gleich; die Beschriftung kommt aus dem Original.
-  const lower = text.toLocaleLowerCase('de');
+  const lower = text.toLowerCase();
   const found: Found[] = [];
   for (const match of lower.matchAll(DURATION)) {
     const start = match.index + match[1]!.length;
@@ -115,7 +115,7 @@ function forms(word: string): readonly string[] {
 /** Wörter eines Schritts, klein geschrieben. */
 function stepWords(text: string): string[] {
   return text
-    .toLocaleLowerCase('de')
+    .toLowerCase()
     .split(/[^a-zäöüß]+/)
     .filter((word) => word.length >= 2);
 }

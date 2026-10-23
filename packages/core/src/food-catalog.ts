@@ -1,3 +1,5 @@
+import { memoize } from './text.ts';
+
 /**
  * Warengruppen, Ernährungsklassen und die Schlüsselwörter, mit denen neue Lebensmittel
  * automatisch eingeordnet werden. Die Einordnung ist ein Vorschlag; im Katalog lässt sie sich ändern.
@@ -197,26 +199,6 @@ const PLANT_MARKERS = [
 ];
 /** Kategorien, deren Lebensmittel ohne tierische Schlüsselwörter als vegan gelten. */
 const PLANT_CATEGORIES: readonly FoodCategory[] = ['produce', 'dry', 'canned', 'spices', 'drinks'];
-
-/** So viele Ergebnisse merkt sich `memoize` höchstens; die Namen eines Haushalts passen gut hinein. */
-const MEMO_LIMIT = 5000;
-
-/**
- * Merkt sich die Ergebnisse einer Funktion, die nur von ihrem Text abhängt. Die App ordnet nach jeder Änderung
- * alle Zutaten neu zu; ohne das rechnet sie dieselben Namen jedes Mal wieder durch.
- */
-function memoize<T>(compute: (text: string) => T): (text: string) => T {
-  const results = new Map<string, T>();
-  return (text) => {
-    let result = results.get(text);
-    if (result === undefined) {
-      if (results.size >= MEMO_LIMIT) results.clear();
-      result = compute(text);
-      results.set(text, result);
-    }
-    return result;
-  };
-}
 
 /** Mögliche Grundformen eines Worts: ohne Pluralendung und ohne Umlaute („Zwiebeln“ → „zwiebel“, „Äpfel“ → „apfel“). */
 export const stemVariants = memoize((word: string): readonly string[] => {

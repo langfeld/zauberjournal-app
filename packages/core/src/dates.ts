@@ -39,6 +39,12 @@ export function timeOfDay(key: string, hour: number): number {
   return new Date(year!, month! - 1, day!, hour).getTime();
 }
 
+/** Zum Sortieren: Als `JJJJ-MM-TT` stehen Tage schon nach Zeichencode in der richtigen Reihenfolge. */
+export function compareDates(a: string, b: string): number {
+  if (a < b) return -1;
+  return a > b ? 1 : 0;
+}
+
 /** Tage von `from` bis `to`; negativ, wenn `to` davor liegt. */
 export function daysBetween(from: string, to: string): number {
   return Math.round((toUtc(to).getTime() - toUtc(from).getTime()) / 86_400_000);

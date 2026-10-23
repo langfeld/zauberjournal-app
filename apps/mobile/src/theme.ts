@@ -83,5 +83,5 @@ export function toneFor(name: string): Tone {
 
 /** Erster Buchstabe für Platzhalter, z. B. „H“ für „Hähnchen-Curry“. */
 export function initialOf(name: string): string {
-  return name.trim().charAt(0).toLocaleUpperCase('de') || '?';
+  return name.trim().charAt(0).toUpperCase() || '?';
 }

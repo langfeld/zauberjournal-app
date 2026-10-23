@@ -134,7 +134,7 @@ export default function RecipeListScreen() {
     applyWrites(store, writes);
     Vibration.vibrate(15);
     const relative = formatRelativeDate(slot.date, today);
-    const day = relative === formatDate(slot.date) ? relative : relative.toLocaleLowerCase('de');
+    const day = relative === formatDate(slot.date) ? relative : relative.toLowerCase();
     const meal = meals.length > 1 ? ` (${MEALS.find((option) => option.id === slot.meal)?.label})` : '';
     setMessage({
       text: `„${recipe.title}“ für ${day}${meal} eingeplant`,

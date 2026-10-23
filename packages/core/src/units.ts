@@ -64,7 +64,7 @@ const UNITS_BY_ID = new Map(UNITS.map((unit) => [unit.id, unit] as const));
 
 /** Erkennt eine Einheit anhand einer Schreibweise, z. B. „Esslöffel“ → EL. */
 export function findUnit(token: string): UnitDefinition | undefined {
-  return UNITS_BY_ALIAS.get(token.toLocaleLowerCase('de'));
+  return UNITS_BY_ALIAS.get(token.toLowerCase());
 }
 
 /** Rundungsart einer gespeicherten Einheit; unbekannte Einheiten werden wie Stück behandelt. */

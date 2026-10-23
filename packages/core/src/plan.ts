@@ -1,4 +1,4 @@
-import { addDays } from './dates.ts';
+import { addDays, compareDates } from './dates.ts';
 import type { FoodDiet } from './food-catalog.ts';
 import { createFoodResolver, type FoodTables } from './foods.ts';
 import { MEALS, type MealId } from './meals.ts';
@@ -192,7 +192,7 @@ export function listPlanEntries(tables: PlanTables, from: string, to: string, di
     })
     .sort(
       (a, b) =>
-        a.date.localeCompare(b.date) ||
+        compareDates(a.date, b.date) ||
         (MEAL_ORDER.get(a.meal) ?? 0) - (MEAL_ORDER.get(b.meal) ?? 0) ||
         a.createdAt - b.createdAt,
     );

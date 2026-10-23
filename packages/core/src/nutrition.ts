@@ -4,6 +4,7 @@ import { buildPlanEntry, createDietLookup, type PlanTables } from './plan.ts';
 import { buildRecipeView, type IngredientItem, type RecipeTables } from './recipe.ts';
 import { parsePackSize, type ReweProductRow } from './rewe.ts';
 import { changedCells, isActive, type RowWrite, type Table } from './rows.ts';
+import { compareText } from './text.ts';
 
 /**
  * Nährwerte (M6): je Lebensmittel die Werte der üblichen Nährwerttabelle je 100 g, aus dem
@@ -241,7 +242,7 @@ export function foodsNeedingNutrition(tables: NutritionTables & Pick<RecipeTable
       !row || (!row.pinned && (!row.source || (row.ean ?? '') !== ean || (row.source === 'none' && now - row.checkedAt > RETRY_NONE)));
     if (due) items.push({ id: foodId, name: food.name, ean, pieceUnit: units.get(foodId) ?? '' });
   }
-  return items.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  return items.sort((a, b) => compareText(a.name, b.name));
 }
 
 /**

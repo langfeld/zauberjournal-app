@@ -91,7 +91,7 @@ const LEGACY_MEALS: Readonly<Record<string, MealId>> = {
 };
 
 function readMeals(value: unknown): MealId[] | null {
-  const names = (Array.isArray(value) ? value : []).filter(isObject).map((category) => text(category.name).toLocaleLowerCase('de'));
+  const names = (Array.isArray(value) ? value : []).filter(isObject).map((category) => text(category.name).toLowerCase());
   const meals = MEALS.filter((meal) => names.some((name) => LEGACY_MEALS[name] === meal.id)).map((meal) => meal.id);
   return meals.length > 0 ? meals : null;
 }
@@ -164,7 +164,7 @@ function ingredientLine(item: LegacyIngredient): string {
 
 /** Der Titel eines Schritts steht vorn, damit Schritte und Zwischenüberschriften der Zutaten zusammenpassen. */
 function stepText(step: { title: string; text: string }): string {
-  const startsWithTitle = step.text.toLocaleLowerCase('de').startsWith(step.title.toLocaleLowerCase('de'));
+  const startsWithTitle = step.text.toLowerCase().startsWith(step.title.toLowerCase());
   return step.title && !startsWithTitle ? `${step.title}: ${step.text}` : step.text;
 }
 
@@ -215,9 +215,9 @@ export function legacyRecipeUpdates(
   let meals = 0;
   let favorites = 0;
   const writes = recipes.flatMap((recipe): RowWrite[] => {
-    const wanted = recipe.title.trim().toLocaleLowerCase('de');
+    const wanted = recipe.title.trim().toLowerCase();
     const found = Object.entries(tables.recipes).find(
-      ([, row]) => isActive(row) && row.title.trim().toLocaleLowerCase('de') === wanted,
+      ([, row]) => isActive(row) && row.title.trim().toLowerCase() === wanted,
     );
     if (!found) return [];
     const [id, row] = found;
@@ -239,8 +239,8 @@ export function legacyIngredientNames(recipe: LegacyRecipe): string[] {
 
 /** Gibt es schon ein Rezept mit diesem Titel? Dann wird es nicht noch einmal übernommen. */
 export function hasRecipeTitled(tables: RecipeTables, title: string): boolean {
-  const wanted = title.trim().toLocaleLowerCase('de');
-  return Object.values(tables.recipes).some((recipe) => isActive(recipe) && recipe.title.trim().toLocaleLowerCase('de') === wanted);
+  const wanted = title.trim().toLowerCase();
+  return Object.values(tables.recipes).some((recipe) => isActive(recipe) && recipe.title.trim().toLowerCase() === wanted);
 }
 
 // ─── REWE-Vorlieben ───
