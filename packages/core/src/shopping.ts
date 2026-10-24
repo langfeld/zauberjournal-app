@@ -13,7 +13,19 @@ import { compareText } from './text.ts';
 import { unitLabel } from './units.ts';
 
 export type ShoppingListStatus = 'open' | 'done';
-export type ShoppingListRow = { name: string; status: ShoppingListStatus; createdAt: number; deletedAt: number | null };
+export type ShoppingListRow = {
+  name: string;
+  status: ShoppingListStatus;
+  createdAt: number;
+  /** Mit der Bestellung bei REWE abgeschlossen (Bestellnummer); fehlt bei Zeilen älterer App-Versionen. */
+  reweOrderId?: string;
+  /** Zeitpunkt der übernommenen Meldung des Userscripts; bleibt nach „Rückgängig“. */
+  reweReportedAt?: number | null;
+  reweOrderedAt?: number | null;
+  rewePickupStart?: number | null;
+  rewePickupEnd?: number | null;
+  deletedAt: number | null;
+};
 
 /** Herkunft einer Position: aus dem Plan, aus dem Vorrat („nachkaufen“) oder von Hand eingetragen. */
 export type ShoppingItemOrigin = 'plan' | 'pantry' | 'manual';
@@ -30,6 +42,8 @@ export type ShoppingItemRow = {
   rewePacks: number | null;
   /** Genau geführt: was der Vorrat deckt, in dessen Einheit; `amount` ist dann der Rest (0 = alles da). */
   stockAmount: number | null;
+  /** Von der Bestellung bei REWE abgehakt; fehlt bei Zeilen älterer App-Versionen. */
+  reweOrdered?: boolean;
   createdAt: number;
   deletedAt: number | null;
 };

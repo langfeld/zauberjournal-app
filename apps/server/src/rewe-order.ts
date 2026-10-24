@@ -1,14 +1,23 @@
 import { readFileSync } from 'node:fs';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { REWE_ORDER_STATUSES, type ReweOrder, type ReweOrderRequest, type ReweOrderStatus } from '@zauberjournal/core';
+import {
+  REWE_ORDER_STATUSES,
+  type RewePlacedItem,
+  type RewePlacementReport,
+  type ReweOrder,
+  type ReweOrderRequest,
+  type ReweOrderStatus,
+} from '@zauberjournal/core';
 
 /**
  * Auftrag fürs Userscript: Die App legt ihn ab, das Userscript holt ihn auf rewe.de ab und meldet
- * je Produkt zurück. Es gibt immer nur einen; ein neuer ersetzt den alten.
+ * je Produkt zurück, nach dem Bestellen auch die Bestellung. Es gibt immer nur einen; ein neuer ersetzt den alten.
  */
 
 const MAX_PRODUCTS = 150;
+/** Eine Bestellung kann mehr enthalten als der Auftrag, z. B. Angebote. */
+const MAX_ORDER_ITEMS = 300;
 const MAX_TEXT_LENGTH = 200;
 const MAX_URL_LENGTH = 500;
 const MAX_PACKS = 99;
@@ -66,11 +75,67 @@ export function readOrderResults(body: JsonObject): { order: number; results: Or
   return { order: body.order, results };
 }
 
+/** Zeitpunkt oder Betrag; `null` = unbekannt, `undefined` = ungültig. */
+function optionalNumber(value: unknown): number | null | undefined {
+  if (value === undefined || value === null) return null;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+function readPlacedItem(value: unknown): RewePlacedItem | null {
+  if (!isObject(value)) return null;
+  const productId = text(value.productId);
+  const name = text(value.name ?? '');
+  const { quantity, price } = value;
+  if (!productId || name === null) return null;
+  if (typeof quantity !== 'number' || !Number.isFinite(quantity) || quantity <= 0 || quantity > MAX_PACKS) return null;
+  if (typeof price !== 'number' || !Number.isFinite(price) || price < 0) return null;
+  return { productId, name, quantity, price };
+}
+
+/**
+ * Prüft die Meldung einer Bestellung bei REWE; `order` ist der Zeitpunkt des Auftrags, für den sie gilt. Fehlen die
+ * Positionen (`items` `null`), konnte das Userscript sie nicht lesen.
+ */
+export function readPlacementReport(body: JsonObject): { order: number; report: RewePlacementReport } | null {
+  const orderId = text(body.orderId);
+  const times = [body.orderedAt, body.pickupStart, body.pickupEnd, body.total].map(optionalNumber);
+  if (typeof body.order !== 'number' || !orderId || times.includes(undefined)) return null;
+  const [orderedAt, pickupStart, pickupEnd, total] = times as (number | null)[];
+  let items: RewePlacedItem[] | null = null;
+  if (body.items !== undefined && body.items !== null) {
+    if (!Array.isArray(body.items) || body.items.length > MAX_ORDER_ITEMS) return null;
+    items = [];
+    for (const value of body.items) {
+      const item = readPlacedItem(value);
+      if (!item) return null;
+      items.push(item);
+    }
+  }
+  return { order: body.order, report: { orderId, orderedAt: orderedAt!, pickupStart: pickupStart!, pickupEnd: pickupEnd!, total: total!, items } };
+}
+
+function sameReport(a: RewePlacementReport, b: RewePlacementReport): boolean {
+  const fields = ({ orderId, orderedAt, pickupStart, pickupEnd, total, items }: RewePlacementReport) =>
+    JSON.stringify([orderId, orderedAt, pickupStart, pickupEnd, total, items]);
+  return fields(a) === fields(b);
+}
+
 export type OrderStore = {
   get(): ReweOrder | null;
   replace(request: ReweOrderRequest): ReweOrder;
   /** Trägt Rückmeldungen ein; `null`, wenn es den Auftrag nicht (mehr) gibt. */
   report(order: number, results: readonly OrderResult[]): ReweOrder | null;
+  /**
+   * Trägt die Bestellung bei REWE ein; `null`, wenn es den Auftrag nicht (mehr) gibt. Dieselbe Meldung noch einmal
+   * ändert nichts; eine andere (geänderte Bestellung) übernimmt die App noch einmal.
+   */
+  place(order: number, report: RewePlacementReport): ReweOrder | null;
+  /**
+   * Vergibt die Übernahme der Meldung `reportedAt` an ein Gerät, damit nicht zwei Handys gleichzeitig dieselbe
+   * Bestellung übernehmen. Dasselbe Gerät darf noch einmal fragen; `null`, wenn ein anderes sie schon hat oder die
+   * Meldung nicht mehr gilt.
+   */
+  claim(order: number, reportedAt: number, deviceId: string): ReweOrder | null;
   clear(): void;
 };
 
@@ -82,7 +147,8 @@ export function createOrderStore(db: DatabaseSync, now: () => number = Date.now)
 
   const get = (): ReweOrder | null => {
     const row = read.get() as { body: string } | undefined;
-    return row ? (JSON.parse(row.body) as ReweOrder) : null;
+    // Aufträge älterer Versionen kennen noch keine Bestellung.
+    return row ? { placed: null, ...(JSON.parse(row.body) as Omit<ReweOrder, 'placed'>) } : null;
   };
   const save = (order: ReweOrder): ReweOrder => {
     write.run(JSON.stringify(order));
@@ -98,7 +164,24 @@ export function createOrderStore(db: DatabaseSync, now: () => number = Date.now)
         createdAt: time,
         updatedAt: time,
         products: request.products.map((product) => ({ ...product, status: 'pending', message: '' })),
+        placed: null,
       });
+    },
+    place(order, report) {
+      const current = get();
+      if (!current || current.createdAt !== order) return null;
+      if (current.placed && sameReport(current.placed, report)) return current;
+      const time = now();
+      // Jede neue Meldung bekommt einen neuen Zeitpunkt; daran erkennt die App, dass sie noch nicht übernommen ist.
+      const reportedAt = Math.max(time, (current.placed?.reportedAt ?? 0) + 1);
+      return save({ ...current, updatedAt: time, placed: { ...report, reportedAt, claimedBy: '' } });
+    },
+    claim(order, reportedAt, deviceId) {
+      const current = get();
+      const placed = current?.placed;
+      if (!current || current.createdAt !== order || !placed || placed.reportedAt !== reportedAt) return null;
+      if (placed.claimedBy) return placed.claimedBy === deviceId ? current : null;
+      return save({ ...current, placed: { ...placed, claimedBy: deviceId } });
     },
     report(order, results) {
       const current = get();

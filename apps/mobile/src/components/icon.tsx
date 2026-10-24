@@ -80,6 +80,7 @@ const GLYPHS = {
   sell: 0xf05b,
   set_meal: 0xf1ea,
   share: 0xe80d,
+  shopping_bag: 0xf1cc,
   shopping_basket: 0xe8cb,
   shopping_cart: 0xe8cc,
   skillet: 0xf543,
@@ -93,6 +94,7 @@ const GLYPHS = {
   timer: 0xe425,
   today: 0xe8df,
   tune: 0xe429,
+  undo: 0xe166,
   warning: 0xe002,
   wifi: 0xe63e,
 } as const;

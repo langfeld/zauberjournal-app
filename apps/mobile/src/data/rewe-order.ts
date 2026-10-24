@@ -6,6 +6,7 @@ import { errorMessage } from '@/lib/error-message';
 
 import { getReweOrder, sendReweOrder } from './api';
 import { useConnection } from './connection';
+import { requestReweOrderCheck } from './rewe-order-sync';
 
 /** Solange das Userscript noch arbeitet, so oft nachsehen. */
 const POLL_MS = 5000;
@@ -13,6 +14,7 @@ const POLL_MS = 5000;
 /**
  * Auftrag fürs Userscript: lädt ihn, solange der Bildschirm zu sehen ist, und schickt neue.
  * Hat das Script noch offene Produkte, fragt die App regelmäßig nach, um den Fortschritt zu zeigen.
+ * Meldet es die Bestellung, übernimmt sie `ReweOrderSync`.
  */
 export function useReweOrder() {
   const { credentials } = useConnection();
@@ -30,6 +32,7 @@ export function useReweOrder() {
           (next) => {
             if (cancelled) return;
             pending.current = next?.products.some((product) => product.status === 'pending') ?? false;
+            if (next?.placed && !next.placed.claimedBy) requestReweOrderCheck();
             setOrder(next);
             setError(null);
           },
@@ -56,6 +59,8 @@ export function useReweOrder() {
       const next = await sendReweOrder(credentials, request);
       pending.current = next.products.length > 0;
       setOrder(next);
+      // Ab jetzt wartet die App auf die Bestellung.
+      requestReweOrderCheck();
     } catch (problem) {
       setError(errorMessage(problem));
     } finally {

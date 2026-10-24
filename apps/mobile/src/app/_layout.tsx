@@ -13,6 +13,7 @@ import { FoodDietRepair } from '@/data/food-diets';
 import { MealSync } from '@/data/meal-sync';
 import { NutritionSync } from '@/data/nutrition-sync';
 import { createAppPersister } from '@/data/persister';
+import { ReweOrderSync } from '@/data/rewe-order-sync';
 import { startDeferredSave } from '@/data/saving';
 import { createAppStore, Provider, useCreateMergeableStore, useCreatePersister } from '@/data/store';
 
@@ -52,6 +53,7 @@ export default function RootLayout() {
         <FoodDietRepair />
         <NutritionSync />
         <MealSync />
+        <ReweOrderSync />
         <AppTabs />
       </ConnectionProvider>
     </Provider>

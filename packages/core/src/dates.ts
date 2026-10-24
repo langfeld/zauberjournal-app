@@ -39,6 +39,12 @@ export function timeOfDay(key: string, hour: number): number {
   return new Date(year!, month! - 1, day!, hour).getTime();
 }
 
+/** Uhrzeit eines Zeitpunkts, z. B. „17:30“, in der Zeitzone des Geräts. */
+export function formatTime(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** Zum Sortieren: Als `JJJJ-MM-TT` stehen Tage schon nach Zeichencode in der richtigen Reihenfolge. */
 export function compareDates(a: string, b: string): number {
   if (a < b) return -1;

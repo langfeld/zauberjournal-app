@@ -1,5 +1,5 @@
 import type { FoodCategory } from './food-catalog.ts';
-import { createFoodResolver, type StockUnit } from './foods.ts';
+import { createFoodResolver, type FoodRow, type StockUnit } from './foods.ts';
 import { bookingId, foodsInRecipes, pantryBooking, recipeStockUnits, stockUnitOf, toStockAmount } from './pantry.ts';
 import { planUpdateEntry, type PlanStatus } from './plan.ts';
 import { isLooseCategory, parsePackSize, type PackSize } from './rewe.ts';
@@ -61,10 +61,48 @@ function listContent(rows: readonly ShoppingItemRow[], unit: StockUnit): number 
   return total;
 }
 
+/** Was von einem Lebensmittel gekauft wurde: REWE-Packungen oder, ohne Produkt (`rewe` `null`), die Mengen der Liste. */
+export type BoughtFood = {
+  food: FoodRow;
+  rewe: { grammage: string; name: string; packs: number } | null;
+  rows: readonly ShoppingItemRow[];
+};
+
+/**
+ * Wie viel gekauft wurde, in der Vorratseinheit; `amount` `null` = unbekannt. Wer noch keine Vorratseinheit hat,
+ * bekommt die der Rezepte (`fromRecipes`), wenn der Einkauf dazu passt, sonst die der Packung.
+ */
+export function boughtAmount({ food, rewe, rows }: BoughtFood, fromRecipes: StockUnit | null): { unit: StockUnit; amount: number | null } {
+  const pack = rewe ? parsePackSize(rewe.grammage, rewe.name) : null;
+  const contentIn = (unit: StockUnit) => (rewe ? packContent(pack, rewe.packs, unit, food.category) : listContent(rows, unit));
+
+  let unit: StockUnit;
+  if (food.stockUnit) unit = food.stockUnit;
+  else {
+    const natural = rewe
+      ? naturalPackUnit(pack, rewe.grammage, rewe.name)
+      : (rows.map((row) => (row.amount === null ? null : stockUnitOf(row.unit))).find(Boolean) ?? null);
+    // Gramm und Milliliter gelten als gleich; dann zeigt der Vorrat die Einheit der Packung („1000 g Zucker“).
+    const metric = (unit: StockUnit | null) => unit === 'g' || unit === 'ml';
+    const first = metric(natural) && metric(fromRecipes) ? [natural, fromRecipes] : [fromRecipes, natural];
+    const candidates = [...first, 'g', 'ml', 'Stück'] as (StockUnit | null)[];
+    unit = candidates.find((candidate): candidate is StockUnit => candidate !== null && contentIn(candidate) !== null) ?? natural ?? 'g';
+  }
+  const content = contentIn(unit);
+  return { unit, amount: content === null ? null : Math.round(content * 1000) / 1000 };
+}
+
+/**
+ * Kommt nach dem Einkauf in den Vorrat: was Plan oder Vorrat auf die Liste gebracht haben (`fromList`), ein Rezept
+ * braucht oder immer im Haus sein soll. Spülmittel & Co. nicht.
+ */
+export function countsForPantry(food: FoodRow | undefined, fromList: boolean, inRecipes: boolean): boolean {
+  return Boolean(food && isActive(food) && (fromList || inRecipes || food.stock));
+}
+
 /**
  * Was nach dem Einkauf in den Vorrat kommt, je Lebensmittel: alles, was gekauft werden sollte und ein Rezept
- * braucht oder immer im Haus sein soll. Die Menge kommt aus den REWE-Packungen, sonst aus der Liste. Wer noch
- * keine Vorratseinheit hat, bekommt die der Rezepte, wenn der Einkauf dazu passt, sonst die der Packung.
+ * braucht oder immer im Haus sein soll. Die Menge kommt aus den REWE-Packungen, sonst aus der Liste.
  */
 export function purchaseSuggestions(tables: ShoppingTables, listId: string): PurchaseSuggestion[] {
   const view = buildShoppingListView(tables, listId);
@@ -72,10 +110,9 @@ export function purchaseSuggestions(tables: ShoppingTables, listId: string): Pur
   const recipeFoods = foodsInRecipes(tables);
   const recipeUnits = recipeStockUnits(tables);
   // Was unter „Vorrat prüfen“ abgehakt wurde, war da und wurde nicht gekauft.
-  const items = [...view.sections.flatMap((section) => section.items), ...view.done].filter((item) => {
-    const food = tables.foods[item.foodId];
-    return !isPantryCheck(item) && food && isActive(food) && (item.origin !== 'manual' || recipeFoods.has(item.foodId) || food.stock);
-  });
+  const items = [...view.sections.flatMap((section) => section.items), ...view.done].filter(
+    (item) => !isPantryCheck(item) && countsForPantry(tables.foods[item.foodId], item.origin !== 'manual', recipeFoods.has(item.foodId)),
+  );
   const inStore = items.length > 0 && items.filter((item) => item.checked).length * 2 >= items.length;
 
   const byFood = new Map<string, ShoppingItemView[]>();
@@ -87,25 +124,11 @@ export function purchaseSuggestions(tables: ShoppingTables, listId: string): Pur
     const withProduct = foodItems.filter((item) => item.rewe?.productId && item.rewe.state !== 'none' && item.rewe.state !== 'skip');
     const rewe = withProduct[0]?.rewe ?? null;
     const packs = withProduct.reduce((sum, item) => sum + (item.rewe?.packs ?? 0), 0);
-    const pack = rewe ? parsePackSize(rewe.grammage, rewe.name) : null;
     const rows = foodItems.flatMap((item) => tables.shoppingItems[item.id] ?? []);
-    const contentIn = (unit: StockUnit) => (rewe ? packContent(pack, packs, unit, food.category) : listContent(rows, unit));
-
-    let unit: StockUnit;
-    if (food.stockUnit) unit = food.stockUnit;
-    else {
-      const natural = rewe
-        ? naturalPackUnit(pack, rewe.grammage, rewe.name)
-        : (rows.map((row) => (row.amount === null ? null : stockUnitOf(row.unit))).find(Boolean) ?? null);
-      // Gramm und Milliliter gelten als gleich; dann zeigt der Vorrat die Einheit der Packung („1000 g Zucker“).
-      const fromRecipes = recipeUnits.get(foodId) ?? null;
-      const metric = (unit: StockUnit | null) => unit === 'g' || unit === 'ml';
-      const first = metric(natural) && metric(fromRecipes) ? [natural, fromRecipes] : [fromRecipes, natural];
-      const candidates = [...first, 'g', 'ml', 'Stück'] as (StockUnit | null)[];
-      unit = candidates.find((candidate): candidate is StockUnit => candidate !== null && contentIn(candidate) !== null) ?? natural ?? 'g';
-    }
-    const content = contentIn(unit);
-    const amount = content === null ? null : Math.round(content * 1000) / 1000;
+    const { unit, amount } = boughtAmount(
+      { food, rewe: rewe && { grammage: rewe.grammage, name: rewe.name, packs }, rows },
+      recipeUnits.get(foodId) ?? null,
+    );
     suggestions.push({
       foodId,
       name: food.name,

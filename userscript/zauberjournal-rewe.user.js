@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Zauberjournal: REWE-Warenkorb
 // @namespace    https://github.com/langfeld/zauberjournal-app
-// @version      1.1.0
-// @description  Legt die Einkaufsliste aus Zauberjournal in den REWE-Warenkorb (Abholservice).
+// @version      1.2.0
+// @description  Legt die Einkaufsliste aus Zauberjournal in den REWE-Warenkorb (Abholservice) und meldet die Bestellung zurück.
 // @homepageURL  https://github.com/langfeld/zauberjournal-app
 // @match        https://www.rewe.de/*
 // @match        https://shop.rewe.de/*
@@ -22,6 +22,7 @@
 /*
  * Holt den Auftrag aus der Einkaufsliste vom Zauberjournal-Server und legt die Produkte über die
  * Website in den Warenkorb. Pro Produkt meldet es zurück, was passiert ist; die App zeigt das an.
+ * Nach dem Bestellen meldet es die Bestellung mit ihren Positionen; die App schließt den Einkauf damit ab.
  *
  * Einrichten: Serveradresse und einen Code aus der App eingeben (Haushalt → REWE-Abholung →
  * Userscript für rewe.de). Das Script koppelt sich dann wie ein weiteres Gerät; in der App lässt es
@@ -35,6 +36,15 @@
   /** Pause zwischen zwei Artikeln, damit REWE nicht zu viele Anfragen auf einmal bekommt. */
   const PAUSE_MS = 500;
   const BASKET_PAGE = '/shop/checkout/basket';
+  /** Bestätigungsseite nach dem Bestellen; dort steht die Bestellnummer. */
+  const AFTERSALE_PAGE = /\/checkout\/aftersale\b/;
+  const ORDER_NUMBER_SELECTOR = '.rs-qa-fass-orderId';
+  /** So lange auf die Bestellnummer warten; die Seite baut sich erst nach dem Laden auf. */
+  const ORDER_NUMBER_WAIT_MS = 15000;
+  /** Abseits der Bestätigungsseite höchstens so oft bei REWE nach einer neuen Bestellung sehen. */
+  const ORDER_CHECK_MS = 10 * 60 * 1000;
+  /** Eine Bestellung gehört zum Auftrag, wenn sie danach kam; mit etwas Spielraum für abweichende Uhren. */
+  const CLOCK_SLACK_MS = 2 * 60 * 1000;
 
   // ─── Userscript-Manager (Tampermonkey, Violentmonkey; GM.* und GM_*) ───
 
@@ -165,6 +175,136 @@
     return { status: 'failed', message: `REWE meldet Fehler ${response.status}` };
   }
 
+  // ─── REWE-Bestellungen ───
+  // Die Bestellungen des Kontos liest die Website über /shop/api/orders; das Format ist inoffiziell. Was sich
+  // nicht lesen lässt, bleibt leer: Die App nimmt dann, was das Script in den Warenkorb gelegt hat.
+  // Diesen Teil prüft apps/server/src/userscript.test.ts mit echten Antworten; er läuft dafür ohne Browser.
+
+  async function reweJson(path) {
+    const response = await fetch(path, { credentials: 'include' });
+    if (!response.ok) throw new Error(`REWE meldet Fehler ${response.status}`);
+    return response.json();
+  }
+
+  /**
+   * Zeitpunkt in Millisekunden; `null`, wenn er fehlt oder unlesbar ist. REWE schreibt `JJJJMMTTHHmm` in deutscher
+   * Zeit, wie sie auch der Browser hat.
+   */
+  function timeOf(value) {
+    const match = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(String(value ?? ''));
+    if (!match) return null;
+    const [year, month, day, hour, minute] = match.slice(1).map(Number);
+    return new Date(year, month - 1, day, hour, minute).getTime();
+  }
+
+  function centsOf(value) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
+  }
+
+  /** Bestellnummer wie „B-TN3-4G7-AQN“, vergleichbar unabhängig von Schreibweise und Leerzeichen */
+  const orderKey = (value) => String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+  /** Ab diesem Stand der Bestellung steht in den Positionen, was es wirklich gab. */
+  const PACKED_STATUSES = ['readyForPickUp', 'pickedUp'];
+
+  function pickupOf(subOrder) {
+    const slot = subOrder?.timeSlot ?? {};
+    return { pickupStart: timeOf(slot.firstSlotDate), pickupEnd: timeOf(slot.lastSlotDate) };
+  }
+
+  /** Bestellungen des Kontos, die neueste zuerst; stornierte zählen nicht. */
+  function readOrderList(data) {
+    const orders = Array.isArray(data?.orders) ? data.orders : [];
+    return orders.flatMap((entry) => {
+      if (!entry?.orderId || /cancel/i.test(String(entry.status ?? ''))) return [];
+      const subOrders = Array.isArray(entry.subOrders) ? entry.subOrders : [];
+      return [{ orderId: String(entry.orderId), orderedAt: timeOf(entry.orderDate), total: centsOf(entry.orderValue), ...pickupOf(subOrders[0]) }];
+    });
+  }
+
+  /**
+   * Positionen und Abholfenster einer Bestellung. Es zählen nur Produkte, nicht Abholgebühr und Pfand. Hat REWE schon
+   * gepackt, gilt, was es wirklich gab: Fehlendes fällt weg, Ware nach Gewicht zählt in Packungen („ca. 100 g“:
+   * 212 g sind 2,12).
+   */
+  function readOrderDetail(data) {
+    const subOrders = Array.isArray(data?.subOrders) ? data.subOrders : [];
+    const items = [];
+    for (const subOrder of subOrders) {
+      const packed = PACKED_STATUSES.includes(subOrder.status);
+      for (const line of Array.isArray(subOrder.lineItems) ? subOrder.lineItems : []) {
+        if (line?.lineItemType !== 'PRODUCT' || !line.productId) continue;
+        let quantity = Number(line.quantity ?? 1);
+        if (packed && typeof line.actualAmount === 'number') {
+          quantity = line.volumeCode === 'KGG' && line.weightPerPiece > 0 ? line.actualAmount / line.weightPerPiece : line.actualAmount;
+        }
+        // Mehr als 99 Packungen nimmt der Server nicht an; so viele bestellt hier niemand.
+        quantity = Math.min(99, Math.round(quantity * 100) / 100);
+        if (!(quantity > 0)) continue;
+        items.push({ productId: String(line.productId), name: String(line.title ?? '').slice(0, 200), quantity, price: centsOf(line.price) ?? 0 });
+      }
+    }
+    return { orderedAt: timeOf(data?.orderDate), total: centsOf(data?.orderValue), items, ...pickupOf(subOrders[0]) };
+  }
+
+  /** Bestellnummer der Bestätigungsseite; sie erscheint erst, wenn die Seite fertig ist. */
+  function waitForOrderNumber() {
+    const read = () => document.querySelector(ORDER_NUMBER_SELECTOR)?.textContent?.trim() || null;
+    return new Promise((resolve) => {
+      if (read()) {
+        resolve(read());
+        return;
+      }
+      const observer = new MutationObserver(() => {
+        if (!read()) return;
+        observer.disconnect();
+        clearTimeout(timer);
+        resolve(read());
+      });
+      const timer = setTimeout(() => {
+        observer.disconnect();
+        resolve(null);
+      }, ORDER_NUMBER_WAIT_MS);
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  }
+
+  /**
+   * Sucht die Bestellung zum Auftrag: die mit der Nummer der Bestätigungsseite, sonst die erste nach dem Auftrag.
+   * Liefert die Meldung für den Server oder `null`, wenn es keine gibt.
+   */
+  async function findPlacement(order, orderNumber) {
+    let entry = null;
+    try {
+      const orders = readOrderList(await reweJson('/shop/api/orders'));
+      entry = orderNumber
+        ? (orders.find((candidate) => orderKey(candidate.orderId) === orderKey(orderNumber)) ?? null)
+        : (orders
+            .filter((candidate) => candidate.orderedAt !== null && candidate.orderedAt >= order.createdAt - CLOCK_SLACK_MS)
+            .sort((a, b) => a.orderedAt - b.orderedAt)[0] ?? null);
+    } catch (error) {
+      console.warn('Zauberjournal: Bestellungen bei REWE nicht lesbar', error);
+    }
+    const orderId = entry?.orderId ?? orderNumber;
+    if (!orderId) return null;
+    let detail = null;
+    try {
+      detail = readOrderDetail(await reweJson(`/shop/api/orders/${encodeURIComponent(orderId)}`));
+    } catch (error) {
+      console.warn('Zauberjournal: Bestellung bei REWE nicht lesbar', error);
+    }
+    return {
+      order: order.createdAt,
+      orderId: String(orderId).slice(0, 200),
+      orderedAt: detail?.orderedAt ?? entry?.orderedAt ?? null,
+      pickupStart: detail?.pickupStart ?? entry?.pickupStart ?? null,
+      pickupEnd: detail?.pickupEnd ?? entry?.pickupEnd ?? null,
+      total: detail?.total ?? entry?.total ?? null,
+      // Ohne lesbare Positionen nimmt die App, was das Script in den Warenkorb gelegt hat.
+      items: detail && detail.items.length > 0 ? detail.items : null,
+    };
+  }
+
   // ─── Oberfläche ───
 
   /** Symbole aus Material Symbols wie in der App (viewBox 0 -960 960 960). */
@@ -188,6 +328,17 @@
 
   const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
+  const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+  /** Abholfenster wie in der App, z. B. „Mi 7.10., 17:00–18:00 Uhr“; leer ohne Abholzeit. */
+  function formatPickup(start, end) {
+    if (!start) return '';
+    const from = new Date(start);
+    const time = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const day = `${WEEKDAYS[from.getDay()]} ${from.getDate()}.${from.getMonth() + 1}.`;
+    return end && end > start ? `${day}, ${time(from)}–${time(new Date(end))} Uhr` : `${day}, ab ${time(from)} Uhr`;
+  }
+
   /** Anzeige je Zustand eines Produkts; `adding` gilt für das Produkt, das gerade dran ist. */
   const STATUS = {
     pending: { label: 'offen', tone: '', icon: '' },
@@ -195,7 +346,17 @@
     added: { label: 'im Warenkorb', tone: 'ok', icon: 'check' },
     present: { label: 'war schon drin', tone: 'ok', icon: 'check' },
     failed: { label: 'hat nicht geklappt', tone: 'bad', icon: 'error' },
+    // Nach dem Bestellen
+    ordered: { label: 'bestellt', tone: 'ok', icon: 'check' },
+    notOrdered: { label: 'nicht bestellt', tone: '', icon: '' },
   };
+
+  /** Ob ein Produkt in der gemeldeten Bestellung ist; ohne lesbare Positionen gilt der Warenkorb. */
+  function isOrdered(placed, product) {
+    return placed.items
+      ? placed.items.some((item) => item.productId === product.productId)
+      : product.status === 'added' || product.status === 'present';
+  }
 
   // Farben und Maße wie in der App (apps/mobile/src/theme.ts).
   const STYLE = `
@@ -298,6 +459,7 @@
     .notice.info { background: #e2ede4; color: #2f6b4f; }
     .notice.warn { background: #fbefd9; color: #9a5d00; }
     .loading { display: flex; align-items: center; gap: 10px; color: #74685b; }
+    .placed { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13.5px; font-weight: 600; color: #2f6b4f; }
     .empty { padding: 6px 4px 2px; text-align: center; }
     .empty p { margin: 0; }
     .circle { width: 64px; height: 64px; margin: 4px auto 12px; display: grid; place-items: center; border-radius: 50%; background: #e2ede4; color: #2f6b4f; }
@@ -315,6 +477,8 @@
     view: 'loading', // loading | setup | retry | empty | order
     order: null,
     running: false,
+    /** Die Bestellung wird gerade gesucht und gemeldet. */
+    reporting: false,
     /** Produkt, das gerade in den Warenkorb kommt. */
     current: null,
     done: 0,
@@ -332,10 +496,13 @@
   const fab = shadow.querySelector('.fab');
   const panel = shadow.querySelector('.panel');
 
-  const openProducts = () => (state.order ? state.order.products.filter((p) => p.status === 'pending' || p.status === 'failed') : []);
+  // Nach dem Bestellen ist der Warenkorb leer; dann gibt es nichts mehr hineinzulegen.
+  const openProducts = () =>
+    state.order && !state.order.placed ? state.order.products.filter((p) => p.status === 'pending' || p.status === 'failed') : [];
 
-  function productRow(product, showPending) {
-    const key = state.current === product.productId ? 'adding' : STATUS[product.status] ? product.status : 'pending';
+  function productRow(product, showPending, placed) {
+    let key = state.current === product.productId ? 'adding' : STATUS[product.status] ? product.status : 'pending';
+    if (placed) key = isOrdered(placed, product) ? 'ordered' : 'notOrdered';
     const status = STATUS[key];
     const label = key === 'failed' ? product.message || status.label : status.label;
     const symbol = key === 'adding' ? '<span class="spinner"></span>' : status.icon ? icon(status.icon, 14) : '';
@@ -359,6 +526,7 @@
   }
 
   function renderOrder(order) {
+    const { placed } = order;
     const count = order.products.length;
     const total = order.products.reduce((sum, product) => sum + product.packs * product.price, 0);
     const packs = order.products.reduce((sum, product) => sum + product.packs, 0);
@@ -371,10 +539,19 @@
       : state.running
         ? `Lege in den Warenkorb … ${state.done} von ${state.total}`
         : `${inBasket} von ${count} im Warenkorb`;
-    const progress = started
-      ? `<div class="progress"><div style="width:${Math.round((inBasket / Math.max(1, count)) * 100)}%"></div></div>
-         <div class="progress-label${complete ? ' complete' : ''}">${progressLabel}</div>`
-      : '';
+    const pickup = placed ? formatPickup(placed.pickupStart, placed.pickupEnd) : '';
+    let progress = '';
+    if (placed) progress = `<div class="placed">${icon('check', 16)}<span>Bestellt${pickup ? `, Abholung ${escapeHtml(pickup)}` : ''}</span></div>`;
+    else if (state.reporting) progress = '<div class="progress-label"><span class="spinner"></span>Melde die Bestellung an Zauberjournal …</div>';
+    else if (started) {
+      progress = `<div class="progress"><div style="width:${Math.round((inBasket / Math.max(1, count)) * 100)}%"></div></div>
+         <div class="progress-label${complete ? ' complete' : ''}">${progressLabel}</div>`;
+    }
+    const hint = placed
+      ? `<p class="hint">${icon('info', 16)}<span>An Zauberjournal gemeldet: Die App schließt den Einkauf ab und bucht das Bestellte in den Vorrat.</span></p>`
+      : started
+        ? ''
+        : `<p class="hint">${icon('info', 16)}<span>Vorher bei REWE anmelden und den Abholmarkt wählen.</span></p>`;
     const runLabel = open === count ? `${plural(count, 'Produkt', 'Produkte')} in den Warenkorb` : `${open} noch in den Warenkorb`;
     const run =
       open > 0
@@ -389,10 +566,12 @@
           <div class="meta">${plural(count, 'Produkt', 'Produkte')}${packs > count ? ` · ${plural(packs, 'Packung', 'Packungen')}` : ''}</div>
           ${progress}
         </div>
-        ${started ? '' : `<p class="hint">${icon('info', 16)}<span>Vorher bei REWE anmelden und den Abholmarkt wählen.</span></p>`}
-        <ul>${order.products.map((product) => productRow(product, started)).join('')}</ul>`,
+        ${hint}
+        <ul>${order.products.map((product) => productRow(product, started || !!placed, placed)).join('')}</ul>`,
       // Die Knöpfe bleiben unten stehen, auch wenn die Liste lang ist.
-      bar: `<div class="actions">${run}<a class="${open > 0 ? 'secondary' : 'primary'}" href="${BASKET_PAGE}">${icon('cart')}Zum Warenkorb</a></div>${footer(true)}`,
+      bar: placed
+        ? footer(true)
+        : `<div class="actions">${run}<a class="${open > 0 ? 'secondary' : 'primary'}" href="${BASKET_PAGE}">${icon('cart')}Zum Warenkorb</a></div>${footer(true)}`,
     };
   }
 
@@ -463,6 +642,44 @@
     render();
   }
 
+  /**
+   * Meldet die Bestellung zum Auftrag: auf der Bestätigungsseite sofort. Sonst sieht es bei REWE nach, ob seit dem
+   * Auftrag bestellt wurde (etwa in der REWE-App), wenn das Script den Warenkorb gefüllt hat; beim Laden einer Seite
+   * höchstens alle zehn Minuten, beim Öffnen des Fensters jedes Mal.
+   */
+  async function detectPlacement(byUser) {
+    const order = state.order;
+    if (!order || order.placed || state.reporting || state.running) return;
+    const onAftersale = AFTERSALE_PAGE.test(location.pathname);
+    if (!onAftersale) {
+      if (!order.products.some((product) => product.status === 'added' || product.status === 'present')) return;
+      const checkedAt = Number(await storage.get('orderCheckedAt', 0)) || 0;
+      if (!byUser && Date.now() - checkedAt < ORDER_CHECK_MS) return;
+      await storage.set('orderCheckedAt', Date.now());
+    }
+    state.reporting = true;
+    render();
+    try {
+      const report = await findPlacement(order, onAftersale ? await waitForOrderNumber() : null);
+      if (report) {
+        const data = await serverRequest('POST', '/api/rewe/order/placed', report);
+        if (data?.order && state.order?.createdAt === order.createdAt) state.order = data.order;
+        // Auf der Bestätigungsseite zeigt das Script gleich, dass es geklappt hat.
+        if (onAftersale) state.open = true;
+      }
+    } catch (error) {
+      if (onAftersale || byUser) {
+        state.error = `Die Bestellung ließ sich nicht an Zauberjournal melden: ${error.message}`;
+        state.open = true;
+      } else {
+        console.warn('Zauberjournal: Bestellung nicht gemeldet', error);
+      }
+    } finally {
+      state.reporting = false;
+      render();
+    }
+  }
+
   /** Legt alle offenen Produkte nacheinander in den Warenkorb und meldet jedes einzeln zurück. */
   async function run() {
     const order = state.order;
@@ -510,7 +727,10 @@
     if (target?.closest('.fab')) {
       state.open = !state.open;
       render();
-      if (state.open && !state.running) await refresh();
+      if (state.open && !state.running) {
+        await refresh();
+        await detectPlacement(true);
+      }
       return;
     }
     const action = target?.closest('[data-action]')?.getAttribute('data-action');
@@ -521,6 +741,7 @@
       state.info = '';
       state.warning = '';
       await refresh();
+      await detectPlacement(true);
     } else if (action === 'run') {
       await run();
     } else if (action === 'logout') {
@@ -553,6 +774,6 @@
   });
 
   document.body.append(host);
-  // Beim Laden nur den Auftrag holen, damit der Knopf anzeigt, ob etwas offen ist.
-  refresh();
+  // Beim Laden den Auftrag holen, damit der Knopf anzeigt, ob etwas offen ist; nach dem Bestellen die Bestellung melden.
+  refresh().then(() => detectPlacement(false));
 })();

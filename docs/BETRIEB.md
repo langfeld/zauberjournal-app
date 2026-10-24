@@ -75,6 +75,8 @@ Das Userscript legt die Einkaufsliste auf rewe.de in den Warenkorb, am PC oder i
 
 Zum Einkaufen in der Einkaufsliste *In den Warenkorb* tippen und dann auf rewe.de den grünen Knopf. Das Userscript meldet je Produkt zurück, ob es geklappt hat. Neue Versionen kommen mit dem Server-Image; der Userscript-Manager holt sie über denselben Link.
 
+Nach dem Bestellen meldet das Userscript die Bestellung samt Positionen und Abholzeit. Das passiert auf der Bestätigungsseite von rewe.de oder, falls die verpasst wurde (etwa bei einer Bestellung in der REWE-App), beim nächsten Besuch auf rewe.de. Die App schließt den Einkauf dann von selbst ab und bucht das Bestellte in den Vorrat. Fehlendes setzt sie auf die nächste Liste. Im Einkauf steht bis zum Abholtag eine Karte *Bei REWE bestellt* mit *Rückgängig*.
+
 ### Übernahme aus dem alten Zauberjournal
 
 Rezepte (mit Fotos) und bevorzugte REWE-Produkte aus den JSON-Exporten des alten Systems überträgt ein Werkzeug im Repo. Es braucht Node 24 sowie Python 3 mit Pillow, das die Fotos in JPEG umwandelt.

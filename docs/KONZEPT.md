@@ -22,8 +22,8 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 2. **Planen:** Beliebig viele Gerichte in einem rollierenden Zeitraum, also ohne feste Kalenderwochen. Standard ist nur das Abendessen; weitere Mahlzeiten lassen sich in den Einstellungen zuschalten. Pro Mahlzeit wird festgelegt, wer mitisst und welche Option jede Person bekommt (z. B. Hähnchen oder Halloumi).
 3. **Einkaufsliste erzeugen:** aus ausgewählten Planeinträgen. Die Mengen werden zusammengefasst, der Vorrat wird abgezogen, eigene Zusatzartikel kommen dazu.
 4. **REWE-Abgleich:** Für jede Position wird ein passendes REWE-Produkt gesucht. Gemerkte Produkte haben Vorrang, in der Reihenfolge des Haushalts. Danach folgt eine Suche mit Filtern. Unsichere Treffer sind markiert, Alternativen lassen sich auswählen.
-5. **Einkaufen:** rewe.de öffnen, am PC oder in Firefox auf dem Handy. Das Userscript legt alles in den Warenkorb und meldet das Ergebnis zurück.
-6. **Vorrat pflegen:** Nach der Abholung wird der Einkauf in den Vorrat gebucht, beim Kochen wird wieder abgebucht.
+5. **Einkaufen:** rewe.de öffnen, am PC oder in Firefox auf dem Handy. Das Userscript legt alles in den Warenkorb und meldet das Ergebnis zurück. Nach dem Bestellen meldet es die Bestellung, und die App schließt den Einkauf ab.
+6. **Vorrat pflegen:** Der Einkauf wird in den Vorrat gebucht (bestellt bei REWE: ab der Abholung), beim Kochen wird wieder abgebucht.
 
 ## 4. Ausbaustufen
 
@@ -99,7 +99,7 @@ Das Repo nutzt npm-Workspaces. Server und `core` brauchen keinen Build-Schritt: 
 2. Pairing und Geräte: Haushalt anlegen, Einladung per QR-Code, Gerätetokens ausstellen und widerrufen.
 3. Fotos speichern und ausliefern.
 4. KI-Import über Requesty.
-5. REWE: Produktsuche, Abgleich, Auftrag fürs Userscript, Rückmeldung.
+5. REWE: Produktsuche, Abgleich, Auftrag fürs Userscript, Rückmeldung und Bestellung.
 6. Nährwerte nachschlagen: Open Food Facts per EAN abfragen und vorhalten, Zutaten dem BLS zuordnen (mit KI).
 
 Alle Daten liegen in einem Volume `/data`. Dafür bekommt der Server ein eigenes TrueNAS-Dataset, dessen ZFS-Snapshots als Backup dienen.
@@ -144,8 +144,8 @@ Die Ernährungsklasse bestimmt, welche Option eine vegetarische Person bekommt. 
 - `planChoices`: Esser, Gruppe, gewählte Option. Gespeichert wird nur eine ausdrückliche Wahl; sonst gilt die automatische (6.1).
 
 **Einkauf**
-- `shoppingLists`: Name, Status (`offen` | `erledigt`, ab M5 auch `rewe`), erstellt am
-- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `vorrat` | `manuell`). Seit M5 außerdem die REWE-Packungen, falls von Hand geändert (leer = aus der Menge berechnet). Der Status im Warenkorb kommt mit dem Userscript dazu. Seit M6 bei Lebensmitteln mit Menge, was der Vorrat deckt (`stockAmount`, in der Vorratseinheit); die Menge ist dann nur der Rest zum Kaufen.
+- `shoppingLists`: Name, Status (`offen` | `erledigt`), erstellt am. Mit der Bestellmeldung (Oktober 2026) kamen dazu: die Bestellnummer bei REWE, Bestellzeit und Abholfenster, außerdem welche Meldung des Userscripts übernommen ist (`reweReportedAt`). Diese Angabe bleibt nach „Rückgängig“ stehen, damit dieselbe Meldung nicht wiederkommt.
+- `shoppingItems`: Liste, Lebensmittel, Text, Menge, Einheit, abgehakt, Herkunft (`plan` | `vorrat` | `manuell`). Seit M5 außerdem die REWE-Packungen, falls von Hand geändert (leer = aus der Menge berechnet). Der Status im Warenkorb steht im Auftrag auf dem Server. Seit M6 bei Lebensmitteln mit Menge, was der Vorrat deckt (`stockAmount`, in der Vorratseinheit); die Menge ist dann nur der Rest zum Kaufen. Seit der Bestellmeldung `reweOrdered`: Die Bestellung bei REWE hat die Position abgehakt.
 - Die Anzeige „für Lasagne (Mi 7.10.)“ wird aus den Planeinträgen der Liste berechnet; eine eigene Tabelle `shoppingItemSources` braucht es dafür nicht.
 
 **Vorrat**
@@ -193,6 +193,11 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - Einfacher Vorrat: Was „da“ ist, steht unter „Vorrat prüfen“; was „nachkaufen“ heißt, kommt von selbst auf die Liste. Abhaken setzt es wieder auf „da“.
   - Vorrat (M6): Der Bestand wird vom Bedarf abgezogen, wenn sich die Einheit umrechnen lässt (g/kg, ml/cl/dl/l, EL = 15 ml, TL = 5 ml, Gramm = Milliliter; Dose, Glas, Packung usw. = 1 Stück). Deckt er alles, steht die Position unter „Vorrat prüfen“, sonst steht nur der Rest auf der Liste. Von selbst nachgekauft wird nur, was immer im Haus sein soll.
 - **Einbuchen (M6):** Beim Abschließen der Liste kommt in den Vorrat, was Rezepte brauchen oder immer im Haus sein soll (Spülmittel & Co. nicht). Die Mengen kommen aus den REWE-Packungen, sonst aus der Liste; die Seite zeigt alles vorausgewählt, ein Tipp bucht ein. Ist mindestens die Hälfte abgehakt, gilt das als Einkauf im Laden, und nur Abgehaktes ist vorausgewählt. Neue Lebensmittel bekommen die Einheit der Rezepte, wenn der Einkauf dazu passt, sonst die der Packung; bei Gramm und Milliliter zählt die der Packung.
+- **Bestellung übernehmen (Oktober 2026):** Meldet das Userscript die Bestellung bei REWE, schließt die App die Liste des Auftrags ab, ohne zu fragen; eine Karte im Einkauf zeigt es bis zum Abholtag, mit „Rückgängig“.
+  - **Bestellt** ist, was die Bestellung enthält. Ein Produkt aus dem Auftrag gilt für seine Positionen; ein anderes für das Lebensmittel, dem es zugeordnet oder gemerkt ist (im Warenkorb getauscht). Was zu keinem Lebensmittel gehört, steht nur als „außerdem bestellt“ da. Lassen sich die Positionen der Bestellung nicht lesen, gilt, was das Userscript in den Warenkorb gelegt hat.
+  - **Vorrat:** Gebucht wird mit den bestellten Packungen, zum Beginn des Abholfensters. Der Bestand zählt das gleich mit, Frisches läuft aber erst ab der Abholung ab. Was der Haushalt selbst abgehakt hat, ist anderswo gekauft und kommt wie beim Abschließen von Hand dazu.
+  - **Fehlendes** kommt auf die neueste andere offene Liste, sonst auf eine neue; „Vorrat prüfen“ und Nachkäufe für „immer im Haus“ nicht, die ergeben sich wieder von selbst.
+  - **Sicher:** Steht nichts von der Liste in der Bestellung, schließt die App nicht ab. Von Hand abgeschlossene Listen bleiben, wie sie sind. Eine geänderte Bestellung (neue Meldung) gleicht alles an. Nur ein Gerät übernimmt eine Meldung; das vergibt der Server.
 - **Abbuchen (M6):** Ist der Tag eines eingekauften Gerichts vorbei, gilt es als gekocht und seine Zutaten gehen ab; „gekocht“ lässt sich auch selbst wählen. Gebucht wird beim Setzen, also immer nach dem Einkauf. Bei Stück wird auf ganze Stück aufgerundet (eine angebrochene Dose kommt nicht zurück). Wer den Status zurücksetzt oder den Eintrag entfernt, nimmt die Abbuchung zurück. Für Gekochtes braucht eine offene Liste nichts mehr, sonst zählte der Bedarf doppelt.
 - **Nährwerte (M6):** Menge in Gramm × Wert je 100 g, im Plan für jede Person passend zu ihren Portionen und Optionen, im Rezept je Portion (mit Wahlkomponente je Option der ersten Gruppe).
   - **Gramm:** feste Gewichte für g/kg, ml/l (Gramm = Milliliter), EL = 15 g, TL = 5 g, Prise, Handvoll usw.; für Stück, Dose, Zehe, Bund usw. das Stückgewicht des Lebensmittels. Zutaten ohne Menge („Salz“) zählen nicht, bei Spannen zählt die Mitte.
@@ -271,7 +276,13 @@ Die Bewertungslogik liegt in `packages/core` und wird mit echten Beispielen gete
 - Legt die Produkte über die Website in den Warenkorb. Das läuft auf dem bewährten Weg aus dem bisherigen Script: Produktseite → Listing-ID → Warenkorb-Endpunkt, mit Pausen zwischen den Artikeln.
 - Meldet pro Artikel zurück, ob er im Warenkorb liegt, schon drin war oder ein Fehler auftrat. Die App zeigt den Status an.
 - Läuft am PC und in Firefox für Android (Violentmonkey oder Tampermonkey). Die Oberfläche funktioniert auch auf schmalen Bildschirmen.
-- Optional später: nach der Abholung die Bestellung auslesen und in den Vorrat buchen.
+- Meldet nach dem Bestellen die Bestellung (seit Oktober 2026). Auf der Bestätigungsseite (`/shop/checkout/aftersale`) liest es die Bestellnummer, dazu über die Bestell-API der Website (`/shop/api/orders`, mit der Anmeldung im Browser) Positionen, Abholfenster und Bestellwert. Weitergegeben werden nur Produkt-ID, Name, Menge und Preis, keine Adresse oder Zahlungsdaten. Wurde die Bestätigungsseite verpasst, etwa bei einer Bestellung in der REWE-App, sieht es beim nächsten Besuch auf rewe.de nach. Das tut es nur, wenn es den Warenkorb gefüllt hat, und höchstens alle zehn Minuten; gezählt wird die erste Bestellung nach dem Auftrag.
+- **Format der Bestell-API** (an echten Antworten geprüft am 24. Oktober 2026):
+  - Die Liste steht in `orders` (20 je Seite, die neueste zuerst). Bestellnummern sehen aus wie `B-TN3-4G7-AQN`; Zeiten stehen als `JJJJMMTTHHmm` in deutscher Zeit, das Abholfenster in `subOrders[].timeSlot`.
+  - Positionen stehen in `subOrders[].lineItems`. Nur `lineItemType` `PRODUCT` zählt; `TIMESLOT` (Abholgebühr) und `REFUND` (Pfand) haben ebenfalls eine Produkt-ID.
+  - Ab dem Stand `readyForPickUp` steht in `actualAmount`, was es wirklich gab: 0 heißt, es fehlte. Ware nach Gewicht (`volumeCode` `KGG`) zählt dort in Gramm, umgerechnet in Packungen über `weightPerPiece`.
+  - Meldet das Script erst nach dem Packen, gelten diese Mengen; Fehlendes kommt dann auf die nächste Liste.
+- Noch nicht: wurde schon direkt nach dem Bestellen gemeldet, nach der Abholung Fehlendes und Gewichte nachtragen. Die Daten dafür liefert dieselbe API; es fehlt nur, dass Script und Server die Bestellung auch nach einem neuen Auftrag noch kennen. Bei einer echten Bestellung fehlten 4 von 16 Produkten.
 
 ## 9. KI-Import (M3)
 
@@ -364,6 +375,12 @@ Entschieden bei der Umsetzung von M8 (6. Oktober 2026):
 - **„Passt zu“ mit mehreren Mahlzeiten statt einer Art je Rezept:** Viele Gerichte passen mittags und abends. Die Felder entsprechen den Mahlzeiten des Plans, damit die Vorschläge sie direkt nutzen können.
 - **Die KI ordnet zu, die alte Zuordnung hat Vorrang:** Für die übernommenen Rezepte gelten die Kategorien des alten Systems; die KI schätzt den Rest. Im Test lag sie bei 32 von 34 alten Rezepten genauso.
 - **Doppelte Lebensmittel: KI schlägt vor, der Haushalt entscheidet.** Die KI sieht nur die Namen und Warengruppen und fasst im Zweifel nicht zusammen. Zusammengeführt wird erst nach einem Tipp je Gruppe, weil es sich nicht rückgängig machen lässt.
+
+Entschieden bei der Bestellmeldung (24. Oktober 2026):
+- **Abschließen ohne Rückfrage, mit „Rückgängig“:** Die Bestellung ist ein eindeutiges Zeichen. Eine Karte im Einkauf zeigt bis zum Abholtag, was passiert ist, und nimmt es auf Wunsch zurück.
+- **Fehlendes auf die nächste Liste** statt die Liste offen zu lassen: Der bestellte Teil ist erledigt, die nächste Liste fängt mit dem Rest an.
+- **Vorrat ab der Abholung:** Bestellt ist noch nicht im Haus; gebucht wird zum Beginn des Abholfensters, damit Frisches nicht zu früh abläuft.
+- **Die App rechnet, der Server vergibt:** Den Abschluss rechnet die App mit derselben Logik wie beim Abschließen von Hand. Der Server merkt sich nur die Meldung und lässt genau ein Gerät übernehmen.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.

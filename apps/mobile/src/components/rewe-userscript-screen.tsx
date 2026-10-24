@@ -74,8 +74,8 @@ export function ReweUserscriptScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: 'Userscript einrichten' }} />
       <Text style={styles.body}>
-        Das Userscript legt eure Einkaufsliste auf rewe.de in den Warenkorb. Es läuft im Browser, am PC oder in Firefox auf
-        dem Handy.
+        Das Userscript legt eure Einkaufsliste auf rewe.de in den Warenkorb und meldet nach dem Bestellen die Bestellung;
+        die App schließt den Einkauf dann von selbst ab. Es läuft im Browser, am PC oder in Firefox auf dem Handy.
       </Text>
 
       <Step number={1} title="Userscript-Manager installieren">

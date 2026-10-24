@@ -133,6 +133,17 @@ export const tablesSchema = {
     name: { type: 'string', default: '' },
     status: { enum: ['open', 'done'], default: 'open' },
     createdAt: { type: 'number', default: 0 },
+    /** Mit der Bestellung bei REWE abgeschlossen: ihre Bestellnummer; leer = nicht (oder „Rückgängig“). */
+    reweOrderId: { type: 'string', default: '' },
+    /**
+     * Wann die übernommene Meldung des Userscripts kam. Bleibt nach „Rückgängig“ stehen, damit dieselbe Meldung
+     * nicht noch einmal übernommen wird; leer = keine.
+     */
+    reweReportedAt: optionalNumber,
+    /** Bestellzeit und Abholfenster bei REWE; leer = unbekannt. */
+    reweOrderedAt: optionalNumber,
+    rewePickupStart: optionalNumber,
+    rewePickupEnd: optionalNumber,
     deletedAt: optionalNumber,
   },
   /** Positionen aus dem Plan und dem Vorrat haben die ID `<Liste>~<Lebensmittel>~<Einheitengruppe>`. */
@@ -151,6 +162,8 @@ export const tablesSchema = {
      * zum Kaufen (0 = alles da). Leer = kein Abzug.
      */
     stockAmount: optionalNumber,
+    /** Von der Bestellung bei REWE abgehakt; „Rückgängig“ hakt nur diese wieder an. */
+    reweOrdered: { type: 'boolean', default: false },
     createdAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,
   },

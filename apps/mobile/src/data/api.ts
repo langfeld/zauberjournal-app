@@ -12,6 +12,7 @@ import {
   type ReweMatchResult,
   type ReweOrder,
   type ReweOrderRequest,
+  type RewePlacement,
   type ReweProduct,
 } from '@zauberjournal/core';
 
@@ -242,6 +243,24 @@ export async function sendReweOrder(credentials: Credentials, order: ReweOrderRe
     body: order,
   });
   return result.order;
+}
+
+/**
+ * Übernimmt die gemeldete Bestellung für dieses Gerät, damit nicht zwei Handys gleichzeitig abschließen. `null`,
+ * wenn ein anderes Gerät sie schon übernimmt oder die Meldung nicht mehr gilt.
+ */
+export async function claimReweOrder(credentials: Credentials, order: ReweOrder, placement: RewePlacement): Promise<ReweOrder | null> {
+  try {
+    const result = await request<{ order: ReweOrder }>(credentials.serverUrl, '/api/rewe/order/claim', {
+      method: 'POST',
+      token: credentials.token,
+      body: { order: order.createdAt, reportedAt: placement.reportedAt },
+    });
+    return result.order;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) return null;
+    throw error;
+  }
 }
 
 /** Schlägt Nährwerte nach: Open Food Facts für REWE-Produkte, sonst der BLS; die KI ordnet zu, das dauert etwas. */

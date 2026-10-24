@@ -12,7 +12,7 @@ import { readMealsRequest, type MealClassifier } from './meal-classifier.ts';
 import { readLookupRequest, type Nutrition } from './nutrition.ts';
 import { isJpeg, isPhotoId, type PhotoStore } from './photos.ts';
 import { isMarketId, matchItems, readMatchRequest, ReweError, type ReweClient } from './rewe.ts';
-import { loadUserscript, readOrderRequest, readOrderResults, type OrderStore } from './rewe-order.ts';
+import { loadUserscript, readOrderRequest, readOrderResults, readPlacementReport, type OrderStore } from './rewe-order.ts';
 
 type Env = { Variables: { device: Device } };
 
@@ -251,6 +251,26 @@ export function createApp({
     if (!body) return c.json({ error: 'Die Rückmeldung ist unvollständig.' }, 400);
     const order = orders.report(body.order, body.results);
     if (!order) return c.json({ error: 'Dieser Auftrag ist nicht mehr aktuell.' }, 409);
+    return c.json({ order });
+  });
+
+  // Das Userscript meldet die Bestellung bei REWE; die App schließt den Einkauf damit ab.
+  app.post('/api/rewe/order/placed', requireDevice, async (c) => {
+    const body = readPlacementReport(await readBody(c));
+    if (!body) return c.json({ error: 'Die Meldung der Bestellung ist unvollständig.' }, 400);
+    const order = orders.place(body.order, body.report);
+    if (!order) return c.json({ error: 'Dieser Auftrag ist nicht mehr aktuell.' }, 409);
+    return c.json({ order });
+  });
+
+  // Nur ein Gerät übernimmt eine Meldung; die anderen bekommen das Ergebnis über den Sync.
+  app.post('/api/rewe/order/claim', requireDevice, async (c) => {
+    const body = await readBody(c);
+    if (typeof body.order !== 'number' || typeof body.reportedAt !== 'number') {
+      return c.json({ error: 'Welche Bestellung übernommen werden soll, fehlt.' }, 400);
+    }
+    const order = orders.claim(body.order, body.reportedAt, c.get('device').id);
+    if (!order) return c.json({ error: 'Diese Bestellung übernimmt schon ein anderes Gerät.' }, 409);
     return c.json({ order });
   });
 

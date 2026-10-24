@@ -18,6 +18,10 @@ type ReweListCardProps = {
   onMatch: () => void;
   /** Auftrag fürs Userscript zu dieser Liste, falls es einen gibt. */
   order: ReweOrder | null;
+  /** Hat das Userscript die Bestellung gemeldet, steht hier, warum die Liste noch offen ist. */
+  placedHint: string;
+  /** Abholfenster der gemeldeten Bestellung, z. B. „morgen, 17:00–18:00 Uhr“; leer = unbekannt. */
+  pickup: string;
   sending: boolean;
   onSend: () => void;
 };
@@ -39,14 +43,28 @@ function Header({ subtitle, children }: { subtitle: string; children?: ReactNode
   );
 }
 
+type CartStatusProps = Pick<ReweListCardProps, 'order' | 'placedHint' | 'pickup' | 'sending' | 'onSend'>;
+
 /** Wie weit das Userscript mit dem Warenkorb ist. */
-function CartStatus({ order, sending, onSend }: { order: ReweOrder | null; sending: boolean; onSend: () => void }) {
+function CartStatus({ order, placedHint, pickup, sending, onSend }: CartStatusProps) {
   if (!order) {
     return (
       <View style={styles.cart}>
         <Button small icon="add_shopping_cart" title="In den Warenkorb" disabled={sending} onPress={onSend} />
         <Hint>Das Userscript legt die Produkte danach auf rewe.de in den Warenkorb.</Hint>
         <Button small variant="ghost" icon="link" title="Userscript einrichten" onPress={() => router.push('/shopping/userscript')} />
+      </View>
+    );
+  }
+  if (order.placed) {
+    return (
+      <View style={styles.cart}>
+        <View style={styles.cartRow}>
+          <Icon name="shopping_bag" size={20} color={colors.primary} />
+          <Text style={styles.cartTitle}>{pickup ? `Bestellt, Abholung ${pickup}` : 'Bei REWE bestellt'}</Text>
+        </View>
+        <Hint>{placedHint}</Hint>
+        <Button small variant="secondary" icon="add_shopping_cart" title="Neu schicken" disabled={sending} onPress={onSend} />
       </View>
     );
   }
@@ -66,8 +84,8 @@ function CartStatus({ order, sending, onSend }: { order: ReweOrder | null; sendi
         {counts.pending > 0
           ? 'Auf rewe.de den grünen Knopf des Userscripts antippen.'
           : counts.failed > 0
-            ? 'Was nicht geklappt hat, bitte auf rewe.de selbst suchen.'
-            : 'Alles liegt im Warenkorb.'}
+            ? 'Was nicht geklappt hat, bitte auf rewe.de selbst suchen. Nach dem Bestellen schließt die App den Einkauf ab.'
+            : 'Alles liegt im Warenkorb. Nach dem Bestellen auf rewe.de schließt die App den Einkauf von selbst ab.'}
       </Hint>
       <Button small variant="secondary" icon="add_shopping_cart" title="Neu schicken" disabled={sending} onPress={onSend} />
     </View>
@@ -75,7 +93,7 @@ function CartStatus({ order, sending, onSend }: { order: ReweOrder | null; sendi
 }
 
 /** Produkte und Preis bei REWE für alles, was noch zu kaufen ist; Abgleich und Warenkorb. */
-export function ReweListCard({ summary, settings, progress, error, onMatch, order, sending, onSend }: ReweListCardProps) {
+export function ReweListCard({ summary, settings, progress, error, onMatch, order, placedHint, pickup, sending, onSend }: ReweListCardProps) {
   if (!settings.marketId) {
     return (
       <Card>
@@ -122,7 +140,9 @@ export function ReweListCard({ summary, settings, progress, error, onMatch, orde
             title={matched ? 'Neu abgleichen' : 'Produkte suchen'}
             onPress={onMatch}
           />
-          {summary.products > 0 ? <CartStatus order={order} sending={sending} onSend={onSend} /> : null}
+          {summary.products > 0 ? (
+            <CartStatus order={order} placedHint={placedHint} pickup={pickup} sending={sending} onSend={onSend} />
+          ) : null}
         </>
       ) : null}
       {error ? <Notice tone="danger">{error}</Notice> : null}

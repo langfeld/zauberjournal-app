@@ -284,11 +284,42 @@ export type ReweOrderProduct = {
 /** Was die App an den Server schickt. */
 export type ReweOrderRequest = { listId: string; listName: string; marketId: string; products: ReweOrderProduct[] };
 
+/**
+ * Eine Position der Bestellung bei REWE; `quantity` zählt Packungen, bei Ware nach Gewicht auch angebrochene (212 g
+ * von „ca. 100 g“ sind 2,12). `price` ist der Preis einer Packung in Cent.
+ */
+export type RewePlacedItem = { productId: string; name: string; quantity: number; price: number };
+
+/**
+ * Was das Userscript nach dem Bestellen auf rewe.de meldet. Zeitpunkte in Millisekunden, `null` = unbekannt.
+ * Ohne `items` (die Bestelldaten ließen sich nicht lesen) gilt, was das Userscript in den Warenkorb gelegt hat.
+ */
+export type RewePlacementReport = {
+  /** Bestellnummer bei REWE */
+  orderId: string;
+  orderedAt: number | null;
+  pickupStart: number | null;
+  pickupEnd: number | null;
+  /** Bestellwert in Cent */
+  total: number | null;
+  items: RewePlacedItem[] | null;
+};
+
+/** Die Bestellung bei REWE zum Auftrag. */
+export type RewePlacement = RewePlacementReport & {
+  /** Wann die Meldung kam; meldet das Userscript eine geänderte Bestellung, übernimmt die App sie noch einmal. */
+  reportedAt: number;
+  /** Gerät, das die Meldung übernimmt; leer = noch keins. Der Server vergibt das an genau eins. */
+  claimedBy: string;
+};
+
 /** Der Auftrag auf dem Server, mit Rückmeldung des Userscripts je Produkt. */
 export type ReweOrder = Omit<ReweOrderRequest, 'products'> & {
   createdAt: number;
   updatedAt: number;
   products: (ReweOrderProduct & { status: ReweOrderStatus; message: string })[];
+  /** Die Bestellung bei REWE, sobald das Userscript sie meldet; `null` = noch nicht bestellt. */
+  placed: RewePlacement | null;
 };
 
 /** Auftrag aus allem, was noch zu kaufen ist und ein REWE-Produkt hat. */

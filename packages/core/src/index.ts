@@ -35,6 +35,7 @@ export * from './plan.ts';
 export { formatAmount, formatNumber, roundScaledAmount, scaleAmount } from './quantity.ts';
 export * from './recipe.ts';
 export * from './rewe.ts';
+export * from './rewe-purchase.ts';
 export * from './rewe-shopping.ts';
 export {
   IMPORT_LIMITS,

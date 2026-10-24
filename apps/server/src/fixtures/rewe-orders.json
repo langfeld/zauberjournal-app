@@ -1,0 +1,212 @@
+{
+  "list": {
+    "orders": [
+      {
+        "orderDate": "202610232359",
+        "orderType": "PICKUP",
+        "orderValue": 3916,
+        "status": "pickedUp",
+        "isOpen": false,
+        "orderId": "B-AB1-CD2-EF3",
+        "subOrders": [
+          {
+            "status": "pickedUp",
+            "isOpen": false,
+            "handoverTime": "202610241337",
+            "timeSlot": {
+              "firstSlotDate": "202610241300",
+              "lastSlotDate": "202610241530"
+            }
+          }
+        ]
+      },
+      {
+        "orderDate": "202610041617",
+        "orderType": "PICKUP",
+        "orderValue": 2477,
+        "status": "pickedUp",
+        "isOpen": false,
+        "orderId": "B-GH4-JK5-LM6",
+        "subOrders": [
+          {
+            "status": "pickedUp",
+            "isOpen": false,
+            "handoverTime": "202610051425",
+            "timeSlot": {
+              "firstSlotDate": "202610051300",
+              "lastSlotDate": "202610051530"
+            }
+          }
+        ]
+      },
+      {
+        "orderDate": "202609281900",
+        "orderType": "PICKUP",
+        "orderValue": 5437,
+        "status": "pickedUp",
+        "isOpen": false,
+        "orderId": "B-NP7-QR8-ST9",
+        "subOrders": [
+          {
+            "status": "pickedUp",
+            "isOpen": false,
+            "handoverTime": "202609291248",
+            "timeSlot": {
+              "firstSlotDate": "202609291300",
+              "lastSlotDate": "202609291530"
+            }
+          }
+        ]
+      }
+    ],
+    "paging": {
+      "objectCount": 22,
+      "objectsPerPage": 20,
+      "currentPage": 1,
+      "pageCount": 2
+    }
+  },
+  "detail": {
+    "orderDate": "202610232359",
+    "creationDate": "202610232359",
+    "orderValue": 3916,
+    "articlesPrice": 3716,
+    "status": "pickedUp",
+    "orderId": "B-AB1-CD2-EF3",
+    "subOrders": [
+      {
+        "status": "pickedUp",
+        "isOpen": false,
+        "handoverTime": "202610241337",
+        "timeSlot": {
+          "firstSlotDate": "202610241300",
+          "lastSlotDate": "202610241530"
+        },
+        "lineItems": [
+          {
+            "sequenceNumber": 25,
+            "lineItemType": "REFUND",
+            "productId": "1234567",
+            "title": "Enthaltene Pfandbeträge",
+            "quantity": 1,
+            "price": 0,
+            "totalPrice": 0,
+            "actualAmount": null,
+            "actualTotalPrice": null,
+            "actualUnitPrice": null,
+            "gtin": null
+          },
+          {
+            "sequenceNumber": 1,
+            "lineItemType": "TIMESLOT",
+            "productId": "1105811",
+            "title": "TimeSlot",
+            "quantity": 1,
+            "price": 200,
+            "totalPrice": 200,
+            "actualAmount": 1,
+            "actualTotalPrice": 0,
+            "actualUnitPrice": 0,
+            "gtin": null
+          },
+          {
+            "sequenceNumber": 3,
+            "lineItemType": "PRODUCT",
+            "productId": "483303",
+            "title": "Salatgurke 1 Stück",
+            "quantity": 1,
+            "price": 99,
+            "totalPrice": 99,
+            "actualAmount": 1,
+            "actualTotalPrice": 99,
+            "actualUnitPrice": 99,
+            "volumeCode": "STK",
+            "weightPerPiece": null,
+            "pricePerKilo": null,
+            "gtin": "8436000259209"
+          },
+          {
+            "sequenceNumber": 6,
+            "lineItemType": "PRODUCT",
+            "productId": "8831096",
+            "title": "REWE Bio Mini Mozzarella 125g",
+            "quantity": 1,
+            "price": 149,
+            "totalPrice": 149,
+            "actualAmount": 1,
+            "actualTotalPrice": 149,
+            "actualUnitPrice": 149,
+            "volumeCode": "STK",
+            "weightPerPiece": null,
+            "pricePerKilo": null,
+            "gtin": "4337256505871"
+          },
+          {
+            "sequenceNumber": 7,
+            "lineItemType": "PRODUCT",
+            "productId": "7084509",
+            "title": "Blattspinat",
+            "quantity": 1,
+            "price": 179,
+            "totalPrice": 179,
+            "actualAmount": 0,
+            "actualTotalPrice": 0,
+            "actualUnitPrice": 0,
+            "volumeCode": "STK",
+            "weightPerPiece": null,
+            "pricePerKilo": null,
+            "gtin": "28325109"
+          },
+          {
+            "sequenceNumber": 8,
+            "lineItemType": "PRODUCT",
+            "productId": "8967097",
+            "title": "Marka Hellas Halloumi 225g",
+            "quantity": 3,
+            "price": 279,
+            "totalPrice": 837,
+            "actualAmount": 3,
+            "actualTotalPrice": 837,
+            "actualUnitPrice": 279,
+            "volumeCode": "STK",
+            "weightPerPiece": null,
+            "pricePerKilo": null,
+            "gtin": "8052879380747"
+          },
+          {
+            "sequenceNumber": 15,
+            "lineItemType": "PRODUCT",
+            "productId": "475360",
+            "title": "Rispentomaten ca. 100g",
+            "quantity": 1,
+            "price": 25,
+            "totalPrice": 25,
+            "actualAmount": 212,
+            "actualTotalPrice": 53,
+            "actualUnitPrice": 249,
+            "volumeCode": "KGG",
+            "weightPerPiece": 100,
+            "pricePerKilo": 249,
+            "gtin": "20475369"
+          },
+          {
+            "sequenceNumber": 16,
+            "lineItemType": "PRODUCT",
+            "productId": "195634",
+            "title": "Kiwi grün 1 Stück",
+            "quantity": 2,
+            "price": 49,
+            "totalPrice": 98,
+            "actualAmount": 2,
+            "actualTotalPrice": 98,
+            "actualUnitPrice": 49,
+            "volumeCode": "STK",
+            "weightPerPiece": null,
+            "pricePerKilo": null,
+            "gtin": "9420514500000"
+          }
+        ]
+      }
+    ]
+  }
+}

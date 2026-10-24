@@ -217,6 +217,59 @@ describe('API', () => {
     expect(await (await get('/api/rewe/order', token)).json()).toEqual({ order: null });
   });
 
+  it('nimmt die Bestellung bei REWE an und lässt sie nur ein Gerät übernehmen', async () => {
+    const { household, app, get, post } = setUp();
+    const first = household.setup(household.ensureSetupCode()!, 'Handy A')!;
+    const second = household.pair(household.createInvite(null).code, 'Handy B')!;
+    const script = household.pair(household.createInvite(null).code, 'REWE-Userscript (PC)')!;
+    const product = { productId: '9578896', listingId: 'l', name: 'Zwiebeln 1,5kg', imageUrl: '', packs: 1, price: 159, itemIds: ['a'] };
+    const send = () =>
+      app.request('/api/rewe/order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${first.token}` },
+        body: JSON.stringify({ listId: 'l', listName: 'Einkauf Mo 5.10.', marketId: '1234567', products: [product] }),
+      });
+    await send();
+
+    const report = {
+      orderId: '4711',
+      orderedAt: 2000,
+      pickupStart: 3000,
+      pickupEnd: 4000,
+      total: 159,
+      items: [{ productId: '9578896', name: 'Zwiebeln 1,5kg', quantity: 1, price: 159 }],
+    };
+    const place = (body: object) => post('/api/rewe/order/placed', { order: 1000, ...body }, script.token);
+    expect((await place({ ...report, items: [{ productId: '9578896', name: '', quantity: 0, price: 159 }] })).status).toBe(400);
+    expect((await place({ ...report, pickupStart: 'morgen' })).status).toBe(400);
+    expect((await place({ ...report, orderId: '' })).status).toBe(400);
+    expect((await place({ ...report, order: 999 })).status).toBe(409);
+
+    const placed = (await (await place(report)).json()) as { order: ReweOrder };
+    expect(placed.order.placed).toEqual({ ...report, reportedAt: 1000, claimedBy: '' });
+    // Dieselbe Meldung noch einmal ändert nichts.
+    expect(((await (await place(report)).json()) as { order: ReweOrder }).order.placed?.reportedAt).toBe(1000);
+
+    const claim = (token: string, reportedAt = 1000) => post('/api/rewe/order/claim', { order: 1000, reportedAt }, token);
+    expect((await post('/api/rewe/order/claim', { order: 1000 }, first.token)).status).toBe(400);
+    expect((await claim(first.token)).status).toBe(200);
+    // Fragt dasselbe Gerät noch einmal, z. B. weil die Antwort verloren ging, bekommt es sie wieder.
+    expect((await claim(first.token)).status).toBe(200);
+    expect((await claim(second.token)).status).toBe(409);
+    const current = (await (await get('/api/rewe/order', second.token)).json()) as { order: ReweOrder };
+    expect(current.order.placed?.claimedBy).toBe(first.deviceId);
+
+    // Eine geänderte Bestellung (hier ohne lesbare Positionen) bekommt einen neuen Zeitpunkt und ist wieder frei.
+    const changed = (await (await place({ ...report, items: undefined })).json()) as { order: ReweOrder };
+    expect(changed.order.placed).toMatchObject({ items: null, reportedAt: 1001, claimedBy: '' });
+    expect((await claim(second.token)).status).toBe(409);
+    expect((await claim(second.token, 1001)).status).toBe(200);
+
+    // Ein neuer Auftrag fängt ohne Bestellung an.
+    const next = (await (await send()).json()) as { order: ReweOrder };
+    expect(next.order.placed).toBeNull();
+  });
+
   it('schlägt Nährwerte nach und sucht im BLS', async () => {
     const { household, get, post } = setUp();
     const { token } = household.setup(household.ensureSetupCode()!, 'Handy A')!;

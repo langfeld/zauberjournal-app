@@ -6,11 +6,16 @@ import {
   completeShoppingList,
   createId,
   createShoppingList,
+  formatPickup,
   formatShortDate,
   listOpenShoppingLists,
   purchaseSuggestions,
+  recentReweOrder,
   removeShoppingItem,
+  reweOrderExtras,
+  reweOrderFits,
   syncShoppingList,
+  undoReweOrder,
   updateFood,
   type ReweOrderStatus,
   type RowWrite,
@@ -24,6 +29,7 @@ import { CATEGORY_STYLES } from '@/components/category-style';
 import { Icon } from '@/components/icon';
 import { RecipeCover } from '@/components/recipe-photo';
 import { ReweListCard } from '@/components/rewe-list-card';
+import { ReweOrderedCard } from '@/components/rewe-ordered-card';
 import { ShoppingItemRow } from '@/components/shopping-item-row';
 import { AddField, Button, Card, Chip, EmptyState, Hint, IconCircle, ProgressBar } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
@@ -77,15 +83,43 @@ export default function ShoppingScreen() {
     for (const product of order?.products ?? []) for (const id of product.itemIds) statuses.set(id, product.status);
     return statuses;
   }, [order]);
+  // Ist die Liste trotz gemeldeter Bestellung offen, steht das in der REWE-Karte.
+  const placedHint = useMemo(() => {
+    if (!order?.placed) return '';
+    if (!reweOrderFits(tables, order)) return 'Die gemeldete Bestellung enthält nichts von dieser Liste. Abschließen geht von Hand.';
+    if (tables.shoppingLists[order.listId]?.reweReportedAt === order.placed.reportedAt) {
+      return 'Die Übernahme ist zurückgenommen. Abschließen geht von Hand.';
+    }
+    return 'Die App schließt den Einkauf gleich ab.';
+  }, [order, tables]);
+
+  // Nach der Bestellung bei REWE, bis zum Tag der Abholung
+  const recent = useMemo(() => recentReweOrder(tables, today), [tables, today]);
+  // Spontankäufe kennt nur der Auftrag auf dem Server; gilt er noch für die bestellte Liste, stehen sie dabei.
+  const extras = useMemo(
+    () => (recent && reweOrder.order?.listId === recent.listId ? reweOrderExtras(tables, reweOrder.order) : []),
+    [recent, reweOrder.order, tables],
+  );
 
   const write = (writes: RowWrite[]) => {
     if (store && writes.length > 0) applyWrites(store, writes);
   };
 
+  const undoOrder = async () => {
+    if (!recent) return;
+    const message = 'Die Liste ist dann wieder offen, und die Buchungen im Vorrat entfallen. Bei REWE bleibt die Bestellung bestehen.';
+    if (!(await confirm('Übernahme rückgängig machen?', message, 'Rückgängig'))) return;
+    write(undoReweOrder(tables, recent.listId, Date.now()));
+  };
+  const orderedCard = recent ? (
+    <ReweOrderedCard summary={recent} extras={extras} today={today} onUndo={() => void undoOrder()} />
+  ) : null;
+
   if (!view) {
     return (
       <ScrollView contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: 'Einkauf' }} />
+        {orderedCard}
         <EmptyState icon="shopping_cart" title="Keine offene Einkaufsliste">
           Wähle geplante Gerichte aus; die Zutaten werden zusammengerechnet und nach Warengruppen sortiert.
         </EmptyState>
@@ -143,6 +177,8 @@ export default function ShoppingScreen() {
         </View>
       ) : null}
 
+      {orderedCard}
+
       <Card>
         <View style={styles.progressRow}>
           <Text style={styles.progressTitle}>
@@ -182,6 +218,8 @@ export default function ShoppingScreen() {
           error={rewe.error ?? reweOrder.error}
           onMatch={() => void rewe.run(tables, view.id)}
           order={order}
+          placedHint={placedHint}
+          pickup={order?.placed ? formatPickup(order.placed.pickupStart, order.placed.pickupEnd, today) : ''}
           sending={reweOrder.sending}
           onSend={() => void sendOrder()}
         />
