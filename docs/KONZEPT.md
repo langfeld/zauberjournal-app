@@ -199,6 +199,7 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Fehlendes** kommt auf die neueste andere offene Liste, sonst auf eine neue; „Vorrat prüfen“ und Nachkäufe für „immer im Haus“ nicht, die ergeben sich wieder von selbst.
   - **Sicher:** Steht nichts von der Liste in der Bestellung, schließt die App nicht ab. Von Hand abgeschlossene Listen bleiben, wie sie sind. Eine geänderte Bestellung (neue Meldung) gleicht alles an. Nur ein Gerät übernimmt eine Meldung; das vergibt der Server.
 - **Abbuchen (M6):** Ist der Tag eines eingekauften Gerichts vorbei, gilt es als gekocht und seine Zutaten gehen ab; „gekocht“ lässt sich auch selbst wählen. Gebucht wird beim Setzen, also immer nach dem Einkauf. Bei Stück wird auf ganze Stück aufgerundet (eine angebrochene Dose kommt nicht zurück). Wer den Status zurücksetzt oder den Eintrag entfernt, nimmt die Abbuchung zurück. Für Gekochtes braucht eine offene Liste nichts mehr, sonst zählte der Bedarf doppelt.
+- **Aufgebraucht (November 2026):** Im Vorrat lässt sich jede Zeile nach links oder rechts wischen, beide Richtungen tun dasselbe. Mit Menge geht der Bestand per Korrektur auf null: Was nicht immer im Haus sein soll, gleitet hinaus und verschwindet aus dem Vorrat, der Rest bleibt als „leer“ stehen und kommt auf die Liste. Ohne Menge geht, was immer im Haus sein soll, auf „nachkaufen“. Eine Meldung bietet „Rückgängig“; das löscht die Korrektur wieder. Leeres lässt sich nicht wischen. Ab gut einem Drittel der Breite färbt sich das Band hinter der Zeile kräftig und das Handy vibriert kurz; dann löst Loslassen aus, ein schneller Wisch auch früher.
 - **Nährwerte (M6):** Menge in Gramm × Wert je 100 g, im Plan für jede Person passend zu ihren Portionen und Optionen, im Rezept je Portion (mit Wahlkomponente je Option der ersten Gruppe).
   - **Gramm:** feste Gewichte für g/kg, ml/l (Gramm = Milliliter), EL = 15 g, TL = 5 g, Prise, Handvoll usw.; für Stück, Dose, Zehe, Bund usw. das Stückgewicht des Lebensmittels. Zutaten ohne Menge („Salz“) zählen nicht, bei Spannen zählt die Mitte.
   - **Lücken:** Was sich nicht umrechnen lässt oder keine Werte hat, steht als „Ohne Werte“ da. Fehlt bei einer Zutat nur ein einzelner Wert, ist die Summe eine Untergrenze und trägt ein „≥“.
@@ -381,6 +382,11 @@ Entschieden bei der Bestellmeldung (24. Oktober 2026):
 - **Fehlendes auf die nächste Liste** statt die Liste offen zu lassen: Der bestellte Teil ist erledigt, die nächste Liste fängt mit dem Rest an.
 - **Vorrat ab der Abholung:** Bestellt ist noch nicht im Haus; gebucht wird zum Beginn des Abholfensters, damit Frisches nicht zu früh abläuft.
 - **Die App rechnet, der Server vergibt:** Den Abschluss rechnet die App mit derselben Logik wie beim Abschließen von Hand. Der Server merkt sich nur die Meldung und lässt genau ein Gerät übernehmen.
+
+Entschieden beim Wischen im Vorrat (3. November 2026):
+- **Aufgebraucht als Korrektur auf null,** ohne eigenen Grund für die Buchung: Für den Bestand ist es dasselbe wie „Bestand neu eintragen“ mit 0. „Rückgängig“ löscht die Korrektur, statt gegenzubuchen.
+- **Ohne Rückfrage, mit „Rückgängig“:** Wie beim Einplanen per langem Drücken; ein versehentlicher Wisch ist mit einem Tipp zurückgenommen.
+- **Responder statt Gesten-Bibliothek,** wie in der Monatsansicht. Das Band hinter der Zeile gibt es nur während des Wischens, damit die Karte in Ruhe aussieht wie vorher.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.

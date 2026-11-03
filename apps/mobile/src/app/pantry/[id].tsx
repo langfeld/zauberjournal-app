@@ -198,7 +198,7 @@ export default function FoodScreen() {
           }
         />
         {food.stockUnit && level > 0 ? (
-          <Button variant="secondary" small icon="remove_shopping_cart" title="Aufgebraucht" onPress={() => saveStock(0, Date.now())} />
+          <Button variant="secondary" small icon="no_food" title="Aufgebraucht" onPress={() => saveStock(0, Date.now())} />
         ) : null}
       </Card>
 

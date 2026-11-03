@@ -3,6 +3,7 @@ import {
   createId,
   FOOD_CATEGORIES,
   formatStock,
+  markUsedUp,
   pantryOverview,
   updateFood,
   type FoodStock,
@@ -10,17 +11,19 @@ import {
   type RowWrite,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
 import { HeaderButton, HeaderRight } from '@/components/header';
 import { Icon } from '@/components/icon';
+import { Snackbar, type SnackbarMessage } from '@/components/snackbar';
+import { SwipeRow } from '@/components/swipe-row';
 import { SyncBadge } from '@/components/sync-status';
 import { AddField, Card, EmptyState, Hint, IconCircle, Segmented, Tag, type SegmentOption } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
-import { useAppTables, useToday } from '@/data/tables';
+import { readAppTables, useAppTables, useToday } from '@/data/tables';
 import { colors, fonts, spacing, tones } from '@/theme';
 
 const STOCK_OPTIONS: SegmentOption<FoodStock>[] = [
@@ -54,6 +57,8 @@ export default function PantryScreen() {
   const tables = useAppTables();
   const today = useToday();
   const [text, setText] = useState('');
+  const [message, setMessage] = useState<SnackbarMessage | null>(null);
+  const hideMessage = useCallback(() => setMessage(null), []);
   const entries = useMemo(() => pantryOverview(tables, today), [tables, today]);
   const toBuy = entries.filter((entry) => entry.empty).length;
 
@@ -66,70 +71,99 @@ export default function PantryScreen() {
     write(result.writes);
     setText('');
   };
+  /** Gewischt: Der Bestand geht auf null; was immer im Haus sein soll, kommt auf die Liste. */
+  const consume = (entry: PantryEntry, now: number) => {
+    if (!store) return;
+    // Frisch gelesen: Ausgelöst wird erst, wenn die Zeile hinausgeglitten ist.
+    const result = markUsedUp(readAppTables(store), entry.foodId, now, createId);
+    if (!result) return;
+    applyWrites(store, result.writes);
+    setMessage({
+      text: `„${entry.name}“ aufgebraucht${entry.staple ? ', kommt auf die Liste' : ''}`,
+      action: { label: 'Rückgängig', onPress: () => applyWrites(store, result.undo) },
+    });
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Stack.Screen
-        options={{
-          title: 'Vorrat',
-          headerRight: () => (
-            <HeaderRight>
-              <HeaderButton icon="category" title="Lebensmittel" onPress={() => router.push('/pantry/foods')} />
-              <SyncBadge />
-            </HeaderRight>
-          ),
-        }}
-      />
-      <Hint>
-        Was ihr daheim habt: Gekauftes kommt beim Abschließen der Einkaufsliste dazu, Gekochtes geht ab, Frisches läuft
-        nach ein paar Tagen ab. Was immer im Haus sein soll (Haus-Symbol), kommt auf die Liste, sobald es leer ist.
-      </Hint>
-      <AddField
-        accessibilityLabel="Zum Vorrat hinzufügen"
-        value={text}
-        onChangeText={setText}
-        onAdd={() => add(Date.now())}
-        placeholder="Hinzufügen, z. B. 1 kg Reis oder Salz"
-      />
-      {toBuy > 0 ? <Tag icon="add_shopping_cart" label={`${toBuy} zum Nachkaufen`} tone={tones.terracotta} /> : null}
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Stack.Screen
+          options={{
+            title: 'Vorrat',
+            headerRight: () => (
+              <HeaderRight>
+                <HeaderButton icon="category" title="Lebensmittel" onPress={() => router.push('/pantry/foods')} />
+                <SyncBadge />
+              </HeaderRight>
+            ),
+          }}
+        />
+        <Hint>
+          Was ihr daheim habt: Gekauftes kommt beim Abschließen der Einkaufsliste dazu, Gekochtes geht ab, Frisches läuft
+          nach ein paar Tagen ab. Was immer im Haus sein soll (Haus-Symbol), kommt auf die Liste, sobald es leer ist. Ist
+          etwas aufgebraucht, wischt es nach links oder rechts.
+        </Hint>
+        <AddField
+          accessibilityLabel="Zum Vorrat hinzufügen"
+          value={text}
+          onChangeText={setText}
+          onAdd={() => add(Date.now())}
+          placeholder="Hinzufügen, z. B. 1 kg Reis oder Salz"
+        />
+        {toBuy > 0 ? <Tag icon="add_shopping_cart" label={`${toBuy} zum Nachkaufen`} tone={tones.terracotta} /> : null}
 
-      {entries.length === 0 ? (
-        <EmptyState icon="kitchen" title="Noch nichts im Vorrat">
-          Nach dem nächsten Einkauf steht hier, was ihr gekauft habt. Was immer im Haus sein soll, z. B. Salz oder Öl, könnt
-          ihr oben eintragen.
-        </EmptyState>
-      ) : null}
-      {FOOD_CATEGORIES.map((category) => {
-        const foods = entries.filter((entry) => entry.category === category.id);
-        if (foods.length === 0) return null;
-        const style = CATEGORY_STYLES[category.id];
-        return (
-          <Card key={category.id} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <IconCircle icon={style.icon} tone={style.tone} size={34} square />
-              <Text style={styles.sectionTitle}>{category.label}</Text>
-            </View>
-            {foods.map((entry, index) => (
-              <View key={entry.foodId} style={[styles.row, index > 0 && styles.divider]}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${entry.name}${entry.staple ? ', immer im Haus' : ''}`}
-                  onPress={() => router.push(`/pantry/${encodeURIComponent(entry.foodId)}`)}
-                  style={styles.name}>
-                  <Text style={styles.foodName}>{entry.name}</Text>
-                  {entry.staple ? <Icon name="home" size={15} color={colors.textMuted} /> : null}
-                </Pressable>
-                <EntryState entry={entry} onStock={(stock) => write(updateFood(tables, entry.foodId, { stock }))} />
+        {entries.length === 0 ? (
+          <EmptyState icon="kitchen" title="Noch nichts im Vorrat">
+            Nach dem nächsten Einkauf steht hier, was ihr gekauft habt. Was immer im Haus sein soll, z. B. Salz oder Öl,
+            könnt ihr oben eintragen.
+          </EmptyState>
+        ) : null}
+        {FOOD_CATEGORIES.map((category) => {
+          const foods = entries.filter((entry) => entry.category === category.id);
+          if (foods.length === 0) return null;
+          const style = CATEGORY_STYLES[category.id];
+          return (
+            <Card key={category.id} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <IconCircle icon={style.icon} tone={style.tone} size={34} square />
+                <Text style={styles.sectionTitle}>{category.label}</Text>
               </View>
-            ))}
-          </Card>
-        );
-      })}
-    </ScrollView>
+              {foods.map((entry, index) => (
+                // Was nicht immer im Haus sein soll, verschwindet aufgebraucht aus dem Vorrat.
+                <SwipeRow
+                  key={entry.foodId}
+                  label="Aufgebraucht"
+                  icon="no_food"
+                  inset={spacing.lg}
+                  disabled={entry.empty}
+                  leaves={!entry.staple}
+                  onSwipe={() => consume(entry, Date.now())}>
+                  <View style={[styles.row, index > 0 && styles.divider]}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${entry.name}${entry.staple ? ', immer im Haus' : ''}`}
+                      accessibilityActions={entry.empty ? undefined : [{ name: 'usedUp', label: 'Aufgebraucht' }]}
+                      onAccessibilityAction={(event) => event.nativeEvent.actionName === 'usedUp' && consume(entry, Date.now())}
+                      onPress={() => router.push(`/pantry/${encodeURIComponent(entry.foodId)}`)}
+                      style={styles.name}>
+                      <Text style={styles.foodName}>{entry.name}</Text>
+                      {entry.staple ? <Icon name="home" size={15} color={colors.textMuted} /> : null}
+                    </Pressable>
+                    <EntryState entry={entry} onStock={(stock) => write(updateFood(tables, entry.foodId, { stock }))} />
+                  </View>
+                </SwipeRow>
+              ))}
+            </Card>
+          );
+        })}
+      </ScrollView>
+      <Snackbar message={message} onHide={hideMessage} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
   section: { paddingVertical: spacing.md, gap: spacing.xs },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingBottom: spacing.xs },

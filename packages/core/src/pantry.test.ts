@@ -6,6 +6,7 @@ import {
   addToPantry,
   correctStock,
   formatStock,
+  markUsedUp,
   pantryOverview,
   parseStockAmount,
   setStaple,
@@ -162,6 +163,38 @@ describe('Vorrat', () => {
     expect(overview.find((entry) => entry.name === 'Reis')).toMatchObject({ level: 500, unit: 'g', staple: false, empty: false, daysLeft: null });
     expect(overview.find((entry) => entry.name === 'Salz')).toMatchObject({ level: null, staple: true, empty: false });
     expect(overview.find((entry) => entry.name === 'Olivenöl')).toMatchObject({ level: 0, staple: true, empty: true });
+  });
+
+  it('bucht Aufgebrauchtes auf null und nimmt es mit „Rückgängig“ zurück', () => {
+    const { test, ids, foodId, stock, level } = setUp();
+    stock('Reis', 'g', 500);
+    stock('Olivenöl', 'ml', 250);
+    test.apply(setStaple(test.tables(), foodId('Olivenöl'), true));
+    const salt = ensureFood(test.tables(), 'Salz')!;
+    test.apply([...salt.writes, ...setStaple(test.tables(), salt.foodId, true)]);
+    const useUp = (name: string) => markUsedUp(test.tables(), foodId(name), at(MONDAY, 10), ids);
+    const entry = (name: string) => pantryOverview(test.tables(), MONDAY).find((found) => found.name === name);
+
+    // Mit Menge: Der Bestand geht auf null; Reis verschwindet aus dem Vorrat, Olivenöl ist leer und wird nachgekauft.
+    const rice = useUp('Reis')!;
+    test.apply(rice.writes);
+    expect(level('Reis')).toBe(0);
+    expect(entry('Reis')).toBeUndefined();
+    test.apply(useUp('Olivenöl')!.writes);
+    expect(entry('Olivenöl')).toMatchObject({ level: 0, empty: true });
+    // Ohne Menge: Was immer im Haus sein soll, steht danach auf „nachkaufen“.
+    const salted = useUp('Salz')!;
+    test.apply(salted.writes);
+    expect(entry('Salz')).toMatchObject({ stock: 'buy', empty: true });
+    // Was schon leer ist, lässt sich nicht noch einmal aufbrauchen.
+    expect([useUp('Reis'), useUp('Olivenöl'), useUp('Salz')]).toEqual([null, null, null]);
+
+    // Rückgängig: Die Korrektur ist gelöscht, der Bestand wieder da.
+    test.apply(rice.undo);
+    expect(level('Reis')).toBe(500);
+    expect(stockBookings(test.tables(), foodId('Reis')).map((booking) => booking.amount)).toEqual([500]);
+    test.apply(salted.undo);
+    expect(entry('Salz')).toMatchObject({ stock: 'have', empty: false });
   });
 
   it('nimmt „Hinzufügen“ mit Menge als Zugang, ohne Menge als „immer im Haus“', () => {

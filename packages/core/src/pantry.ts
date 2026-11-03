@@ -337,3 +337,28 @@ export function correctStock(
   }
   return writes;
 }
+
+/**
+ * „Aufgebraucht“, z. B. per Wischen im Vorrat: Mit Menge geht der Bestand per Korrektur auf null, ohne Menge kommt,
+ * was immer im Haus sein soll, auf „nachkaufen“. `undo` löscht die Korrektur bzw. setzt „da“ zurück.
+ * `null`, wenn nichts da ist.
+ */
+export function markUsedUp(
+  tables: PantryTables,
+  foodId: string,
+  now: number,
+  createId: () => string,
+): { writes: RowWrite[]; undo: RowWrite[] } | null {
+  const food = tables.foods[foodId];
+  if (!food || !isActive(food)) return null;
+  if (!food.stockUnit) {
+    if (food.stock !== 'have') return null;
+    return {
+      writes: [{ table: 'foods', rowId: foodId, cells: { stock: 'buy' } }],
+      undo: [{ table: 'foods', rowId: foodId, cells: { stock: 'have' } }],
+    };
+  }
+  const writes = correctStock(tables, foodId, 0, now, createId);
+  if (writes.length === 0) return null;
+  return { writes, undo: writes.map((write) => ({ table: write.table, rowId: write.rowId, cells: { deletedAt: now } })) };
+}

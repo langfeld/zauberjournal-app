@@ -59,6 +59,7 @@ const GLYPHS = {
   lunch_dining: 0xea61,
   menu_book: 0xea19,
   merge: 0xeb98,
+  no_food: 0xf1a7,
   nutrition: 0xe110,
   open_in_new: 0xe89e,
   person: 0xe7fd,
