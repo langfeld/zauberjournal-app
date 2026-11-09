@@ -31,6 +31,7 @@ import {
   completeShoppingList,
   createShoppingList,
   listOpenShoppingLists,
+  removeShoppingItem,
   syncShoppingList,
   type ShoppingItemView,
 } from './shopping.ts';
@@ -228,14 +229,15 @@ describe('Bestellung bei REWE übernehmen', () => {
     test.apply(applyReweOrder(test.tables(), order({ items: [line(onion, 3)] }), NOW));
     const restId = `${listId}~rest`;
     expect(items(restId).map((entry) => entry.name)).toEqual(['Knoblauch', 'Kokosmilch', 'Salz', 'Spülmittel']);
+    test.apply(removeShoppingItem(item('Salz', restId).id, NOW + 500));
 
-    // Kokosmilch kam noch dazu, die Zwiebeln flogen raus.
+    // Kokosmilch kam noch dazu, die Zwiebeln flogen raus. Salz bleibt weg, der Haushalt hat es entfernt.
     test.apply(applyReweOrder(test.tables(), order({ items: [line(coconutMilk, 1)] }, {}, 6000), NOW + 1000));
     expect(item('Kokosmilch').checked).toBe(true);
     expect(item('Zwiebeln')).toMatchObject({ checked: false });
     expect(level('Kokosmilch')).toBe(400);
     expect(level('Zwiebeln')).toBe(0);
-    expect(items(restId).map((entry) => entry.name)).toEqual(['Knoblauch', 'Zwiebeln', 'Salz', 'Spülmittel']);
+    expect(items(restId).map((entry) => entry.name)).toEqual(['Knoblauch', 'Zwiebeln', 'Spülmittel']);
     expect(test.tables().shoppingLists[listId]?.reweReportedAt).toBe(6000);
   });
 

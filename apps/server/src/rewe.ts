@@ -240,7 +240,9 @@ export function readMatchRequest(body: JsonObject): MatchRequest | null {
     const category = str(item.category) as FoodCategory;
     if (!id || !name || !FOOD_CATEGORY_IDS.includes(category)) return null;
     const amount = typeof item.amount === 'number' && Number.isFinite(item.amount) ? item.amount : null;
-    items.push({ id, need: { name, category, amount, unit: str(item.unit) }, preferred: readPreferred(item.preferred) });
+    const grams = num(item.gramsPerPiece);
+    const need = { name, category, amount, unit: str(item.unit), gramsPerPiece: grams > 0 ? grams : null };
+    items.push({ id, need, preferred: readPreferred(item.preferred) });
   }
   return { marketId, organic: body.organic === true, items };
 }

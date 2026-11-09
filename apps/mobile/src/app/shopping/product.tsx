@@ -1,16 +1,14 @@
 import {
   buildShoppingListView,
+  changeRewePacks,
   chooseReweProduct,
   confirmReweProduct,
   forgetReweFavorite,
   formatPrice,
   matchReweProducts,
   moveReweFavorite,
-  packsFor,
-  parsePackSize,
   reweFavoritesOf,
   reweSearchTerm,
-  setRewePacks,
   skipRewe,
   type ReweCandidate,
   type ReweFavorite,
@@ -201,6 +199,7 @@ export default function ReweProductScreen() {
   const unit = row?.unit ?? '';
   const listId = row?.listId ?? '';
   const foodId = row?.foodId ?? '';
+  const gramsPerPiece = tables.foodNutrition[foodId]?.gramsPerPiece ?? null;
   const marketId = settings.marketId;
 
   const view = useMemo(() => (listId ? buildShoppingListView(tables, listId) : undefined), [tables, listId]);
@@ -231,10 +230,12 @@ export default function ReweProductScreen() {
   const candidates = useMemo(
     () =>
       result
-        ? matchReweProducts({ name: search.term, category, amount, unit }, result.products, { organic: settings.organic, limit: 30 })
-            .candidates
+        ? matchReweProducts({ name: search.term, category, amount, unit, gramsPerPiece }, result.products, {
+            organic: settings.organic,
+            limit: 30,
+          }).candidates
         : [],
-    [result, search.term, category, amount, unit, settings.organic],
+    [result, search.term, category, amount, unit, gramsPerPiece, settings.organic],
   );
 
   if (!row || !item) return <Redirect href="/shopping" />;
@@ -244,7 +245,6 @@ export default function ReweProductScreen() {
   const rewe = item.rewe;
   const current = rewe && rewe.productId && rewe.state !== 'none' && rewe.state !== 'skip' ? rewe : null;
   const label = current ? currentLabel(current, favorites.length) : null;
-  const computedPacks = current ? packsFor(amount, unit, parsePackSize(current.grammage, current.name), category) : 1;
   const need = [item.amount, item.origin === 'pantry' ? 'Vorrat: nachkaufen' : item.sources ? `für ${item.sources}` : '']
     .filter(Boolean)
     .join(' · ');
@@ -271,8 +271,7 @@ export default function ReweProductScreen() {
     write(skipRewe(tables, itemId, Date.now()));
     router.back();
   };
-  // Stimmt die Zahl wieder mit der Menge überein, gilt sie als berechnet.
-  const changePacks = (packs: number) => write(setRewePacks(itemId, packs === computedPacks ? null : packs));
+  const changePacks = (packs: number) => write(changeRewePacks(item, packs));
   const submit = () => {
     const term = query.trim();
     if (term) setSearch((previous) => ({ term, round: previous.round + 1 }));
@@ -321,7 +320,7 @@ export default function ReweProductScreen() {
           />
           <View style={styles.sumRow}>
             {current.manualPacks ? (
-              <Button small variant="ghost" title="Wie berechnet" onPress={() => changePacks(computedPacks)} />
+              <Button small variant="ghost" title="Wie berechnet" onPress={() => changePacks(current.computedPacks)} />
             ) : (
               <Text style={styles.meta}>Passend zur Menge</Text>
             )}

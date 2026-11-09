@@ -281,6 +281,23 @@ describe('Vorrat', () => {
     expect(suggestions().filter(([, , , selected]) => selected).map(([name]) => name)).toEqual(['Reis', 'Zwiebeln']);
   });
 
+  it('bucht Packungen nach Gewicht in Stück, wenn die Rezepte Stück zählen', () => {
+    const { test, ids, listId, sync, rewe, foodId } = setUp();
+    test.addRecipe('Burritos', 2, ['4 Tortillas']);
+    test.apply(addManualItem(test.tables(), listId, '4 Tortillas', 2000, ids));
+    sync();
+    const bought = () => purchaseSuggestions(test.tables(), listId).find((entry) => entry.name === 'Tortillas');
+
+    // Die Stückzahl steht im Namen.
+    rewe('Tortillas', 'Mr. Wraps Roggen Wraps 6 Stück, 370g', '370g (1 kg = 6,19 €)', 229);
+    expect(bought()).toMatchObject({ amount: 6, unit: 'Stück' });
+    // Sonst rechnet das Stückgewicht: 496 g zu je 62 g sind 8 Tortillas, und es braucht nur eine Packung.
+    rewe('Tortillas', 'ja! Weizen Tortillas 496g', '496g (1 kg = 3,21 €)', 159);
+    expect(bought()).toMatchObject({ amount: 4, unit: 'Stück' });
+    test.apply([{ table: 'foodNutrition', rowId: foodId('Tortillas'), cells: { gramsPerPiece: 62 } }]);
+    expect(bought()).toMatchObject({ amount: 8, unit: 'Stück' });
+  });
+
   it('bucht den Einkauf ein, gibt neuen Lebensmitteln ihre Einheit und zählt nichts doppelt', () => {
     const { test, listId, foodId, level } = setUp();
     const salt = foodId('Salz');

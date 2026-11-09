@@ -238,27 +238,58 @@ export function Stepper({ label, value, onDecrease, onIncrease, canDecrease = tr
     <View style={styles.stepper}>
       {icon ? <Icon name={icon} size={20} color={colors.textMuted} /> : null}
       <Text style={styles.stepperLabel}>{label}</Text>
-      <View style={styles.stepperControl}>
-        <IconButton
-          icon="remove"
-          variant="surface"
-          size={34}
-          accessibilityLabel={`${label}: weniger`}
-          disabled={!canDecrease}
-          onPress={onDecrease}
-        />
-        <Text style={styles.stepperValue} accessibilityLabel={`${label}: ${value}`}>
-          {value}
-        </Text>
-        <IconButton
-          icon="add"
-          variant="surface"
-          size={34}
-          accessibilityLabel={`${label}: mehr`}
-          disabled={!canIncrease}
-          onPress={onIncrease}
-        />
-      </View>
+      <CountControl
+        label={label}
+        value={value}
+        onDecrease={onDecrease}
+        onIncrease={onIncrease}
+        canDecrease={canDecrease}
+        canIncrease={canIncrease}
+      />
+    </View>
+  );
+}
+
+type CountControlProps = Omit<StepperProps, 'icon'> & {
+  /** Anderer Knopf statt „weniger“, z. B. Entfernen bei der letzten Packung. */
+  decrease?: { icon: IconName; label: string };
+  /** Kleiner, z. B. in einer Zeile der Einkaufsliste. */
+  small?: boolean;
+};
+
+/** Zahl mit Knöpfen für weniger und mehr; `label` nennt Screenreadern, was gezählt wird. */
+export function CountControl({
+  label,
+  value,
+  onDecrease,
+  onIncrease,
+  canDecrease = true,
+  canIncrease = true,
+  decrease,
+  small,
+}: CountControlProps) {
+  const size = small ? 30 : 34;
+  return (
+    <View style={styles.stepperControl}>
+      <IconButton
+        icon={decrease?.icon ?? 'remove'}
+        variant="surface"
+        size={size}
+        accessibilityLabel={decrease?.label ?? `${label}: weniger`}
+        disabled={!canDecrease}
+        onPress={onDecrease}
+      />
+      <Text style={[styles.stepperValue, small && styles.stepperValueSmall]} accessibilityLabel={`${label}: ${value}`}>
+        {value}
+      </Text>
+      <IconButton
+        icon="add"
+        variant="surface"
+        size={size}
+        accessibilityLabel={`${label}: mehr`}
+        disabled={!canIncrease}
+        onPress={onIncrease}
+      />
     </View>
   );
 }
@@ -503,6 +534,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSunken,
   },
   stepperValue: { minWidth: 28, textAlign: 'center', fontSize: 17, fontWeight: '700', color: colors.text },
+  stepperValueSmall: { minWidth: 20, fontSize: 15 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

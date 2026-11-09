@@ -6,7 +6,7 @@ import {
   type ReweProduct,
 } from './rewe.ts';
 import { activeSorted, changedCells, isActive, type CellValue, type RowWrite } from './rows.ts';
-import type { ShoppingListView, ShoppingTables } from './shopping.ts';
+import type { ShoppingItemView, ShoppingListView, ShoppingTables } from './shopping.ts';
 import { assignSortKeys } from './sort-keys.ts';
 
 /**
@@ -134,6 +134,7 @@ export function reweMatchItems(tables: ShoppingTables, listId: string): ReweMatc
       category: food.category,
       amount: item.amount,
       unit: item.unit,
+      gramsPerPiece: tables.foodNutrition[item.foodId]?.gramsPerPiece ?? null,
       preferred: favoriteRows(tables, item.foodId)
         .slice(0, REWE_MAX_PREFERRED)
         .map(([, favorite]) => ({ productId: favorite.productId, name: favorite.name })),
@@ -258,6 +259,13 @@ export function skipRewe(tables: ShoppingTables, itemId: string, now: number): R
 /** Packungen einer Position von Hand; `null` = wieder aus der Menge berechnen. */
 export function setRewePacks(itemId: string, packs: number | null): RowWrite[] {
   return [{ table: 'shoppingItems', rowId: itemId, cells: { rewePacks: packs } }];
+}
+
+/** Ändert die Packungen einer Position; passt die Zahl wieder zur Menge, gilt sie als berechnet. */
+export function changeRewePacks(item: Pick<ShoppingItemView, 'id' | 'rewe'>, packs: number): RowWrite[] {
+  if (!item.rewe || packs < 1) return [];
+  const manual = packs === item.rewe.computedPacks ? null : packs;
+  return manual === (item.rewe.manualPacks ? item.rewe.packs : null) ? [] : setRewePacks(item.id, manual);
 }
 
 // ─── Auftrag fürs Userscript ───

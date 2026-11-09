@@ -10,6 +10,8 @@ import {
   completeShoppingList,
   computeShoppingNeeds,
   createShoppingList,
+  removeShoppingItem,
+  restoreShoppingItem,
   setShoppingListEntries,
   syncShoppingList,
 } from './shopping.ts';
@@ -139,5 +141,36 @@ describe('Einkaufsliste', () => {
     test.apply(completeShoppingList(test.tables(), listId));
     expect(test.tables().planEntries[entryId]?.status).toBe('shopped');
     expect(syncShoppingList(test.tables(), listId, 5000)).toEqual([]);
+  });
+
+  it('nimmt Positionen von der Liste, ohne dass Plan oder Vorrat sie zurückbringen', () => {
+    const { test, ids, curry, plan } = setUp();
+    const entryId = plan('2026-10-07', curry);
+    const { listId, writes } = createShoppingList(test.tables(), [entryId], '2026-10-05', 1000, ids);
+    test.apply(writes);
+    test.apply([{ table: 'foods', rowId: 'food:milch', cells: { name: 'Milch', category: 'dairy', stock: 'buy' } }]);
+    test.apply(addManualItem(test.tables(), listId, '2 Spülmittel', 2000, ids));
+    test.apply(syncShoppingList(test.tables(), listId, 2000));
+    const items = () => {
+      const view = buildShoppingListView(test.tables(), listId)!;
+      return [...view.sections.flatMap((section) => section.items), ...view.pantry, ...view.done];
+    };
+    const idOf = (name: string) => items().find((item) => item.name === name)!.id;
+    const coconut = idOf('Kokosmilch');
+
+    // Aus dem Plan, aus dem Vorrat und von Hand
+    for (const name of ['Kokosmilch', 'Milch', 'Spülmittel']) test.apply(removeShoppingItem(idOf(name), 3000));
+    test.apply(syncShoppingList(test.tables(), listId, 4000));
+    expect(items().map((item) => item.name)).toEqual(['Knoblauch', 'Zwiebeln', 'Olivenöl', 'Salz']);
+
+    // Mehr Portionen ändern daran nichts.
+    const [annaId] = Object.entries(test.tables().members).find(([, member]) => member.name === 'Anna')!;
+    test.apply(planSetServings(test.tables(), entryId, annaId, 2, 5000));
+    expect(syncShoppingList(test.tables(), listId, 5000).some((write) => write.rowId === coconut)).toBe(false);
+
+    // „Rückgängig“ bringt die Position zurück, mit dem Bedarf von jetzt.
+    test.apply(restoreShoppingItem(coconut));
+    test.apply(syncShoppingList(test.tables(), listId, 6000));
+    expect(items().find((item) => item.id === coconut)).toMatchObject({ name: 'Kokosmilch', amount: '300 ml' });
   });
 });

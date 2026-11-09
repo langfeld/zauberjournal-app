@@ -6,7 +6,8 @@ import { colors, radius, spacing } from '@/theme';
 import { Icon } from './icon';
 import { RecipeThumbnail } from './recipe-photo';
 import { ReweProductLine } from './rewe-product';
-import { Button, IconButton } from './ui';
+import { SwipeRow } from './swipe-row';
+import { Button } from './ui';
 
 /** So viele Gerichte zeigen ihr Foto; die Namen stehen trotzdem alle im Text daneben. */
 const MAX_DISH_PHOTOS = 3;
@@ -30,57 +31,61 @@ type ShoppingItemRowProps = {
   onToggle: () => void;
   /** Zusätzlicher Knopf rechts, z. B. „Kaufen“ im Abschnitt „Vorrat prüfen“. */
   action?: { title: string; onPress: () => void };
-  onRemove?: () => void;
+  /** Nach links oder rechts gewischt: Die Position kommt von der Liste, statt abgehakt zu werden. */
+  onRemove: () => void;
   /** Trennlinie über der Zeile, außer bei der ersten eines Abschnitts. */
   divider?: boolean;
   /** Zeigt das REWE-Produkt der Position; Antippen öffnet die Auswahl. */
   onOpenProduct?: () => void;
+  /** Eine REWE-Packung mehr oder weniger, direkt in der Liste. */
+  onStepPacks?: (delta: 1 | -1) => void;
   /** Was das Userscript mit dem REWE-Produkt gemacht hat. */
   cart?: ReweOrderStatus;
 };
 
-/** Eine Position der Einkaufsliste; Antippen hakt sie ab. */
-export function ShoppingItemRow({ item, onToggle, action, onRemove, divider, onOpenProduct, cart }: ShoppingItemRowProps) {
+/** Eine Position der Einkaufsliste; Antippen hakt sie ab, Wischen nimmt sie von der Liste. */
+export function ShoppingItemRow({ item, onToggle, action, onRemove, divider, onOpenProduct, onStepPacks, cart }: ShoppingItemRowProps) {
   const note = item.origin === 'pantry' ? 'Vorrat: nachkaufen' : [item.fromStock, item.sources].filter(Boolean).join(' · ');
   const rewe = onOpenProduct && !item.checked ? item.rewe : null;
   return (
-    <View style={divider && styles.divider}>
-      <View style={styles.row}>
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: item.checked }}
-          accessibilityLabel={[item.amount, item.name].filter(Boolean).join(' ')}
-          onPress={onToggle}
-          style={({ pressed }) => [styles.main, pressed && styles.pressed]}>
-          <View style={[styles.box, item.checked && styles.boxChecked]}>
-            {item.checked ? <Icon name="check" size={16} color={colors.primaryText} /> : null}
-          </View>
-          <View style={styles.text}>
-            <Text style={[styles.name, item.checked && styles.checked]}>{item.name}</Text>
-            {note ? (
-              <View style={styles.noteRow}>
-                {item.dishes.length > 0 ? <DishPhotos dishes={item.dishes} dimmed={item.checked} /> : null}
-                <Text style={styles.note} numberOfLines={1}>
-                  {note}
-                </Text>
-              </View>
+    <SwipeRow label="Entfernen" icon="delete" inset={spacing.lg} leaves onSwipe={onRemove}>
+      <View style={divider && styles.divider}>
+        <View style={styles.row}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: item.checked }}
+            accessibilityLabel={[item.amount, item.name].filter(Boolean).join(' ')}
+            accessibilityActions={[{ name: 'remove', label: 'Entfernen' }]}
+            onAccessibilityAction={(event) => event.nativeEvent.actionName === 'remove' && onRemove()}
+            onPress={onToggle}
+            style={({ pressed }) => [styles.main, pressed && styles.pressed]}>
+            <View style={[styles.box, item.checked && styles.boxChecked]}>
+              {item.checked ? <Icon name="check" size={16} color={colors.primaryText} /> : null}
+            </View>
+            <View style={styles.text}>
+              <Text style={[styles.name, item.checked && styles.checked]}>{item.name}</Text>
+              {note ? (
+                <View style={styles.noteRow}>
+                  {item.dishes.length > 0 ? <DishPhotos dishes={item.dishes} dimmed={item.checked} /> : null}
+                  <Text style={styles.note} numberOfLines={1}>
+                    {note}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            {item.amount ? (
+              <Text style={[styles.amount, item.checked && styles.amountChecked]}>{item.amount}</Text>
             ) : null}
+          </Pressable>
+          {action ? <Button small variant="secondary" icon="add_shopping_cart" title={action.title} onPress={action.onPress} /> : null}
+        </View>
+        {rewe && onOpenProduct && onStepPacks ? (
+          <View style={styles.product}>
+            <ReweProductLine rewe={rewe} onPress={onOpenProduct} cart={cart} onStepPacks={onStepPacks} onRemove={onRemove} />
           </View>
-          {item.amount ? (
-            <Text style={[styles.amount, item.checked && styles.amountChecked]}>{item.amount}</Text>
-          ) : null}
-        </Pressable>
-        {action ? <Button small variant="secondary" icon="add_shopping_cart" title={action.title} onPress={action.onPress} /> : null}
-        {onRemove ? (
-          <IconButton icon="close" variant="muted" size={34} accessibilityLabel={`${item.name} entfernen`} onPress={onRemove} />
         ) : null}
       </View>
-      {rewe && onOpenProduct ? (
-        <View style={styles.product}>
-          <ReweProductLine rewe={rewe} onPress={onOpenProduct} cart={cart} />
-        </View>
-      ) : null}
-    </View>
+    </SwipeRow>
   );
 }
 

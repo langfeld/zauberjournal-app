@@ -2,6 +2,7 @@ import {
   addManualItem,
   buildReweOrder,
   buildShoppingListView,
+  changeRewePacks,
   checkShoppingItem,
   completeShoppingList,
   createId,
@@ -12,6 +13,7 @@ import {
   purchaseSuggestions,
   recentReweOrder,
   removeShoppingItem,
+  restoreShoppingItem,
   reweOrderExtras,
   reweOrderFits,
   syncShoppingList,
@@ -19,10 +21,11 @@ import {
   updateFood,
   type ReweOrderStatus,
   type RowWrite,
+  type ShoppingItemView,
   type ShoppingListEntry,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CATEGORY_STYLES } from '@/components/category-style';
@@ -31,6 +34,7 @@ import { RecipeCover } from '@/components/recipe-photo';
 import { ReweListCard } from '@/components/rewe-list-card';
 import { ReweOrderedCard } from '@/components/rewe-ordered-card';
 import { ShoppingItemRow } from '@/components/shopping-item-row';
+import { Snackbar, type SnackbarMessage } from '@/components/snackbar';
 import { AddField, Button, Card, Chip, EmptyState, Hint, IconCircle, ProgressBar } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useReweMatch } from '@/data/rewe-match';
@@ -64,6 +68,8 @@ export default function ShoppingScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const [newItem, setNewItem] = useState('');
   const [showDone, setShowDone] = useState(false);
+  const [message, setMessage] = useState<SnackbarMessage | null>(null);
+  const hideMessage = useCallback(() => setMessage(null), []);
   const rewe = useReweMatch();
   const reweOrder = useReweOrder();
   const listId = lists.find((list) => list.id === selected)?.id ?? lists[0]?.id;
@@ -152,6 +158,23 @@ export default function ShoppingScreen() {
     write(completeShoppingList(tables, view.id));
   };
   const toggle = (itemId: string, checked: boolean) => write(checkShoppingItem(tables, itemId, checked));
+  /** Von der Liste nehmen, statt abzuhaken: Abgehaktes gilt als gekauft und käme in den Vorrat. */
+  const remove = (item: ShoppingItemView, now: number) => {
+    if (!store) return;
+    applyWrites(store, removeShoppingItem(item.id, now));
+    setMessage({
+      text: `„${item.name}“ entfernt`,
+      action: { label: 'Rückgängig', onPress: () => applyWrites(store, restoreShoppingItem(item.id)) },
+    });
+  };
+  const stepPacks = (item: ShoppingItemView, delta: 1 | -1) => {
+    if (!store || !item.rewe) return;
+    // Vom gespeicherten Stand aus zählen: Bei schnellem Tippen zieht die Anzeige erst kurz danach nach.
+    const saved = store.getCell('shoppingItems', item.id, 'rewePacks');
+    const manual = typeof saved === 'number';
+    const packs = manual ? saved : item.rewe.computedPacks;
+    write(changeRewePacks({ id: item.id, rewe: { ...item.rewe, packs, manualPacks: manual } }, packs + delta));
+  };
   const openProduct = (itemId: string) => router.push({ pathname: '/shopping/product', params: { item: itemId } });
   const sendOrder = async () => {
     const { toCheck, pending } = view.rewe;
@@ -167,164 +190,177 @@ export default function ShoppingScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Stack.Screen options={{ title: view.name }} />
-      {lists.length > 1 ? (
-        <View style={styles.chips}>
-          {lists.map((list) => (
-            <Chip key={list.id} label={list.name} selected={list.id === view.id} onPress={() => setSelected(list.id)} />
-          ))}
-        </View>
-      ) : null}
-
-      {orderedCard}
-
-      <Card>
-        <View style={styles.progressRow}>
-          <Text style={styles.progressTitle}>
-            {total === 0 ? 'Noch leer' : open === 0 ? 'Alles erledigt' : `Noch ${open} von ${total}`}
-          </Text>
-          {total > 0 ? <Text style={styles.progressCount}>{Math.round((view.done.length / total) * 100)} %</Text> : null}
-        </View>
-        <ProgressBar value={total > 0 ? view.done.length / total : 0} />
-        <View style={styles.entriesHeader}>
-          <Text style={styles.entriesLabel}>
-            {view.entries.length === 0
-              ? 'Noch keine Gerichte'
-              : `Für ${view.entries.length} ${view.entries.length === 1 ? 'Gericht' : 'Gerichte'}`}
-          </Text>
-          <Button
-            small
-            variant="secondary"
-            icon="restaurant"
-            title="Gerichte wählen"
-            onPress={() => router.push({ pathname: '/shopping/entries', params: { list: view.id } })}
-          />
-        </View>
-        {view.entries.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.entries} contentContainerStyle={styles.entriesRow}>
-            {view.entries.map((entry) => (
-              <EntryCard key={entry.entryId} entry={entry} />
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Stack.Screen options={{ title: view.name }} />
+        {lists.length > 1 ? (
+          <View style={styles.chips}>
+            {lists.map((list) => (
+              <Chip key={list.id} label={list.name} selected={list.id === view.id} onPress={() => setSelected(list.id)} />
             ))}
-          </ScrollView>
+          </View>
         ) : null}
-      </Card>
 
-      {rewe.connected ? (
-        <ReweListCard
-          summary={view.rewe}
-          settings={rewe.settings}
-          progress={rewe.progress}
-          error={rewe.error ?? reweOrder.error}
-          onMatch={() => void rewe.run(tables, view.id)}
-          order={order}
-          placedHint={placedHint}
-          pickup={order?.placed ? formatPickup(order.placed.pickupStart, order.placed.pickupEnd, today) : ''}
-          sending={reweOrder.sending}
-          onSend={() => void sendOrder()}
+        {orderedCard}
+
+        <Card>
+          <View style={styles.progressRow}>
+            <Text style={styles.progressTitle}>
+              {total === 0 ? 'Noch leer' : open === 0 ? 'Alles erledigt' : `Noch ${open} von ${total}`}
+            </Text>
+            {total > 0 ? <Text style={styles.progressCount}>{Math.round((view.done.length / total) * 100)} %</Text> : null}
+          </View>
+          <ProgressBar value={total > 0 ? view.done.length / total : 0} />
+          <View style={styles.entriesHeader}>
+            <Text style={styles.entriesLabel}>
+              {view.entries.length === 0
+                ? 'Noch keine Gerichte'
+                : `Für ${view.entries.length} ${view.entries.length === 1 ? 'Gericht' : 'Gerichte'}`}
+            </Text>
+            <Button
+              small
+              variant="secondary"
+              icon="restaurant"
+              title="Gerichte wählen"
+              onPress={() => router.push({ pathname: '/shopping/entries', params: { list: view.id } })}
+            />
+          </View>
+          {view.entries.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.entries} contentContainerStyle={styles.entriesRow}>
+              {view.entries.map((entry) => (
+                <EntryCard key={entry.entryId} entry={entry} />
+              ))}
+            </ScrollView>
+          ) : null}
+        </Card>
+
+        {rewe.connected ? (
+          <ReweListCard
+            summary={view.rewe}
+            settings={rewe.settings}
+            progress={rewe.progress}
+            error={rewe.error ?? reweOrder.error}
+            onMatch={() => void rewe.run(tables, view.id)}
+            order={order}
+            placedHint={placedHint}
+            pickup={order?.placed ? formatPickup(order.placed.pickupStart, order.placed.pickupEnd, today) : ''}
+            sending={reweOrder.sending}
+            onSend={() => void sendOrder()}
+          />
+        ) : null}
+
+        <AddField
+          accessibilityLabel="Artikel hinzufügen"
+          value={newItem}
+          onChangeText={setNewItem}
+          onAdd={addItem}
+          placeholder="Hinzufügen, z. B. 2 l Milch"
         />
-      ) : null}
+        {open > 0 ? <Hint>Was ihr nicht braucht, wischt ihr nach links oder rechts von der Liste.</Hint> : null}
 
-      <AddField
-        accessibilityLabel="Artikel hinzufügen"
-        value={newItem}
-        onChangeText={setNewItem}
-        onAdd={addItem}
-        placeholder="Hinzufügen, z. B. 2 l Milch"
-      />
+        {view.sections.map((section) => {
+          const style = CATEGORY_STYLES[section.category];
+          return (
+            <Card key={section.category} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <IconCircle icon={style.icon} tone={style.tone} size={34} square />
+                <Text style={styles.sectionTitle}>{section.label}</Text>
+                <Text style={styles.sectionCount}>{section.items.length}</Text>
+              </View>
+              <View>
+                {section.items.map((item, index) => (
+                  <ShoppingItemRow
+                    key={item.id}
+                    item={item}
+                    divider={index > 0}
+                    onToggle={() => toggle(item.id, true)}
+                    onRemove={() => remove(item, Date.now())}
+                    onOpenProduct={rewe.connected && rewe.settings.marketId ? () => openProduct(item.id) : undefined}
+                    onStepPacks={(delta) => stepPacks(item, delta)}
+                    cart={cartStatus.get(item.id)}
+                  />
+                ))}
+              </View>
+            </Card>
+          );
+        })}
+        {view.sections.length === 0 && view.pantry.length === 0 ? (
+          view.done.length > 0 ? (
+            <EmptyState icon="task_alt" title="Alles abgehakt">
+              Fertig? Dann den Einkauf unten abschließen.
+            </EmptyState>
+          ) : (
+            <Hint>Die Liste ist leer.</Hint>
+          )
+        ) : null}
 
-      {view.sections.map((section) => {
-        const style = CATEGORY_STYLES[section.category];
-        return (
-          <Card key={section.category} style={styles.section}>
+        {view.pantry.length > 0 ? (
+          <Card style={styles.section}>
             <View style={styles.sectionHeader}>
-              <IconCircle icon={style.icon} tone={style.tone} size={34} square />
-              <Text style={styles.sectionTitle}>{section.label}</Text>
-              <Text style={styles.sectionCount}>{section.items.length}</Text>
+              <IconCircle icon="inventory_2" tone={tones.ochre} size={34} square />
+              <Text style={styles.sectionTitle}>Vorrat prüfen</Text>
+              <Text style={styles.sectionCount}>{view.pantry.length}</Text>
             </View>
+            <Hint>Laut Vorrat da. Abhaken, wenn genug da ist, sonst „Kaufen“.</Hint>
             <View>
-              {section.items.map((item, index) => (
+              {view.pantry.map((item, index) => (
                 <ShoppingItemRow
                   key={item.id}
                   item={item}
                   divider={index > 0}
                   onToggle={() => toggle(item.id, true)}
-                  onRemove={item.origin === 'manual' ? () => write(removeShoppingItem(item.id, Date.now())) : undefined}
-                  onOpenProduct={rewe.connected && rewe.settings.marketId ? () => openProduct(item.id) : undefined}
-                  cart={cartStatus.get(item.id)}
+                  onRemove={() => remove(item, Date.now())}
+                  action={
+                    item.covered
+                      ? undefined
+                      : { title: 'Kaufen', onPress: () => write(updateFood(tables, item.foodId, { stock: 'buy' })) }
+                  }
                 />
               ))}
             </View>
           </Card>
-        );
-      })}
-      {view.sections.length === 0 && view.pantry.length === 0 ? (
-        view.done.length > 0 ? (
-          <EmptyState icon="task_alt" title="Alles abgehakt">
-            Fertig? Dann den Einkauf unten abschließen.
-          </EmptyState>
-        ) : (
-          <Hint>Die Liste ist leer.</Hint>
-        )
-      ) : null}
+        ) : null}
 
-      {view.pantry.length > 0 ? (
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <IconCircle icon="inventory_2" tone={tones.ochre} size={34} square />
-            <Text style={styles.sectionTitle}>Vorrat prüfen</Text>
-            <Text style={styles.sectionCount}>{view.pantry.length}</Text>
-          </View>
-          <Hint>Laut Vorrat da. Abhaken, wenn genug da ist, sonst „Kaufen“.</Hint>
-          <View>
-            {view.pantry.map((item, index) => (
-              <ShoppingItemRow
-                key={item.id}
-                item={item}
-                divider={index > 0}
-                onToggle={() => toggle(item.id, true)}
-                action={
-                  item.covered
-                    ? undefined
-                    : { title: 'Kaufen', onPress: () => write(updateFood(tables, item.foodId, { stock: 'buy' })) }
-                }
-              />
-            ))}
-          </View>
-        </Card>
-      ) : null}
+        {view.done.length > 0 ? (
+          <Card style={styles.section}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showDone }}
+              onPress={() => setShowDone((current) => !current)}
+              style={styles.sectionHeader}>
+              <IconCircle icon="task_alt" tone={tones.green} size={34} square />
+              <Text style={styles.sectionTitle}>Erledigt</Text>
+              <Text style={styles.sectionCount}>{view.done.length}</Text>
+              <Icon name={showDone ? 'expand_less' : 'expand_more'} size={22} color={colors.textMuted} />
+            </Pressable>
+            {showDone ? (
+              <View>
+                {view.done.map((item, index) => (
+                  <ShoppingItemRow
+                    key={item.id}
+                    item={item}
+                    divider={index > 0}
+                    onToggle={() => toggle(item.id, false)}
+                    onRemove={() => remove(item, Date.now())}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </Card>
+        ) : null}
 
-      {view.done.length > 0 ? (
-        <Card style={styles.section}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showDone }}
-            onPress={() => setShowDone((current) => !current)}
-            style={styles.sectionHeader}>
-            <IconCircle icon="task_alt" tone={tones.green} size={34} square />
-            <Text style={styles.sectionTitle}>Erledigt</Text>
-            <Text style={styles.sectionCount}>{view.done.length}</Text>
-            <Icon name={showDone ? 'expand_less' : 'expand_more'} size={22} color={colors.textMuted} />
-          </Pressable>
-          {showDone ? (
-            <View>
-              {view.done.map((item, index) => (
-                <ShoppingItemRow key={item.id} item={item} divider={index > 0} onToggle={() => toggle(item.id, false)} />
-              ))}
-            </View>
-          ) : null}
-        </Card>
-      ) : null}
-
-      <View style={styles.finish}>
-        <Button variant="secondary" icon="task_alt" title="Einkauf abschließen" onPress={() => void finish()} />
-        <Hint>Danach gelten die Gerichte im Plan als eingekauft, und die nächste Liste fängt leer an.</Hint>
-      </View>
-    </ScrollView>
+        <View style={styles.finish}>
+          <Button variant="secondary" icon="task_alt" title="Einkauf abschließen" onPress={() => void finish()} />
+          <Hint>Danach gelten die Gerichte im Plan als eingekauft, und die nächste Liste fängt leer an.</Hint>
+        </View>
+      </ScrollView>
+      <Snackbar message={message} onHide={hideMessage} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs + 2 },
   progressRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },

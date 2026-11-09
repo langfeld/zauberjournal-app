@@ -8,6 +8,7 @@ import { rateProduct, type ReweMatchResult, type ReweProduct } from './rewe.ts';
 import {
   applyReweMatches,
   buildReweOrder,
+  changeRewePacks,
   chooseReweProduct,
   confirmReweProduct,
   forgetReweFavorite,
@@ -66,10 +67,13 @@ describe('REWE-Abgleich der Einkaufsliste', () => {
     const { test, listId, item } = setUp();
     test.apply(updateFood(test.tables(), item('Salz').foodId, { stock: 'have' }));
 
+    // Mit Stückgewicht lassen sich Zwiebeln mit Netzen nach Gewicht vergleichen.
+    test.apply([{ table: 'foodNutrition', rowId: item('Zwiebeln').foodId, cells: { gramsPerPiece: 80 } }]);
+
     expect(reweMatchItems(test.tables(), listId)).toEqual([
-      { id: item('Knoblauch').foodId, name: 'Knoblauch', category: 'produce', amount: 2, unit: 'Zehe', preferred: [] },
-      { id: item('Zwiebeln').foodId, name: 'Zwiebeln', category: 'produce', amount: 3, unit: 'Stück', preferred: [] },
-      { id: item('Kokosmilch').foodId, name: 'Kokosmilch', category: 'canned', amount: 600, unit: 'ml', preferred: [] },
+      { id: item('Knoblauch').foodId, name: 'Knoblauch', category: 'produce', amount: 2, unit: 'Zehe', gramsPerPiece: null, preferred: [] },
+      { id: item('Zwiebeln').foodId, name: 'Zwiebeln', category: 'produce', amount: 3, unit: 'Stück', gramsPerPiece: 80, preferred: [] },
+      { id: item('Kokosmilch').foodId, name: 'Kokosmilch', category: 'canned', amount: 600, unit: 'ml', gramsPerPiece: null, preferred: [] },
     ]);
   });
 
@@ -210,6 +214,33 @@ describe('REWE-Abgleich der Einkaufsliste', () => {
     const other = product('Kokosmilch', 'REWE Bio Kokosmilch 400ml');
     test.apply(chooseReweProduct(test.tables(), item('Kokosmilch').id, other, 'first', 4000));
     expect(item('Kokosmilch').rewe).toMatchObject({ name: 'REWE Bio Kokosmilch 400ml', packs: 2, manualPacks: false });
+  });
+
+  it('ändert Packungen in der Liste; passt die Zahl wieder zur Menge, gilt sie als berechnet', () => {
+    const { test, listId, item, result } = setUp();
+    test.apply(applyReweMatches(test.tables(), listId, [result('Kokosmilch', [coconutMilk], 'sure')], 3000));
+    expect(item('Kokosmilch').rewe).toMatchObject({ packs: 2, computedPacks: 2, manualPacks: false });
+
+    test.apply(changeRewePacks(item('Kokosmilch'), 3));
+    expect(item('Kokosmilch').rewe).toMatchObject({ packs: 3, computedPacks: 2, manualPacks: true });
+    expect(changeRewePacks(item('Kokosmilch'), 3)).toEqual([]);
+    expect(changeRewePacks(item('Kokosmilch'), 0)).toEqual([]);
+
+    test.apply(changeRewePacks(item('Kokosmilch'), 2));
+    expect(item('Kokosmilch').rewe).toMatchObject({ packs: 2, manualPacks: false });
+    expect(test.tables().shoppingItems[item('Kokosmilch').id]?.rewePacks).toBeNull();
+  });
+
+  it('rechnet Stück über das Stückgewicht in Packungen nach Gewicht um', () => {
+    const { test, ids, listId, item } = setUp();
+    test.apply(addManualItem(test.tables(), listId, '4 Tortilla Wraps', 2500, ids));
+    const tortillas = product('Tortilla Wraps', 'ja! Weizen Tortillas 496g');
+    test.apply(chooseReweProduct(test.tables(), item('Tortilla Wraps').id, tortillas, 'first', 3000));
+    // Ohne Stückgewicht sind vier Stück abgepackter Ware vier Packungen.
+    expect(item('Tortilla Wraps').rewe).toMatchObject({ packs: 4, computedPacks: 4 });
+
+    test.apply([{ table: 'foodNutrition', rowId: item('Tortilla Wraps').foodId, cells: { gramsPerPiece: 62 } }]);
+    expect(item('Tortilla Wraps').rewe).toMatchObject({ packs: 1, computedPacks: 1, manualPacks: false });
   });
 
   it('lässt Lebensmittel weg, die nicht bei REWE gekauft werden', () => {

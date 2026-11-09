@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, tones, type Tone } from '@/theme';
 
 import { Icon } from './icon';
+import { CountControl } from './ui';
 
 /** Produktbild von REWE, verkleinert; die Fotos haben weißen Grund. */
 export function ReweImage({ url, size }: { url: string; size: number }) {
@@ -30,11 +31,6 @@ export function ReweImage({ url, size }: { url: string; size: number }) {
   );
 }
 
-/** Wie viele Packungen, z. B. „3× Zwiebel gelb ca. 100g“. */
-export function packsLabel(packs: number, name: string): string {
-  return packs > 1 ? `${packs}× ${name}` : name;
-}
-
 /** Markierung hinter dem Produkt: Vorschlag zum Prüfen oder Ersatz für die erste Wahl. */
 function lineTag(rewe: ShoppingItemRewe): { label: string; tone: Tone } | null {
   if (rewe.state === 'unsure' || rewe.state === 'missing') return { label: 'prüfen', tone: tones.ochre };
@@ -54,10 +50,14 @@ type ReweProductLineProps = {
   onPress: () => void;
   /** Was das Userscript mit dem Produkt gemacht hat. */
   cart?: ReweOrderStatus;
+  /** Eine Packung mehr (1) oder weniger (−1). */
+  onStepPacks: (delta: 1 | -1) => void;
+  /** Bei einer Packung wird aus „weniger“ das Entfernen der Position. */
+  onRemove?: () => void;
 };
 
-/** Das REWE-Produkt unter einer Position der Einkaufsliste; Antippen öffnet die Auswahl. */
-export function ReweProductLine({ rewe, onPress, cart = 'pending' }: ReweProductLineProps) {
+/** Das REWE-Produkt unter einer Position der Einkaufsliste; Antippen öffnet die Auswahl, daneben die Packungen. */
+export function ReweProductLine({ rewe, onPress, cart = 'pending', onStepPacks, onRemove }: ReweProductLineProps) {
   if (rewe.state === 'skip' || rewe.state === 'none' || !rewe.productId) {
     const skipped = rewe.state === 'skip';
     const label = skipped ? 'Nicht bei REWE' : 'Kein Produkt gefunden';
@@ -78,29 +78,44 @@ export function ReweProductLine({ rewe, onPress, cart = 'pending' }: ReweProduct
   }
 
   const tag = lineTag(rewe);
-  const name = packsLabel(rewe.packs, rewe.name);
   const total = formatPrice(rewe.packs * rewe.price);
-  const details = [name, total, tag?.label, CART_LABELS[cart]].filter(Boolean).join(', ');
+  const details = [rewe.packs > 1 ? `${rewe.packs}× ${rewe.name}` : rewe.name, total, tag?.label, CART_LABELS[cart]];
+  const last = rewe.packs <= 1;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`REWE: ${details}. Ändern`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.line, pressed && styles.pressed]}>
-      <ReweImage url={rewe.imageUrl} size={30} />
-      <Text style={styles.name} numberOfLines={2}>
-        {name}
-      </Text>
-      {tag ? (
-        <View style={[styles.tag, { backgroundColor: tag.tone.background }]}>
-          <Text style={[styles.tagText, { color: tag.tone.foreground }]}>{tag.label}</Text>
+    <View style={styles.row}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`REWE: ${details.filter(Boolean).join(', ')}. Ändern`}
+        onPress={onPress}
+        style={({ pressed }) => [styles.line, styles.product, pressed && styles.pressed]}>
+        <ReweImage url={rewe.imageUrl} size={30} />
+        <View style={styles.text}>
+          <Text style={styles.productName} numberOfLines={2}>
+            {rewe.name}
+          </Text>
+          <View style={styles.meta}>
+            <Text style={styles.price}>{total}</Text>
+            {tag ? (
+              <View style={[styles.tag, { backgroundColor: tag.tone.background }]}>
+                <Text style={[styles.tagText, { color: tag.tone.foreground }]}>{tag.label}</Text>
+              </View>
+            ) : null}
+            {cart === 'added' || cart === 'present' ? <Icon name="shopping_cart" size={16} color={colors.primary} /> : null}
+            {cart === 'failed' ? <Icon name="error" size={16} color={colors.danger} /> : null}
+          </View>
         </View>
-      ) : null}
-      {cart === 'added' || cart === 'present' ? <Icon name="shopping_cart" size={16} color={colors.primary} /> : null}
-      {cart === 'failed' ? <Icon name="error" size={16} color={colors.danger} /> : null}
-      <Text style={styles.price}>{total}</Text>
-      <Icon name="chevron_right" size={18} color={colors.textMuted} />
-    </Pressable>
+        <Icon name="chevron_right" size={18} color={colors.textMuted} />
+      </Pressable>
+      <CountControl
+        small
+        label={`${rewe.name}, Packungen`}
+        value={rewe.packs}
+        canDecrease={!last || !!onRemove}
+        decrease={last && onRemove ? { icon: 'delete', label: `${rewe.name} entfernen` } : undefined}
+        onDecrease={() => (last ? onRemove?.() : onStepPacks(-1))}
+        onIncrease={() => onStepPacks(1)}
+      />
+    </View>
   );
 }
 
@@ -113,6 +128,7 @@ const styles = StyleSheet.create({
     borderColor: colors.hairline,
     backgroundColor: '#FFFFFF',
   },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   line: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -124,8 +140,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm + 2,
     backgroundColor: colors.background,
   },
+  product: { flex: 1 },
   pressed: { opacity: 0.6 },
   name: { flex: 1, fontSize: 13.5, color: colors.text },
+  text: { flex: 1, gap: 1 },
+  productName: { fontSize: 13.5, lineHeight: 18, color: colors.text },
+  meta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs + 2 },
   muted: { color: colors.textMuted },
   choose: { fontSize: 13.5, fontWeight: '700', color: colors.primary },
   tag: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill },

@@ -29,18 +29,29 @@ export type PurchaseSuggestion = {
 };
 
 /**
- * Inhalt der Packungen in `unit`. Gramm und Milliliter gelten dabei als gleich. Abgepackte Ware zählt als
- * Stück je Packung; bei Obst, Gemüse, Fleisch und Fisch sind Stück einzelne Früchte oder Filets.
+ * Inhalt der Packungen in `unit`. Gramm und Milliliter gelten dabei als gleich. Stück zählen nach der Stückzahl
+ * der Packung, sonst über das Stückgewicht des Lebensmittels (eine Packung Tortillas mit 496 g sind bei 62 g je
+ * Stück 8). Ohne beides zählt abgepackte Ware als Stück je Packung; bei Obst, Gemüse, Fleisch und Fisch sind
+ * Stück einzelne Früchte oder Filets.
  */
-function packContent(pack: PackSize | null, packs: number, unit: StockUnit, category: FoodCategory): number | null {
+function packContent(
+  pack: PackSize | null,
+  packs: number,
+  unit: StockUnit,
+  category: FoodCategory,
+  gramsPerPiece: number | null,
+): number | null {
   const loose = isLooseCategory(category);
   if (!pack) return unit === 'Stück' && !loose ? packs : null;
   if (pack.unit === 'Stück') {
-    if (unit === 'Stück') return packs * pack.amount;
+    if (unit === 'Stück') return packs * (pack.pieces ?? pack.amount);
     return unit === 'g' && pack.approxGrams ? packs * pack.amount * pack.approxGrams : null;
   }
-  if (unit === 'Stück') return loose ? null : packs;
-  return packs * pack.amount;
+  if (unit !== 'Stück') return packs * pack.amount;
+  if (pack.pieces) return packs * pack.pieces;
+  // Mindestens ein Stück je Packung, auch wenn das Stückgewicht größer ist als die Packung
+  if (gramsPerPiece) return Math.max(packs, Math.round((packs * pack.amount) / gramsPerPiece));
+  return loose ? null : packs;
 }
 
 /** Einheit einer Packungsangabe: Liter und Milliliter zählen in ml, sonst Gramm bzw. Stück. */
@@ -61,20 +72,28 @@ function listContent(rows: readonly ShoppingItemRow[], unit: StockUnit): number 
   return total;
 }
 
-/** Was von einem Lebensmittel gekauft wurde: REWE-Packungen oder, ohne Produkt (`rewe` `null`), die Mengen der Liste. */
+/**
+ * Was von einem Lebensmittel gekauft wurde: REWE-Packungen oder, ohne Produkt (`rewe` `null`), die Mengen der Liste.
+ * `gramsPerPiece`: Stückgewicht des Lebensmittels, falls bekannt.
+ */
 export type BoughtFood = {
   food: FoodRow;
   rewe: { grammage: string; name: string; packs: number } | null;
   rows: readonly ShoppingItemRow[];
+  gramsPerPiece?: number | null;
 };
 
 /**
  * Wie viel gekauft wurde, in der Vorratseinheit; `amount` `null` = unbekannt. Wer noch keine Vorratseinheit hat,
  * bekommt die der Rezepte (`fromRecipes`), wenn der Einkauf dazu passt, sonst die der Packung.
  */
-export function boughtAmount({ food, rewe, rows }: BoughtFood, fromRecipes: StockUnit | null): { unit: StockUnit; amount: number | null } {
+export function boughtAmount(
+  { food, rewe, rows, gramsPerPiece = null }: BoughtFood,
+  fromRecipes: StockUnit | null,
+): { unit: StockUnit; amount: number | null } {
   const pack = rewe ? parsePackSize(rewe.grammage, rewe.name) : null;
-  const contentIn = (unit: StockUnit) => (rewe ? packContent(pack, rewe.packs, unit, food.category) : listContent(rows, unit));
+  const contentIn = (unit: StockUnit) =>
+    rewe ? packContent(pack, rewe.packs, unit, food.category, gramsPerPiece) : listContent(rows, unit);
 
   let unit: StockUnit;
   if (food.stockUnit) unit = food.stockUnit;
@@ -126,7 +145,12 @@ export function purchaseSuggestions(tables: ShoppingTables, listId: string): Pur
     const packs = withProduct.reduce((sum, item) => sum + (item.rewe?.packs ?? 0), 0);
     const rows = foodItems.flatMap((item) => tables.shoppingItems[item.id] ?? []);
     const { unit, amount } = boughtAmount(
-      { food, rewe: rewe && { grammage: rewe.grammage, name: rewe.name, packs }, rows },
+      {
+        food,
+        rewe: rewe && { grammage: rewe.grammage, name: rewe.name, packs },
+        rows,
+        gramsPerPiece: tables.foodNutrition[foodId]?.gramsPerPiece ?? null,
+      },
       recipeUnits.get(foodId) ?? null,
     );
     suggestions.push({

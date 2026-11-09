@@ -44,6 +44,11 @@ export type ShoppingItemRow = {
   stockAmount: number | null;
   /** Von der Bestellung bei REWE abgehakt; fehlt bei Zeilen älterer App-Versionen. */
   reweOrdered?: boolean;
+  /**
+   * Von Hand entfernt (dazu `deletedAt`): Die Position bleibt weg, auch wenn Plan oder Vorrat sie noch brauchen.
+   * Fehlt bei Zeilen älterer App-Versionen.
+   */
+  removed?: boolean;
   createdAt: number;
   deletedAt: number | null;
 };
@@ -230,7 +235,7 @@ function takeFromStock(
  * - Was immer im Haus sein soll und leer ist (bzw. ohne Menge auf „nachkaufen“ steht), kommt dazu, falls kein
  *   Rezept es braucht.
  * - Was nicht mehr gebraucht wird, verschwindet, außer es ist schon abgehakt.
- * - Von Hand eingetragene Positionen bleiben, wie sie sind.
+ * - Von Hand eingetragene Positionen bleiben, wie sie sind; von Hand entfernte bleiben weg.
  */
 export function syncShoppingList(tables: ShoppingTables, listId: string, now: number): RowWrite[] {
   const list = tables.shoppingLists[listId];
@@ -274,6 +279,7 @@ export function syncShoppingList(tables: ShoppingTables, listId: string, now: nu
   const writes = resolver.newFoodWrites();
   for (const [id, cells] of desired) {
     const existing = tables.shoppingItems[id];
+    if (existing?.removed) continue;
     const write = changedCells('shoppingItems', id, existing, existing ? cells : { ...cells, checked: false, createdAt: now });
     if (write) writes.push(write);
   }
@@ -325,6 +331,8 @@ export type ShoppingItemRewe = {
   packs: number;
   /** Packungen von Hand geändert. */
   manualPacks: boolean;
+  /** Packungen passend zur Menge, auch wenn sie von Hand geändert sind. */
+  computedPacks: number;
   /** Platz unter den gemerkten Produkten (1 = erste Wahl); `null`, wenn das Produkt nicht gemerkt ist. */
   rank: number | null;
 };
@@ -384,11 +392,13 @@ function itemRewe(
   category: FoodCategory,
   product: ReweProductRow | undefined,
   favorites: readonly string[],
+  gramsPerPiece: number | null,
 ): ShoppingItemRewe | null {
   if (!product) return null;
   const manualPacks = item.rewePacks !== null && item.rewePacks !== undefined;
   const index = product.productId ? favorites.indexOf(product.productId) : -1;
   const rank = index >= 0 ? index + 1 : null;
+  const computedPacks = packsFor(item.amount, item.unit, parsePackSize(product.grammage, product.name), category, gramsPerPiece);
   return {
     state: viewState(product, rank, favorites),
     productId: product.productId,
@@ -397,10 +407,9 @@ function itemRewe(
     imageUrl: product.imageUrl,
     grammage: product.grammage,
     price: product.price,
-    packs: manualPacks
-      ? item.rewePacks!
-      : packsFor(item.amount, item.unit, parsePackSize(product.grammage, product.name), category),
+    packs: manualPacks ? item.rewePacks! : computedPacks,
     manualPacks,
+    computedPacks,
     rank,
   };
 }
@@ -504,7 +513,13 @@ export function buildShoppingListView(tables: ShoppingTables, listId: string): S
         pantryCheck,
         category,
         rewe: item.foodId
-          ? itemRewe(item, category, tables.reweProducts[item.foodId], favorites.get(item.foodId) ?? [])
+          ? itemRewe(
+              item,
+              category,
+              tables.reweProducts[item.foodId],
+              favorites.get(item.foodId) ?? [],
+              tables.foodNutrition[item.foodId]?.gramsPerPiece ?? null,
+            )
           : null,
       };
     })
@@ -612,8 +627,14 @@ export function checkShoppingItem(tables: ShoppingTables, itemId: string, checke
   return writes;
 }
 
+/** Nimmt eine Position von der Liste, statt sie abzuhaken; aus Plan oder Vorrat kommt sie nicht wieder. */
 export function removeShoppingItem(itemId: string, now: number): RowWrite[] {
-  return [{ table: 'shoppingItems', rowId: itemId, cells: { deletedAt: now } }];
+  return [{ table: 'shoppingItems', rowId: itemId, cells: { deletedAt: now, removed: true } }];
+}
+
+/** „Rückgängig“ nach dem Entfernen. */
+export function restoreShoppingItem(itemId: string): RowWrite[] {
+  return [{ table: 'shoppingItems', rowId: itemId, cells: { deletedAt: null, removed: false } }];
 }
 
 /** Schließt den Einkauf ab: Die Liste ist erledigt, ihre geplanten Gerichte gelten als eingekauft. */

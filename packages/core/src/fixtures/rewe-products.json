@@ -3636,5 +3636,408 @@
    "listingId": "8-2J8PH6AS-00000000-0000-4000-8000-000000000000",
    "ean": ""
   }
+ ],
+ "Tortilla Wraps": [
+  {
+   "id": "8229827",
+   "name": "Old El Paso 6 Tortillas Super Soft glutenfrei 216g",
+   "brand": "Old El Paso",
+   "imageUrl": "img:8229827",
+   "price": 429,
+   "basePrice": 1986,
+   "grammage": "216g (1 kg = 19,86 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "glutenfree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "13-8410076474001-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9431725",
+   "name": "Chio Tortillas Wild Paprika 110g",
+   "brand": "Chio",
+   "imageUrl": "img:9431725",
+   "price": 199,
+   "basePrice": 1809,
+   "grammage": "110g (1 kg = 18,09 €)",
+   "categoryPath": "Süßes & Salziges/Chips & Knabbereien/Tortilla-Chips & Dips/",
+   "tags": [],
+   "listingId": "8-TM6ZSQZZ-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9429439",
+   "name": "Chio Tortillas Hot Chili 110g",
+   "brand": "Chio",
+   "imageUrl": "img:9429439",
+   "price": 199,
+   "basePrice": 1809,
+   "grammage": "110g (1 kg = 18,09 €)",
+   "categoryPath": "Süßes & Salziges/Chips & Knabbereien/Tortilla-Chips & Dips/",
+   "tags": [],
+   "listingId": "8-3FKTS0WX-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9935676",
+   "name": "Dogan Tortillas Dürüm 200g",
+   "brand": "",
+   "imageUrl": "img:9935676",
+   "price": 119,
+   "basePrice": 595,
+   "grammage": "200g (1 kg = 5,95 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [],
+   "listingId": "8-GBGHSIWO-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9430861",
+   "name": "Chio Tortillas Nacho Cheese Style 110g",
+   "brand": "Chio",
+   "imageUrl": "img:9430861",
+   "price": 199,
+   "basePrice": 1809,
+   "grammage": "110g (1 kg = 18,09 €)",
+   "categoryPath": "Süßes & Salziges/Chips & Knabbereien/Tortilla-Chips & Dips/",
+   "tags": [],
+   "listingId": "8-OG2FPTP7-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "1984670",
+   "name": "Don Enrico Corn Wrap Tortillas 320g",
+   "brand": "Don Enrico",
+   "imageUrl": "img:1984670",
+   "price": 199,
+   "basePrice": 622,
+   "grammage": "320g (1 kg = 6,22 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [],
+   "listingId": "13-4013200780234-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9022742",
+   "name": "REWE Beste Wahl Weizen Tortillas mit Leinsamen 372g",
+   "brand": "REWE Beste Wahl",
+   "imageUrl": "img:9022742",
+   "price": 139,
+   "basePrice": 374,
+   "grammage": "372g (1 kg = 3,74 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [],
+   "listingId": "8-Z6P6G673-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9959854",
+   "name": "Foodmaker Chicken Caesar Wrap 215g",
+   "brand": "",
+   "imageUrl": "img:9959854",
+   "price": 399,
+   "basePrice": 1856,
+   "grammage": "215g (1 kg = 18,56 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool"
+   ],
+   "listingId": "8-2BOX0XN5-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "1340944",
+   "name": "Mr. Wraps 8 Wraps 320g",
+   "brand": "Mr. Wraps",
+   "imageUrl": "img:1340944",
+   "price": 199,
+   "basePrice": 622,
+   "grammage": "320g (1 kg = 6,22 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [],
+   "listingId": "13-5708209001976-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7867985",
+   "name": "Natsu Wrap Sweet Chili Chicken Style vegan 170g",
+   "brand": "Natsu",
+   "imageUrl": "img:7867985",
+   "price": 359,
+   "basePrice": 0,
+   "grammage": "170g",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-4LCY81TQ-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7832780",
+   "name": "Natsu Wrap Pesto Chicken-Style Vegan 170g",
+   "brand": "Natsu",
+   "imageUrl": "img:7832780",
+   "price": 359,
+   "basePrice": 0,
+   "grammage": "170g",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-AHKB4OZK-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "2368347",
+   "name": "Mr. Wraps Roggen Wraps 6 Stück, 370g",
+   "brand": "Mr. Wraps",
+   "imageUrl": "img:2368347",
+   "price": 229,
+   "basePrice": 619,
+   "grammage": "370g (1 kg = 6,19 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [],
+   "listingId": "13-5708209002195-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7356376",
+   "name": "REWE to go Focaccia Prosciutto Sandwiches 215g",
+   "brand": "REWE to go",
+   "imageUrl": "img:7356376",
+   "price": 329,
+   "basePrice": 1530,
+   "grammage": "215g (1 kg = 15,30 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "discounted",
+    "cool"
+   ],
+   "listingId": "8-XBQ6QANU-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7392118",
+   "name": "Mangal Döner Poldis Dürüm to go Kalb 300g",
+   "brand": "",
+   "imageUrl": "img:7392118",
+   "price": 449,
+   "basePrice": 0,
+   "grammage": "300g",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [],
+   "listingId": "8-H2IGVMWS-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "1929049",
+   "name": "Natsu Sandwich mittelalter Gouda 170g",
+   "brand": "Natsu",
+   "imageUrl": "img:1929049",
+   "price": 359,
+   "basePrice": 2112,
+   "grammage": "170g (1 kg = 21,12 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "vegetarian"
+   ],
+   "listingId": "13-4045851020278-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7867051",
+   "name": "Natsu Sweet Chili Chicken-Style Sandwich vegan 170g",
+   "brand": "Natsu",
+   "imageUrl": "img:7867051",
+   "price": 359,
+   "basePrice": 0,
+   "grammage": "170g",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lactosefree",
+    "vegan",
+    "vegetarian"
+   ],
+   "listingId": "8-LTL8N8CM-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9696121",
+   "name": "Maggi Internationale Würzsauce Texicana Salsa 500ml",
+   "brand": "Maggi",
+   "imageUrl": "img:9696121",
+   "price": 279,
+   "basePrice": 558,
+   "grammage": "500ml (1 l = 5,58 €)",
+   "categoryPath": "Öle, Soßen & Gewürze/Soßen/Grillsaucen/Salsa-Sauce/",
+   "tags": [],
+   "listingId": "13-4005500333630-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9084299",
+   "name": "More Protein Wraps 372g",
+   "brand": "",
+   "imageUrl": "img:9084299",
+   "price": 499,
+   "basePrice": 1341,
+   "grammage": "372g (1 kg = 13,41 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [],
+   "listingId": "8-6DZCXK48-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9590556",
+   "name": "ja! Weizen Tortillas 496g",
+   "brand": "ja!",
+   "imageUrl": "img:9590556",
+   "price": 159,
+   "basePrice": 321,
+   "grammage": "496g (1 kg = 3,21 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "8-ALYES03M-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "9590486",
+   "name": "ja! Vollkorn Tortillas 496g",
+   "brand": "ja!",
+   "imageUrl": "img:9590486",
+   "price": 159,
+   "basePrice": 321,
+   "grammage": "496g (1 kg = 3,21 €)",
+   "categoryPath": "Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/Tortillas & Wraps/",
+   "tags": [
+    "lowestprice"
+   ],
+   "listingId": "8-IFOWBNLP-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "8621778",
+   "name": "ja! Chicken Wrap Bombay Style 190g",
+   "brand": "ja!",
+   "imageUrl": "img:8621778",
+   "price": 179,
+   "basePrice": 942,
+   "grammage": "190g (1 kg = 9,42 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-FMVTBHWL-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7881039",
+   "name": "ja! Thunfisch Wrap 190g",
+   "brand": "ja!",
+   "imageUrl": "img:7881039",
+   "price": 179,
+   "basePrice": 942,
+   "grammage": "190g (1 kg = 9,42 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-4ILNUDPJ-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "8622326",
+   "name": "ja! Thunfisch Sandwich 185g",
+   "brand": "ja!",
+   "imageUrl": "img:8622326",
+   "price": 179,
+   "basePrice": 968,
+   "grammage": "185g (1 kg = 9,68 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-1K7GZ0ZO-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7877621",
+   "name": "ja! Pute-Ei Sandwich 185g",
+   "brand": "ja!",
+   "imageUrl": "img:7877621",
+   "price": 179,
+   "basePrice": 968,
+   "grammage": "185g (1 kg = 9,68 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-1ZMS4QLP-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "8625024",
+   "name": "ja! Salami-Käse Sandwich 185g",
+   "brand": "ja!",
+   "imageUrl": "img:8625024",
+   "price": 179,
+   "basePrice": 968,
+   "grammage": "185g (1 kg = 9,68 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-U5GEFUL5-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7878218",
+   "name": "ja! Bacon-Ei Sandwich 160g",
+   "brand": "ja!",
+   "imageUrl": "img:7878218",
+   "price": 179,
+   "basePrice": 1119,
+   "grammage": "160g (1 kg = 11,19 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-Z0EEWC8V-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  },
+  {
+   "id": "7596339",
+   "name": "ja! Pitaroll Cheese Chicken 210g",
+   "brand": "ja!",
+   "imageUrl": "img:7596339",
+   "price": 229,
+   "basePrice": 1090,
+   "grammage": "210g (1 kg = 10,90 €)",
+   "categoryPath": "Fertiggerichte & Konserven/Fertiggerichte/Frische Wraps & Sandwiches/",
+   "tags": [
+    "cool",
+    "lowestprice"
+   ],
+   "listingId": "8-H3UBCJ5P-00000000-0000-4000-8000-000000000000",
+   "ean": ""
+  }
  ]
 }

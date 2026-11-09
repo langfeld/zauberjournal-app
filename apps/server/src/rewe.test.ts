@@ -111,8 +111,11 @@ describe('REWE', () => {
     expect(readMatchRequest({ market: MARKET, items: [item] })).toEqual({
       marketId: MARKET,
       organic: false,
-      items: [{ id: 'a', need: { name: 'Zwiebeln', category: 'produce', amount: 2, unit: 'Stück' }, preferred: [] }],
+      items: [{ id: 'a', need: { name: 'Zwiebeln', category: 'produce', amount: 2, unit: 'Stück', gramsPerPiece: null }, preferred: [] }],
     });
+    // Mit Stückgewicht lassen sich Stück mit Packungen nach Gewicht vergleichen; Unsinn zählt nicht.
+    expect(readMatchRequest({ market: MARKET, items: [{ ...item, gramsPerPiece: 80 }] })?.items[0]?.need.gramsPerPiece).toBe(80);
+    expect(readMatchRequest({ market: MARKET, items: [{ ...item, gramsPerPiece: -5 }] })?.items[0]?.need.gramsPerPiece).toBeNull();
     const remembered = [{ productId: '1', name: 'X' }];
     expect(readMatchRequest({ market: MARKET, organic: true, items: [{ ...item, amount: null, preferred: remembered }] }))
       .toMatchObject({ organic: true, items: [{ need: { amount: null }, preferred: remembered }] });

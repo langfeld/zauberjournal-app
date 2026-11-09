@@ -187,7 +187,15 @@ export function applyReweOrder(tables: ShoppingTables, order: ReweOrder, now: nu
   const entries: { foodId: string; amount: number; unit: StockUnit }[] = [];
   for (const [foodId, { grammage, name, packs }] of match.foods) {
     if (!counts(foodId)) continue;
-    const { unit, amount } = boughtAmount({ food: tables.foods[foodId]!, rewe: { grammage, name, packs }, rows: [] }, recipeUnits.get(foodId) ?? null);
+    const { unit, amount } = boughtAmount(
+      {
+        food: tables.foods[foodId]!,
+        rewe: { grammage, name, packs },
+        rows: [],
+        gramsPerPiece: tables.foodNutrition[foodId]?.gramsPerPiece ?? null,
+      },
+      recipeUnits.get(foodId) ?? null,
+    );
     if (amount) entries.push({ foodId, amount, unit });
   }
   const elsewhereByFood = new Map<string, ShoppingItemView[]>();
@@ -227,9 +235,10 @@ export function applyReweOrder(tables: ShoppingTables, order: ReweOrder, now: nu
     const copy = tables.shoppingItems[movedItemId(item.id)];
     if (copy && isActive(copy) && !copy.checked) writes.push({ table: 'shoppingItems', rowId: movedItemId(item.id), cells: { deletedAt: now } });
   }
+  // Was der Haushalt dort entfernt hat, bleibt weg.
   const toMove = missing.filter((item) => {
     const copy = tables.shoppingItems[movedItemId(item.id)];
-    return !copy || !isActive(copy);
+    return !copy || (!isActive(copy) && !copy.removed);
   });
   // Eine neue Liste nur, wenn es keine andere offene gibt; war die fürs Fehlende entfernt (z. B. mit „Rückgängig“),
   // kommt sie wieder. Hat der Haushalt sie schon abgeschlossen, bleibt das Fehlende auf der bestellten Liste stehen.

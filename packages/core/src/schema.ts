@@ -164,6 +164,8 @@ export const tablesSchema = {
     stockAmount: optionalNumber,
     /** Von der Bestellung bei REWE abgehakt; „Rückgängig“ hakt nur diese wieder an. */
     reweOrdered: { type: 'boolean', default: false },
+    /** Von Hand entfernt (mit `deletedAt`): Plan und Vorrat bringen die Position nicht wieder auf die Liste. */
+    removed: { type: 'boolean', default: false },
     createdAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,
   },

@@ -33,9 +33,10 @@ export type ReweMarket = { id: string; name: string; street: string; zipCode: st
 
 /**
  * Inhalt einer Packung. Gramm und Milliliter gelten als gleich (bei Lebensmitteln nah genug dran);
- * Stückware hat oft ein ungefähres Gewicht („1 Stück ca. 420 g“).
+ * Stückware hat oft ein ungefähres Gewicht („1 Stück ca. 420 g“). `pieces`: wie viele einzelne Stück darin sind,
+ * wenn Angabe oder Name es sagen („2x150g“, „Roggen Wraps 6 Stück, 370g“); bei Stückware sonst `amount`.
  */
-export type PackSize = { amount: number; unit: 'g' | 'Stück'; approxGrams?: number };
+export type PackSize = { amount: number; unit: 'g' | 'Stück'; approxGrams?: number; pieces?: number };
 
 const METRIC_FACTORS: Record<string, number> = { g: 1, kg: 1000, ml: 1, cl: 10, l: 1000 };
 
@@ -46,11 +47,28 @@ function toNumber(text: string): number {
   return Number(text.replace(',', '.'));
 }
 
-/** Liest die Packungsgröße aus der Angabe der Suche, notfalls aus dem Namen („Zwiebeln 1,5kg“). */
+/** Stückzahl im Produktnamen, z. B. „Mr. Wraps Roggen Wraps 6 Stück, 370g“ oder „Goldene Brustfilets 2 Stück“. */
+const PIECES_IN_NAME = /(\d+)\s*(?:stück|stk\.?)(?![a-zäöüß])/;
+
+/**
+ * Liest die Packungsgröße aus der Angabe der Suche, notfalls aus dem Namen („Zwiebeln 1,5kg“). Die Stückzahl kommt
+ * aus der Angabe („2x150g“) oder dem Namen; nennt die Angabe schon Stück („10 Stück“), gilt sie.
+ */
 export function parsePackSize(grammage: string, name = ''): PackSize | null {
+  const pack = readPackSize(grammage, name);
+  const count = PIECES_IN_NAME.exec(name.toLowerCase());
+  const pieces = count ? Number(count[1]) : 0;
+  // „1 Stück ca. 300 g“ ist eine Schale; darin können mehrere Filets liegen.
+  if (pack && pieces > 0 && pack.pieces === undefined && (pack.unit === 'g' || (pack.amount === 1 && pieces > 1))) {
+    pack.pieces = pieces;
+  }
+  return pack;
+}
+
+function readPackSize(grammage: string, name: string): PackSize | null {
   const text = (grammage.split('(')[0] ?? '').trim().toLowerCase();
   let match = new RegExp(`^(\\d+)\\s*x\\s*${NUMBER}\\s*${METRIC_UNIT}$`).exec(text);
-  if (match) return { amount: Number(match[1]) * toNumber(match[2]!) * METRIC_FACTORS[match[3]!]!, unit: 'g' };
+  if (match) return { amount: Number(match[1]) * toNumber(match[2]!) * METRIC_FACTORS[match[3]!]!, unit: 'g', pieces: Number(match[1]) };
   match = new RegExp(`^${NUMBER}\\s*${METRIC_UNIT}$`).exec(text);
   if (match) return { amount: toNumber(match[1]!) * METRIC_FACTORS[match[2]!]!, unit: 'g' };
   match = new RegExp(`^(\\d+)\\s*stück(?:\\s*ca\\.?\\s*${NUMBER}\\s*(kg|g))?`).exec(text);
@@ -100,19 +118,34 @@ function atLeastOne(packs: number): number {
 
 /**
  * Wie viele Packungen den Bedarf decken. Teilmengen wie EL, Zehe oder Prise und Bedarf ohne Menge
- * brauchen eine Packung; passen Bedarf und Packung nicht zusammen, ebenfalls eine. Stück abgepackter
- * Ware sind Packungen („2 Butter“); bei Obst, Gemüse, Fleisch und Fisch reicht eine Packung nach Gewicht.
+ * brauchen eine Packung; passen Bedarf und Packung nicht zusammen, ebenfalls eine. Stück zählen nach der
+ * Stückzahl der Packung, sonst über das Stückgewicht des Lebensmittels (`gramsPerPiece`): Vier Tortillas zu
+ * je 62 g passen in eine Packung mit 496 g. Ohne beides sind Stück abgepackter Ware Packungen („2 Butter“);
+ * bei Obst, Gemüse, Fleisch und Fisch reicht dann eine Packung nach Gewicht.
  */
-export function packsFor(amount: number | null, unit: string, pack: PackSize | null, category: FoodCategory = 'other'): number {
+export function packsFor(
+  amount: number | null,
+  unit: string,
+  pack: PackSize | null,
+  category: FoodCategory = 'other',
+  gramsPerPiece: number | null = null,
+): number {
   if (amount === null || amount <= 0) return 1;
   if (PACK_UNITS.has(unit)) return atLeastOne(amount);
   const need = COMPARABLE[unit];
   if (!need || !pack) return 1;
   const needed = amount * need.factor;
-  if (need.unit === pack.unit) return atLeastOne(needed / pack.amount);
-  // Bedarf in Gramm, Packung als Stück „ca. 420 g“
-  if (need.unit === 'g' && pack.approxGrams) return atLeastOne(needed / (pack.amount * pack.approxGrams));
-  if (need.unit === 'Stück' && !LOOSE.has(category)) return atLeastOne(needed);
+  if (need.unit === 'Stück') {
+    const pieces = pack.pieces ?? (pack.unit === 'Stück' ? pack.amount : null);
+    if (pieces) return atLeastOne(needed / pieces);
+    // Packung nach Gewicht
+    if (gramsPerPiece) return atLeastOne((needed * gramsPerPiece) / pack.amount);
+    return LOOSE.has(category) ? 1 : atLeastOne(needed);
+  }
+  if (pack.unit === 'g') return atLeastOne(needed / pack.amount);
+  // Bedarf in Gramm, Packung als Stück „ca. 420 g“ oder „10 Stück“
+  if (pack.approxGrams) return atLeastOne(needed / (pack.amount * pack.approxGrams));
+  if (gramsPerPiece) return atLeastOne(needed / (pack.amount * gramsPerPiece));
   return 1;
 }
 
@@ -121,7 +154,7 @@ export function packsFor(amount: number | null, unit: string, pack: PackSize | n
 /** Wo REWE die Warengruppen des Lebensmittel-Katalogs führt (Anfang des Kategoriepfads). */
 const CATEGORY_PATHS: Record<FoodCategory, readonly string[]> = {
   produce: ['Obst & Gemüse/'],
-  bakery: ['Backwaren, Cerealien & Aufstriche/Brot & Backwaren/'],
+  bakery: ['Backwaren, Cerealien & Aufstriche/Brot & Backwaren/', 'Backwaren, Cerealien & Aufstriche/Burgerbrötchen, Wraps & Pita/'],
   dairy: ['Käse, Eier & Molkerei/'],
   meat: ['Fleisch, Wurst & Fisch/Fleisch', 'Fleisch, Wurst & Fisch/Wurst'],
   fish: ['Fleisch, Wurst & Fisch/Fisch', 'Tiefkühlkost/Tiefkühl-Fisch', 'Fertiggerichte & Konserven/Fischkonserven'],
@@ -261,8 +294,11 @@ function extraWords(foodName: string, product: ReweProduct): number {
 
 // ─── Bewertung ───
 
-/** Was gebraucht wird, z. B. 680 g Hähnchenbrust aus der Warengruppe Fleisch. */
-export type ReweNeed = { name: string; category: FoodCategory; amount: number | null; unit: string };
+/**
+ * Was gebraucht wird, z. B. 680 g Hähnchenbrust aus der Warengruppe Fleisch. `gramsPerPiece`: Stückgewicht des
+ * Lebensmittels, falls bekannt; damit lassen sich Stück mit Packungen nach Gewicht vergleichen.
+ */
+export type ReweNeed = { name: string; category: FoodCategory; amount: number | null; unit: string; gramsPerPiece?: number | null };
 
 export type ReweCandidate = ReweProduct & {
   packs: number;
@@ -294,7 +330,8 @@ function unitPrice(product: ReweProduct, pack: PackSize | null): number {
 
 /** Packungen und Gesamtpreis eines Produkts für den Bedarf, ohne Bewertung (z. B. für ein Stammprodukt). */
 export function rateProduct(need: Omit<ReweNeed, 'name'>, product: ReweProduct): ReweCandidate {
-  const packs = packsFor(need.amount, need.unit, parsePackSize(product.grammage, product.name), need.category);
+  const pack = parsePackSize(product.grammage, product.name);
+  const packs = packsFor(need.amount, need.unit, pack, need.category, need.gramsPerPiece ?? null);
   return { ...product, packs, total: packs * product.price, score: 0 };
 }
 
