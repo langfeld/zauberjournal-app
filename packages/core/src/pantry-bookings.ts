@@ -221,17 +221,3 @@ export function planSetStatus(tables: ShoppingTables, entryId: string, status: P
   }
   return writes;
 }
-
-/**
- * Eingekaufte Gerichte, deren Tag vorbei ist, gelten als gekocht und werden abgebucht. Gebucht wird jetzt,
- * also immer nach dem Einkauf, auch wenn die Liste erst Tage später abgeschlossen wurde. Wer ein Gericht
- * nicht gekocht hat, stellt es auf „geplant“ zurück.
- */
-export function planAutoCook(tables: ShoppingTables, today: string, now: number): RowWrite[] {
-  const writes: RowWrite[] = [];
-  for (const [entryId, entry] of Object.entries(tables.planEntries)) {
-    if (!isActive(entry) || !entry.recipeId || entry.status !== 'shopped' || entry.date >= today) continue;
-    writes.push(...planSetStatus(tables, entryId, 'cooked', now));
-  }
-  return writes;
-}

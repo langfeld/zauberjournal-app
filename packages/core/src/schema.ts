@@ -114,6 +114,12 @@ export const tablesSchema = {
     shoppingListId: { type: 'string', default: '' },
     createdAt: { type: 'number', default: 0 },
     deletedAt: optionalNumber,
+    /**
+     * Von selbst weitergerückt (seit November 2026): der Tag davor und der Zeitpunkt; derselbe Zeitpunkt = derselbe
+     * Lauf. Gilt für das nicht gekochte Gericht und die mitgerückten. Leer bzw. `null` = nicht. Für „Doch gekocht“.
+     */
+    postponedFrom: { type: 'string', default: '' },
+    postponedAt: optionalNumber,
   },
   /** Wer isst mit; ID `<Eintrag>/<Person>`, Gäste `<Eintrag>/guests`. */
   planEaters: {
@@ -250,6 +256,11 @@ export const valuesSchema = {
   reweMarketAddress: { type: 'string', default: '' },
   /** Beim Abgleich Bio-Produkte vorziehen. */
   reweOrganic: { type: 'boolean', default: false },
+  /**
+   * Die Tage davor sind erledigt: Was dort nicht als gekocht eingetragen war, ist weitergerückt. Später von Hand
+   * Eingetragenes bleibt dort. Leer = noch nie geprüft.
+   */
+  planCheckedBefore: { type: 'string', default: '' },
 } as const satisfies ValuesSchema;
 
 export type AppTablesSchema = typeof tablesSchema;

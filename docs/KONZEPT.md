@@ -35,7 +35,7 @@ Vorerst nicht geplant sind: iOS, Play Store, Betrieb für fremde Haushalte und e
 | **M3 Import & Fotos** | Foto, Screenshot, Link oder Text wird per Requesty zum Rezept; Prüfansicht; vegetarischer Vorschlag; Rezeptfotos als Dateien über den Server | Rezepte schnell erfasst ✅ (umgesetzt; siehe Abschnitt 9) |
 | **M4 Planen & Einkaufen** | Lebensmittel-Katalog und Zuordnung der Zutaten (aus M3 verschoben), Plan in Wochen- und Monatsansicht (rollierend), Esser und Optionen pro Mahlzeit, Einkaufsliste erzeugen, einfacher Vorrat, Abhaken | Hauptablauf ohne REWE ✅ (umgesetzt; siehe Abschnitte 6, 7 und 12) |
 | **M5 REWE** | Produktquelle, Abgleich mit Lernen, Auswahl in der App, neues Userscript mit Rückmeldung | Warenkorb wird befüllt ✅ (umgesetzt und am 6. Oktober 2026 auf rewe.de bestätigt; siehe Abschnitt 8 und [BETRIEB.md](BETRIEB.md)) |
-| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat ✅ (umgesetzt: Vorrat aus dem Einkauf mit Einbuchen beim Abschließen der Liste, Abbuchen nach dem Plantag und Ablauf von Frischem; Nährwerte pro Person und Portion aus BLS und Open Food Facts. Die Vegetarisch-Prüfung ist auf später verschoben, siehe Abschnitt 12) |
+| **M6 Vorrat & Nährwerte** | Buchungen, Mindesthaltbarkeit, Erfassungsstufen, BLS-Nährwerte pro Person, Vegetarisch-Prüfung | „intelligenter“ Vorrat ✅ (umgesetzt: Vorrat aus dem Einkauf mit Einbuchen beim Abschließen der Liste, Abbuchen beim Kochen und Ablauf von Frischem; Nährwerte pro Person und Portion aus BLS und Open Food Facts. Die Vegetarisch-Prüfung ist auf später verschoben, siehe Abschnitt 12) |
 | **M7 Übernahme** | Bestehende Rezepte aus einem Export des alten Systems importieren | alle Rezepte im neuen System ✅ (34 Rezepte und 78 REWE-Vorlieben am 5. Oktober 2026 übernommen; Werkzeug siehe [BETRIEB.md](BETRIEB.md)) |
 | **M8 Kochen & Vorschläge** | Kochmodus mit Timern; Planvorschläge aus Vorrat, Abwechslung und Aufwand | Kochen mit Timern und Vorschläge für den Plan ✅ (umgesetzt, Abschnitt 7) |
 | **Später** | Angebote, Widgets, Web-Ansicht am PC, direkter Sync im WLAN, Vegetarisch-Prüfung | |
@@ -139,7 +139,7 @@ Die Ernährungsklasse bestimmt, welche Option eine vegetarische Person bekommt. 
 - `choiceOptions`: Gruppe, Name („Hähnchen“), Sortierschlüssel. Die Ernährungsklasse wird aus den Zutaten berechnet.
 
 **Planung**
-- `planEntries`: Datum (`JJJJ-MM-TT`), Mahlzeit, Rezept oder Freitext, Status (`geplant` | `eingekauft` | `gekocht`), Einkaufsliste
+- `planEntries`: Datum (`JJJJ-MM-TT`), Mahlzeit, Rezept oder Freitext, Status (`geplant` | `eingekauft` | `gekocht`), Einkaufsliste. Seit November 2026 außerdem, von welchem Tag aus und wann ein Gericht von selbst weitergerückt ist (`postponedFrom`, `postponedAt`; derselbe Zeitpunkt = derselbe Lauf), für „Doch gekocht“.
 - `planEaters`: Planeintrag, Person (leer = Gäste), Portionen. Neue Einträge bekommen alle Personen mit je einer Portion.
 - `planChoices`: Esser, Gruppe, gewählte Option. Gespeichert wird nur eine ausdrückliche Wahl; sonst gilt die automatische (6.1).
 
@@ -170,7 +170,7 @@ Die Ernährungsklasse bestimmt, welche Option eine vegetarische Person bekommt. 
 - das Stückgewicht in Gramm für Zutaten in Stück, Dose, Zehe, Bund usw.
 - die acht Werte der Nährwerttabelle je 100 g: Energie, Fett, gesättigte Fettsäuren, Kohlenhydrate, Zucker, Ballaststoffe, Eiweiß, Salz (leer = unbekannt)
 
-**Einstellungen** (TinyBase-Values): aktive Mahlzeiten (seit M4, je ein Schalter; Standard: nur Abendessen), seit M5 der REWE-Markt (ID, Name, Adresse) und „Bio bevorzugen“. Standardportionen braucht es nicht: Die Portionen ergeben sich aus den Personen.
+**Einstellungen** (TinyBase-Values): aktive Mahlzeiten (seit M4, je ein Schalter; Standard: nur Abendessen), seit M5 der REWE-Markt (ID, Name, Adresse) und „Bio bevorzugen“. Seit November 2026 `planCheckedBefore`: Die Tage davor sind geprüft, nicht Gekochtes von dort ist weitergerückt. Standardportionen braucht es nicht: Die Portionen ergeben sich aus den Personen.
 
 **Nur auf dem Server, nicht im Store:** Haushalte, Geräte und Tokens, Einladungen, Zwischenspeicher für REWE-Produkte und Open Food Facts, der BLS, KI-Protokoll.
 
@@ -200,7 +200,12 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Vorrat:** Gebucht wird mit den bestellten Packungen, zum Beginn des Abholfensters. Der Bestand zählt das gleich mit, Frisches läuft aber erst ab der Abholung ab. Was der Haushalt selbst abgehakt hat, ist anderswo gekauft und kommt wie beim Abschließen von Hand dazu.
   - **Fehlendes** kommt auf die neueste andere offene Liste, sonst auf eine neue; „Vorrat prüfen“ und Nachkäufe für „immer im Haus“ nicht, die ergeben sich wieder von selbst.
   - **Sicher:** Steht nichts von der Liste in der Bestellung, schließt die App nicht ab. Von Hand abgeschlossene Listen bleiben, wie sie sind. Eine geänderte Bestellung (neue Meldung) gleicht alles an. Nur ein Gerät übernimmt eine Meldung; das vergibt der Server.
-- **Abbuchen (M6):** Ist der Tag eines eingekauften Gerichts vorbei, gilt es als gekocht und seine Zutaten gehen ab; „gekocht“ lässt sich auch selbst wählen. Gebucht wird beim Setzen, also immer nach dem Einkauf. Bei Stück wird auf ganze Stück aufgerundet (eine angebrochene Dose kommt nicht zurück). Wer den Status zurücksetzt oder den Eintrag entfernt, nimmt die Abbuchung zurück. Für Gekochtes braucht eine offene Liste nichts mehr, sonst zählte der Bedarf doppelt.
+- **Abbuchen (M6):** Wer ein Gericht als gekocht einträgt, bucht seine Zutaten ab: mit dem Haken „Gekocht“ im Plan, am Ende des Kochmodus oder mit dem Status am Eintrag. Bis November 2026 galten eingekaufte Gerichte nach ihrem Tag von selbst als gekocht; seitdem rückt nicht Gekochtes weiter (nächster Punkt). Bei Stück wird auf ganze Stück aufgerundet (eine angebrochene Dose kommt nicht zurück). Wer den Status zurücksetzt oder den Eintrag entfernt, nimmt die Abbuchung zurück. Für Gekochtes braucht eine offene Liste nichts mehr, sonst zählte der Bedarf doppelt.
+- **Nicht gekocht (November 2026):** Der Haushalt verschiebt oft spontan. Ist der Tag eines Gerichts vorbei und niemand hat es als gekocht eingetragen, rückt es auf den nächsten Tag derselben Mahlzeit (vor 15 Uhr auf heute, danach auf morgen). Die Gerichte danach rücken je einen Tag nach, bis ein freier Tag die Lücke schließt; was danach kommt, bleibt stehen. Tage mit Gekochtem oder einem Eintrag ohne Rezept („Essen gehen“, „Reste“) bleiben, wie sie sind, die Gerichte überspringen sie. Der Status (eingekauft oder geplant) bleibt.
+  - **Einmal je Tag:** Die App merkt sich, bis wohin sie geprüft hat. Was jemand danach auf einen vergangenen Tag legt, bleibt dort. Ältere Einträge aus der Zeit davor rücken nicht.
+  - **Zwei Handys:** Mit Haushalt prüft die App erst, wenn sie nach dem Öffnen mit dem Server verbunden ist, damit ein „gekocht“ vom anderen Handy schon da ist. Ohne Verbindung wartet sie damit.
+  - **Doch gekocht:** Eine Karte oben im Plan nennt, was weitergerückt ist („Gestern → Heute“). „Doch gekocht“ setzt das Gericht auf seinen Tag zurück und bucht ab; was mitgerückt ist, rückt zurück. „Passt so“ blendet die Karte aus. Dieselbe Wahl gibt es am Eintrag. Wer ein mitgerücktes Gericht inzwischen von Hand verschoben hat, behält es dort.
+  - **Kochmodus aus dem Rezept:** Steht das Rezept heute im Plan, lässt es sich am Ende dort als gekocht eintragen.
 - **Aufgebraucht (November 2026):** Im Vorrat lässt sich jede Zeile nach links oder rechts wischen, beide Richtungen tun dasselbe. Mit Menge geht der Bestand per Korrektur auf null: Was nicht immer im Haus sein soll, gleitet hinaus und verschwindet aus dem Vorrat, der Rest bleibt als „leer“ stehen und kommt auf die Liste. Ohne Menge geht, was immer im Haus sein soll, auf „nachkaufen“. Eine Meldung bietet „Rückgängig“; das löscht die Korrektur wieder. Leeres lässt sich nicht wischen. Ab gut einem Drittel der Breite färbt sich das Band hinter der Zeile kräftig und das Handy vibriert kurz; dann löst Loslassen aus, ein schneller Wisch auch früher.
 - **Nährwerte (M6):** Menge in Gramm × Wert je 100 g, im Plan für jede Person passend zu ihren Portionen und Optionen, im Rezept je Portion (mit Wahlkomponente je Option der ersten Gruppe).
   - **Gramm:** feste Gewichte für g/kg, ml/l (Gramm = Milliliter), EL = 15 g, TL = 5 g, Prise, Handvoll usw.; für Stück, Dose, Zehe, Bund usw. das Stückgewicht des Lebensmittels. Zutaten ohne Menge („Salz“) zählen nicht, bei Spannen zählt die Mitte.
@@ -213,7 +218,7 @@ Beispiel „Sättigender Salat“: Die Basis ist für alle gleich. Dazu kommt di
   - **Schritte:** Schritte einer Option nur, wenn jemand sie bekommt, mit „Nur Halloumi · 1 Portion“. Entstehen Fleisch oder Fisch und Vegetarisches zugleich, steht vorne der Hinweis auf getrennte Pfanne und eigenes Brett.
   - **Zutaten je Schritt:** die Zutaten, die der Schritt nennt, mit Menge für die Portionen. Erkannt wird über die Namen: „Zwiebel“ = „Zwiebeln“, „Hähnchenstreifen“ = „Hähnchenbrustfilet“ (Formwörter wie Streifen, Würfel, Zehen zählen nicht), „Öl“ = „Olivenöl“. Ein Schritt einer Option nennt nur Zutaten der Basis und dieser Option.
   - **Timer:** aus Zeitangaben im Schritt („15 Minuten“, „10–15 Min.“, „eine halbe Stunde“, „1 Std. 20 Min.“); bei Spannen gilt die untere Grenze. Ohne Zahl („einige Minuten“) gibt es keinen Timer. Mehrere Timer laufen nebeneinander, auch wenn man den Kochmodus verlässt. Der Alarm ist eine geplante Benachrichtigung und klingelt deshalb auch bei gesperrtem Handy; ohne Erlaubnis vibriert nur die offene App.
-  - **Zum Schluss:** Aus dem Plan lässt sich das Gericht als gekocht eintragen; die Zutaten gehen dann vom Vorrat ab.
+  - **Zum Schluss:** Aus dem Plan lässt sich das Gericht als gekocht eintragen; die Zutaten gehen dann vom Vorrat ab. Aus dem Rezept geht das auch, wenn es heute im Plan steht (seit November 2026).
 - **Planvorschläge (M8):** Jedes Rezept bekommt für einen Tag Punkte, und jeder Vorschlag nennt bis zu drei Gründe dafür. Es gibt sie beim Hinzufügen eines Gerichts (die besten drei über der Rezeptliste) und unter „Vorschlagen“ im Plan: Man wählt, für wie viele freie Tage ab heute oder morgen. Belegte Tage (auch mit „Reste“ ohne Rezept) bleiben, wie sie sind, und zählen nicht mit. Jeder freie Tag bekommt einen Vorschlag, der sich tauschen oder weglassen lässt; ein Tipp darauf zeigt das Rezept. Erst „Einplanen“ trägt die Gerichte ein.
   - **Freier Vorrat:** Bestand plus das, was offene Einkaufslisten bringen (in ganzen REWE-Packungen), abzüglich dessen, was geplante Gerichte brauchen, das frühere zuerst. Im Entwurf behält jeder Tag seine Zutaten; die folgenden rechnen mit dem, was übrig bleibt. So zählt der Rest einer Packung („Rest vom Einkauf: Quark“), aber keine Zutat wird doppelt verplant.
   - **Punkte:** Frisches aus dem Vorrat zählt viel, kurz vor dem Ablauf noch mehr („Spinat · noch 2 Tage“). Was nach dem Einkauf übrig bleibt, zählt etwas weniger, Haltbares kaum. Grundzutaten, die in mindestens jedem fünften Rezept stecken (Zwiebeln, Butter, Zucker), zählen wenig und werden nur kurz vor dem Ablauf genannt. „Alles da“ oder „nur 1 Zutat fehlt“ gibt einen Bonus.
@@ -357,7 +362,7 @@ Entschieden bei der Umsetzung von M5:
 
 Entschieden bei der Umsetzung von M6 (5. und 6. Oktober 2026):
 - **Vorrat aus dem Einkauf statt Pflege von Hand:** Niemand soll eine lange Liste durchgehen. Gekauftes kommt beim Abschließen der Liste dazu, Gekochtes geht ab. Die erste Fassung (Menge nur für ausgewählte Lebensmittel) hat der User verworfen.
-- **Gekocht nach dem Plantag:** Eingekaufte Gerichte gelten danach von selbst als gekocht; wer nicht gekocht hat, stellt „geplant“ ein.
+- **Gekocht nach dem Plantag:** Eingekaufte Gerichte gelten danach von selbst als gekocht; wer nicht gekocht hat, stellt „geplant“ ein. (Im November 2026 ersetzt: Nicht Gekochtes rückt weiter, siehe unten.)
 - **Frisches läuft je Warengruppe ab,** statt eine Mindesthaltbarkeit zu erfassen.
 - **Bestand als Summe von Buchungen** in der Vorratseinheit. Wechselt die Einheit, fängt der Bestand bei null an; die alten Buchungen bleiben erhalten.
 - **Gramm und Milliliter gelten im Vorrat als gleich;** Prise, Zehe, Bund usw. werden nicht gebucht.
@@ -389,6 +394,12 @@ Entschieden beim Wischen im Vorrat (3. November 2026):
 - **Aufgebraucht als Korrektur auf null,** ohne eigenen Grund für die Buchung: Für den Bestand ist es dasselbe wie „Bestand neu eintragen“ mit 0. „Rückgängig“ löscht die Korrektur, statt gegenzubuchen.
 - **Ohne Rückfrage, mit „Rückgängig“:** Wie beim Einplanen per langem Drücken; ein versehentlicher Wisch ist mit einem Tipp zurückgenommen.
 - **Responder statt Gesten-Bibliothek,** wie in der Monatsansicht. Das Band hinter der Zeile gibt es nur während des Wischens, damit die Karte in Ruhe aussieht wie vorher.
+
+Entschieden beim Weiterrücken (13. November 2026):
+- **Gekocht ist, was jemand einträgt; alles andere rückt weiter.** Der Haushalt hat das gewählt, statt einen Knopf „Nicht gekocht“ zu tippen: Spontan umgeplant wird oft, und danach soll der Plan von selbst stimmen. Dafür gibt es den Haken „Gekocht“ direkt im Plan, und wer das Eintragen vergisst, nimmt es mit „Doch gekocht“ zurück.
+- **Bis zum nächsten freien Tag** statt den ganzen restlichen Plan zu verschieben: Ein freier Tag fängt das Weiterrücken auf, spätere Pläne (etwa ein Essen mit Gästen) bleiben.
+- **Jeder Tag einmal, gemerkt im Haushalt** statt bei jedem Öffnen alles Vergangene: So bleibt, was jemand von Hand auf einen vergangenen Tag legt, und alte Einträge aus der Zeit vor der Umstellung rücken nicht.
+- **„Rückgängig“ aus dem Stand vor dem Schreiben:** Die Meldungen rechnen die alten Werte der geänderten Zellen aus, statt jede Änderung einzeln umzukehren.
 
 Noch offen:
 1. **Over-the-air-Updates:** ob und wo (EAS Update oder NAS). Das wird entschieden, wenn häufige APK-Builds lästig werden.

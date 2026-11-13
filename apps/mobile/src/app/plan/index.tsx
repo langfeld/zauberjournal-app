@@ -8,13 +8,20 @@ import {
   formatRelativeDate,
   formatShortDate,
   listPlanEntries,
+  listPostponed,
   PLAN_STATUS_LABELS,
+  planCookedAfterAll,
+  planKeepPostponed,
   planMoveDay,
+  planSetStatus,
+  revertWrites,
   startOfWeek,
   weekday,
   weekdayLabel,
   type Meal,
   type PlanEntryView,
+  type RowWrite,
+  type ShoppingTables,
 } from '@zauberjournal/core';
 import { router, Stack } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -23,12 +30,13 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MEAL_ICONS } from '@/components/category-style';
 import { Icon, type IconName } from '@/components/icon';
 import { PlanMonth } from '@/components/plan-month';
+import { PostponedCard } from '@/components/postponed-card';
 import { RecipeCover, RecipeThumbnail } from '@/components/recipe-photo';
 import { Snackbar, type SnackbarMessage } from '@/components/snackbar';
 import { Button, IconButton, Segmented, Tag } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
-import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
+import { readAppTables, useActiveMeals, useAppTables, useToday } from '@/data/tables';
 import { colors, fonts, radius, shadows, spacing, tones, type Tone } from '@/theme';
 
 type Mode = 'week' | 'month';
@@ -47,27 +55,45 @@ function statusTag(entry: PlanEntryView): { label: string; icon: IconName; tone:
   return entry.shoppingListId ? { label: 'auf der Einkaufsliste', icon: 'shopping_cart', tone: tones.ochre } : null;
 }
 
+/** Heute und davor lässt sich ein Gericht abhaken; was nicht als gekocht eingetragen ist, rückt nach seinem Tag weiter. */
+function canMarkCooked(entry: PlanEntryView, today: string): boolean {
+  return !!entry.recipe && entry.status !== 'cooked' && entry.date <= today;
+}
+
 /** Ein Gericht im Plan. Das erste des Tages steht schon groß im Bild darüber, deshalb ohne Vorschaubild. */
-function EntryRow({ entry, featured }: { entry: PlanEntryView; featured: boolean }) {
+function EntryRow({ entry, featured, onCooked }: { entry: PlanEntryView; featured: boolean; onCooked?: () => void }) {
   const status = statusTag(entry);
   const description = describePlanEntry(entry);
+  // Der Haken steht neben dem Link statt darin: Im Browser darf ein Knopf keinen anderen enthalten.
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => router.push(`/plan/${entry.id}`)}
-      style={({ pressed }) => [styles.entry, pressed && styles.pressed]}>
-      {featured ? null : <RecipeThumbnail photoId={entry.recipe?.photo ?? ''} title={entry.title} size={44} />}
-      <View style={styles.entryText}>
-        <Text
-          style={[styles.entryTitle, featured && styles.entryTitleFeatured, entry.status === 'cooked' && styles.done]}
-          numberOfLines={2}>
-          {entry.title}
-        </Text>
-        {description ? <Text style={styles.meta}>{description}</Text> : null}
-        {status ? <Tag icon={status.icon} label={status.label} tone={status.tone} /> : null}
-      </View>
-      <Icon name="chevron_right" size={20} color={colors.borderStrong} />
-    </Pressable>
+    <View style={styles.entry}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push(`/plan/${entry.id}`)}
+        style={({ pressed }) => [styles.entryLink, pressed && styles.pressed]}>
+        {featured ? null : <RecipeThumbnail photoId={entry.recipe?.photo ?? ''} title={entry.title} size={44} />}
+        <View style={styles.entryText}>
+          <Text
+            style={[styles.entryTitle, featured && styles.entryTitleFeatured, entry.status === 'cooked' && styles.done]}
+            numberOfLines={2}>
+            {entry.title}
+          </Text>
+          {description ? <Text style={styles.meta}>{description}</Text> : null}
+          {status ? <Tag icon={status.icon} label={status.label} tone={status.tone} /> : null}
+        </View>
+        {onCooked ? null : <Icon name="chevron_right" size={20} color={colors.borderStrong} />}
+      </Pressable>
+      {onCooked ? (
+        <Button
+          small
+          variant="secondary"
+          icon="check"
+          title="Gekocht"
+          accessibilityLabel={`„${entry.title}“ als gekocht eintragen`}
+          onPress={onCooked}
+        />
+      ) : null}
+    </View>
   );
 }
 
@@ -88,7 +114,19 @@ function DateBadge({ day, today, onPhoto }: { day: string; today: string; onPhot
  * Ein Tag der Wochenansicht. Ist etwas geplant, steht das Bild des ersten Gerichts groß oben
  * und das Datum darauf; ein leerer Tag ist nur eine schmale Zeile.
  */
-function WeekDay({ day, today, meals, entries }: { day: string; today: string; meals: Meal[]; entries: PlanEntryView[] }) {
+function WeekDay({
+  day,
+  today,
+  meals,
+  entries,
+  onCooked,
+}: {
+  day: string;
+  today: string;
+  meals: Meal[];
+  entries: PlanEntryView[];
+  onCooked: (entry: PlanEntryView) => void;
+}) {
   const byMeal = meals.map((meal) => ({ meal, entries: entries.filter((entry) => entry.meal === meal.id) }));
   const hero = byMeal.flatMap((group) => group.entries)[0];
   return (
@@ -117,7 +155,12 @@ function WeekDay({ day, today, meals, entries }: { day: string; today: string; m
                 </View>
               ) : null}
               {mealEntries.map((entry) => (
-                <EntryRow key={entry.id} entry={entry} featured={entry === hero} />
+                <EntryRow
+                  key={entry.id}
+                  entry={entry}
+                  featured={entry === hero}
+                  onCooked={canMarkCooked(entry, today) ? () => onCooked(entry) : undefined}
+                />
               ))}
               <View style={styles.addRow}>
                 <Button
@@ -161,6 +204,35 @@ export default function PlanScreen() {
     for (const entry of entries) map.set(entry.date, [...(map.get(entry.date) ?? []), entry]);
     return map;
   }, [entries]);
+
+  const postponed = useMemo(
+    () => listPostponed(tables, today).map((entry) => ({ ...entry, title: tables.recipes[entry.recipeId]?.title ?? 'Gelöschtes Rezept' })),
+    [tables, today],
+  );
+
+  /** Schreibt und bietet „Rückgängig“; gerechnet wird mit dem frischen Stand, falls gerade der Sync etwas gebracht hat. */
+  const writeWithUndo = (change: (current: ShoppingTables, now: number) => RowWrite[], text: string) => {
+    if (!store) return;
+    const current = readAppTables(store);
+    const now = Date.now();
+    const writes = change(current, now);
+    if (writes.length === 0) return;
+    const undo = revertWrites(current, writes, now);
+    applyWrites(store, writes);
+    setMessage({ text, action: { label: 'Rückgängig', onPress: () => applyWrites(store, undo) } });
+  };
+  const markCooked = (entry: PlanEntryView) =>
+    writeWithUndo((current, now) => planSetStatus(current, entry.id, 'cooked', now), `„${entry.title}“ als gekocht eingetragen`);
+  const cookedAfterAll = (entryId: string) => {
+    const entry = postponed.find((candidate) => candidate.id === entryId);
+    writeWithUndo(
+      (current, now) => planCookedAfterAll(current, entryId, today, new Date(now).getHours(), now),
+      entry ? `„${entry.title}“ am ${formatDate(entry.from)} gekocht, der Plan ist zurückgerückt` : 'Als gekocht eingetragen',
+    );
+  };
+  const keepPostponed = () => {
+    if (store) applyWrites(store, planKeepPostponed(readAppTables(store), postponed.map((entry) => entry.id)));
+  };
 
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -217,8 +289,19 @@ export default function PlanScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} scrollEnabled={!picking}>
+        {postponed.length > 0 ? (
+          <PostponedCard
+            entries={postponed}
+            today={today}
+            showMeal={meals.length > 1}
+            onCooked={cookedAfterAll}
+            onKeep={keepPostponed}
+          />
+        ) : null}
         {mode === 'week' ? (
-          days.map((day) => <WeekDay key={day} day={day} today={today} meals={meals} entries={byDay.get(day) ?? []} />)
+          days.map((day) => (
+            <WeekDay key={day} day={day} today={today} meals={meals} entries={byDay.get(day) ?? []} onCooked={markCooked} />
+          ))
         ) : (
           <PlanMonth days={days} today={today} byDay={byDay} onOpenDay={showDay} onMove={moveDay} onPickChange={setPicking} />
         )}
@@ -284,7 +367,8 @@ const styles = StyleSheet.create({
   meal: { gap: spacing.xs },
   mealLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   mealLabelText: { fontSize: 12.5, fontWeight: '700', letterSpacing: 0.4, color: colors.textMuted, textTransform: 'uppercase' },
-  entry: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xs },
+  entry: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  entryLink: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xs },
   entryText: { flex: 1, gap: 3 },
   entryTitle: { fontFamily: fonts.display, fontSize: 16.5, lineHeight: 21, color: colors.text },
   entryTitleFeatured: { fontSize: 19, lineHeight: 25 },

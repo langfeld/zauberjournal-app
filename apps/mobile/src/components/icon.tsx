@@ -40,6 +40,7 @@ const GLYPHS = {
   egg: 0xeacc,
   error: 0xe000,
   event: 0xe878,
+  event_upcoming: 0xf238,
   expand_less: 0xe5ce,
   expand_more: 0xe5cf,
   favorite: 0xe87d,

@@ -18,6 +18,9 @@ export type PlanEntryRow = {
   shoppingListId: string;
   createdAt: number;
   deletedAt: number | null;
+  /** Von selbst weitergerückt: Tag davor und Zeitpunkt des Laufs (siehe `plan-postpone.ts`); leer bzw. `null` = nicht. */
+  postponedFrom: string;
+  postponedAt: number | null;
 };
 
 /** Wer isst mit. Leere `memberId` = Gäste. */
@@ -274,12 +277,23 @@ export function planChoose(tables: PlanTables, eaterId: string, groupId: string,
   return write ? [write] : [];
 }
 
+/** Nicht (mehr) von selbst weitergerückt, etwa nach dem Verschieben von Hand oder „Passt so“. */
+export const NOT_POSTPONED = { postponedFrom: '', postponedAt: null } as const;
+
+/** Ob ein Eintrag von selbst weitergerückt ist (siehe `plan-postpone.ts`). */
+export function wasPostponed(entry: PlanEntryRow): entry is PlanEntryRow & { postponedAt: number } {
+  return typeof entry.postponedAt === 'number';
+}
+
+/** Ändert einen Eintrag. Ein neuer Tag oder eine andere Mahlzeit lösen ihn vom Weiterrücken, „Doch gekocht“ lässt ihn dann stehen. */
 export function planUpdateEntry(
   tables: PlanTables,
   entryId: string,
   cells: Partial<Pick<PlanEntryRow, 'date' | 'meal' | 'status' | 'text' | 'shoppingListId'>>,
 ): RowWrite[] {
-  const write = changedCells('planEntries', entryId, tables.planEntries[entryId], cells);
+  const row = tables.planEntries[entryId];
+  const moved = row && wasPostponed(row) && ((cells.date ?? row.date) !== row.date || (cells.meal ?? row.meal) !== row.meal);
+  const write = changedCells('planEntries', entryId, row, moved ? { ...cells, ...NOT_POSTPONED } : cells);
   return write ? [write] : [];
 }
 
@@ -321,8 +335,10 @@ export function planMoveDay(tables: PlanTables, from: string, to: string): RowWr
   if (from === to) return [];
   const movable = (date: string) =>
     Object.entries(tables.planEntries).filter(([, entry]) => isActive(entry) && entry.date === date && entry.status !== 'cooked');
-  return [
-    ...movable(from).map(([id]): RowWrite => ({ table: 'planEntries', rowId: id, cells: { date: to } })),
-    ...movable(to).map(([id]): RowWrite => ({ table: 'planEntries', rowId: id, cells: { date: from } })),
-  ];
+  const move = ([id, entry]: [string, PlanEntryRow], date: string): RowWrite => ({
+    table: 'planEntries',
+    rowId: id,
+    cells: wasPostponed(entry) ? { date, ...NOT_POSTPONED } : { date },
+  });
+  return [...movable(from).map((row) => move(row, to)), ...movable(to).map((row) => move(row, from))];
 }

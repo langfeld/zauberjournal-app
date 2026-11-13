@@ -17,7 +17,7 @@ import {
   stockUnitFromRecipes,
   toStockAmount,
 } from './pantry.ts';
-import { bookPurchase, planAutoCook, planSetStatus, purchaseSuggestions } from './pantry-bookings.ts';
+import { bookPurchase, planSetStatus, purchaseSuggestions } from './pantry-bookings.ts';
 import { planAddEntry } from './plan.ts';
 import { reweMatchItems } from './rewe-shopping.ts';
 import {
@@ -356,26 +356,6 @@ describe('Vorrat', () => {
     stock('Kichererbsen', 'Stück', 4);
     test.apply(planSetStatus(test.tables(), entryId, 'cooked', at('2026-10-07', 19)));
     expect(level('Kichererbsen', '2026-10-07')).toBe(2);
-  });
-
-  it('nimmt eingekaufte Gerichte nach ihrem Tag als gekocht, gebucht nach dem Einkauf', () => {
-    const { test, ids, curry, entryId, stock, level, foodId } = setUp();
-    const planned = planAddEntry(test.tables(), { date: '2026-10-06', meal: 'lunch', recipeId: curry, text: '' }, 1000, ids);
-    test.apply(planned.writes);
-    stock('Reis', 'g', 1000);
-    test.apply(planSetStatus(test.tables(), entryId, 'shopped', at(MONDAY, 18)));
-    // Die Liste wurde erst nach dem Plantag abgeschlossen: Der Einkauf zählt trotzdem vor dem Kochen.
-    test.apply(bookPurchase(test.tables(), 'liste', [{ foodId: foodId('Kokosmilch'), amount: 400, unit: 'ml' }], at('2026-10-08', 7)));
-
-    // Am Tag selbst noch nicht, erst danach; nur Eingekauftes, Geplantes bleibt.
-    expect(planAutoCook(test.tables(), '2026-10-06', at('2026-10-06', 22))).toEqual([]);
-    test.apply(planAutoCook(test.tables(), '2026-10-08', at('2026-10-08', 8)));
-    expect(test.tables().planEntries[entryId]?.status).toBe('cooked');
-    expect(test.tables().planEntries[planned.entryId]?.status).toBe('planned');
-    expect(level('Reis', '2026-10-08')).toBe(700);
-    expect(level('Kokosmilch', '2026-10-08')).toBe(0);
-    expect(stockBookings(test.tables(), foodId('Reis'))[0]).toMatchObject({ reason: 'cooked', createdAt: at('2026-10-08', 8) });
-    expect(planAutoCook(test.tables(), '2026-10-08', at('2026-10-08', 9))).toEqual([]);
   });
 
   it('braucht auf der Liste nichts mehr für Gekochtes, sonst zählte der Bedarf doppelt', () => {

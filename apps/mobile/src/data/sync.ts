@@ -15,6 +15,12 @@ import type { AppStore } from './store';
  */
 export type SyncStatus = 'off' | 'connecting' | 'online' | 'offline' | 'revoked';
 
+export type SyncState = {
+  status: SyncStatus;
+  /** Wann der Sync zuletzt verbunden hat, seit die App im Vordergrund ist; `null` = seitdem noch nicht. */
+  syncedAt: number | null;
+};
+
 const MAX_RETRY_DELAY_MS = 30_000;
 /** So lange darf die Adresse für zu Hause brauchen; im WLAN antwortet der Server viel schneller. */
 const HOME_TIMEOUT_MS = 2000;
@@ -30,11 +36,12 @@ async function chooseServerUrl(access: DeviceAccess): Promise<string> {
  * Hält die Sync-Verbindung offen, solange die App im Vordergrund ist, und verbindet bei Abbrüchen neu. Bei jedem
  * Aufbau, also auch nach dem Öffnen der App, wählt sie die Adresse neu und meldet sie an `onServerUrl`.
  */
-export function useSync(store: AppStore, access: DeviceAccess | null, onServerUrl: (serverUrl: string) => void): SyncStatus {
+export function useSync(store: AppStore, access: DeviceAccess | null, onServerUrl: (serverUrl: string) => void): SyncState {
   // Der Status gehört zu bestimmten Zugangsdaten; bei neuen Zugangsdaten gilt wieder „verbinde“.
-  const [state, setState] = useState<{ access: DeviceAccess | null; status: SyncStatus }>({
+  const [state, setState] = useState<SyncState & { access: DeviceAccess | null }>({
     access: null,
     status: 'connecting',
+    syncedAt: null,
   });
   const [active, setActive] = useState(AppState.currentState !== 'background');
 
@@ -53,7 +60,7 @@ export function useSync(store: AppStore, access: DeviceAccess | null, onServerUr
     /** Mit der zuletzt gewählten Adresse */
     let credentials: Credentials = access;
     const report = (status: SyncStatus) => {
-      if (!stopped) setState({ access, status });
+      if (!stopped) setState({ access, status, syncedAt: status === 'online' ? Date.now() : null });
     };
 
     const retryLater = async () => {
@@ -98,9 +105,11 @@ export function useSync(store: AppStore, access: DeviceAccess | null, onServerUr
       stopped = true;
       clearTimeout(retryTimer);
       destroyCurrent?.();
+      // Im Hintergrund ruht der Sync: Was andere Geräte inzwischen ändern, kommt erst mit dem nächsten Verbinden.
+      setState((current) => ({ ...current, syncedAt: null }));
     };
   }, [store, access, active, onServerUrl]);
 
-  if (!access) return 'off';
-  return state.access === access ? state.status : 'connecting';
+  if (!access) return { status: 'off', syncedAt: null };
+  return state.access === access ? { status: state.status, syncedAt: state.syncedAt } : { status: 'connecting', syncedAt: null };
 }

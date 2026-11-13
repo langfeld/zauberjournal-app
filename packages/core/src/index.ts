@@ -32,6 +32,7 @@ export {
   type PairingInfo,
 } from './pairing.ts';
 export * from './plan.ts';
+export * from './plan-postpone.ts';
 export { formatAmount, formatNumber, roundScaledAmount, scaleAmount } from './quantity.ts';
 export * from './recipe.ts';
 export * from './rewe.ts';
@@ -44,7 +45,7 @@ export {
   type ImportedRecipe,
   type VegetarianSuggestion,
 } from './recipe-import.ts';
-export { isActive, type CellValue, type RowWrite, type Table } from './rows.ts';
+export { isActive, revertWrites, type CellValue, type RowWrite, type Table } from './rows.ts';
 export {
   tablesSchema,
   valuesSchema,

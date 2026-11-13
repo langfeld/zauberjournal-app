@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { AppTabs } from '@/components/app-tabs';
-import { AutoCook } from '@/data/auto-cook';
+import { AutoPostpone } from '@/data/auto-postpone';
 import { ConnectionProvider } from '@/data/connection';
 import { FoodDietRepair } from '@/data/food-diets';
 import { MealSync } from '@/data/meal-sync';
@@ -49,7 +49,7 @@ export default function RootLayout() {
     <Provider store={store}>
       <ConnectionProvider store={store}>
         <StatusBar style="dark" />
-        <AutoCook />
+        <AutoPostpone />
         <FoodDietRepair />
         <NutritionSync />
         <MealSync />

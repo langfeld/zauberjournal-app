@@ -33,8 +33,11 @@ type CookingModeProps = {
   view: RecipeView;
   servings: number;
   distribution: Distribution;
-  /** Aus dem Plan: Am Ende lässt sich das Gericht als gekocht eintragen. */
-  entry?: { id: string; status: PlanStatus };
+  /**
+   * Der Planeintrag, der am Ende als gekocht eingetragen werden kann. `fromRecipe`: Der Kochmodus kommt aus dem Rezept,
+   * und das Gericht steht heute im Plan.
+   */
+  entry?: { id: string; status: PlanStatus; fromRecipe?: boolean };
 };
 
 /**
@@ -107,8 +110,16 @@ export function CookingMode({ view, servings, distribution, entry }: CookingMode
             <Text style={styles.finishTitle}>Guten Appetit!</Text>
             {entry && entry.status !== 'cooked' ? (
               <>
-                <Button icon="task_alt" title="Als gekocht eintragen" onPress={markCooked} />
-                <Hint>Die Zutaten gehen dann vom Vorrat ab.</Hint>
+                <Button
+                  icon="task_alt"
+                  title={entry.fromRecipe ? 'Im Plan als gekocht eintragen' : 'Als gekocht eintragen'}
+                  onPress={markCooked}
+                />
+                <Hint>
+                  {entry.fromRecipe
+                    ? 'Das Gericht steht heute im Plan. Die Zutaten der geplanten Portionen gehen dann vom Vorrat ab; sonst rückt es morgen weiter.'
+                    : 'Die Zutaten gehen dann vom Vorrat ab. Sonst rückt das Gericht nach seinem Tag weiter.'}
+                </Hint>
               </>
             ) : null}
             <Button variant="secondary" title="Schließen" onPress={() => router.back()} />

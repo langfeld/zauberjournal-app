@@ -3,15 +3,18 @@ import {
   buildPlanEntry,
   createDietLookup,
   formatDate,
+  isPostponedEntry,
   listMembers,
   mealLabel,
   PLAN_STATUS_LABELS,
   planChoose,
+  planCookedAfterAll,
   planRemoveEntry,
   planSetServings,
   planSetStatus,
   planUpdateEntry,
   removeCookedBookings,
+  revertWrites,
   type EaterView,
   type PlanEntryView,
   type PlanStatus,
@@ -19,7 +22,7 @@ import {
   type RowWrite,
 } from '@zauberjournal/core';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { MEAL_ICONS } from '@/components/category-style';
@@ -28,6 +31,7 @@ import { NotFound } from '@/components/not-found';
 import { PlanEntryNutrition } from '@/components/nutrition';
 import { RecipeBody } from '@/components/recipe-body';
 import { RecipePhoto } from '@/components/recipe-photo';
+import { Snackbar, type SnackbarMessage } from '@/components/snackbar';
 import {
   Button,
   Card,
@@ -42,7 +46,7 @@ import {
 } from '@/components/ui';
 import { applyWrites } from '@/data/recipes';
 import { useStore } from '@/data/store';
-import { useActiveMeals, useAppTables, useToday } from '@/data/tables';
+import { readAppTables, useActiveMeals, useAppTables, useToday } from '@/data/tables';
 import { confirm } from '@/lib/confirm';
 import { colors, fonts, radius, spacing } from '@/theme';
 
@@ -86,11 +90,28 @@ export default function PlanEntryScreen() {
   const entry = useMemo(() => buildPlanEntry(tables, id, createDietLookup(tables)), [tables, id]);
   const members = useMemo(() => listMembers(tables), [tables]);
   const today = useToday();
+  const [message, setMessage] = useState<SnackbarMessage | null>(null);
+  const hideMessage = useCallback(() => setMessage(null), []);
 
   if (!entry) return <NotFound message="Diesen Eintrag gibt es nicht (mehr)." backLabel="Zum Plan" href="/plan" />;
 
   const write = (writes: RowWrite[]) => {
     if (store && writes.length > 0) applyWrites(store, writes);
+  };
+  const row = tables.planEntries[entry.id];
+  /** Von selbst weitergerückt, weil es nicht als gekocht eingetragen war: Tag davor, sonst leer. */
+  const postponedFrom = row && isPostponedEntry(row) ? row.postponedFrom : '';
+  const cookedAfterAll = () => {
+    if (!store) return;
+    const current = readAppTables(store);
+    const now = Date.now();
+    const writes = planCookedAfterAll(current, entry.id, today, new Date(now).getHours(), now);
+    const undo = revertWrites(current, writes, now);
+    applyWrites(store, writes);
+    setMessage({
+      text: `Am ${formatDate(postponedFrom)} gekocht, der Plan ist zurückgerückt`,
+      action: { label: 'Rückgängig', onPress: () => applyWrites(store, undo) },
+    });
   };
   const setServings = (memberId: string, servings: number, now: number) =>
     write(planSetServings(tables, entry.id, memberId, servings, now));
@@ -108,119 +129,134 @@ export default function PlanEntryScreen() {
     write(planChoose(tables, eater.id, groupId, optionId));
 
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Stack.Screen options={{ title: mealLabel(entry.meal) }} />
-      {entry.recipe ? <RecipePhoto photoId={entry.recipe.photo} style={styles.photo} alt={`Foto: ${entry.title}`} /> : null}
-      <Text style={styles.title}>{entry.title}</Text>
-      {entry.recipe && entry.servings > 0 ? (
-        <Button icon="skillet" title="Kochen" onPress={() => router.push(`/plan/${entry.id}/cook`)} />
-      ) : null}
-
-      <Card>
-        <View style={styles.dateRow}>
-          <IconButton
-            icon="chevron_left"
-            variant="secondary"
-            size={38}
-            accessibilityLabel="Einen Tag früher"
-            onPress={() => update({ date: addDays(entry.date, -1) })}
-          />
-          <Text style={styles.date}>{formatDate(entry.date)}</Text>
-          <IconButton
-            icon="chevron_right"
-            variant="secondary"
-            size={38}
-            accessibilityLabel="Einen Tag später"
-            onPress={() => update({ date: addDays(entry.date, 1) })}
-          />
-        </View>
-        {meals.length > 1 ? (
-          <View style={styles.chips}>
-            {meals.map((meal) => (
-              <Chip
-                key={meal.id}
-                icon={MEAL_ICONS[meal.id]}
-                label={meal.label}
-                selected={entry.meal === meal.id}
-                onPress={() => update({ meal: meal.id })}
-              />
-            ))}
-          </View>
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Stack.Screen options={{ title: mealLabel(entry.meal) }} />
+        {entry.recipe ? <RecipePhoto photoId={entry.recipe.photo} style={styles.photo} alt={`Foto: ${entry.title}`} /> : null}
+        <Text style={styles.title}>{entry.title}</Text>
+        {entry.recipe && entry.servings > 0 ? (
+          <Button icon="skillet" title="Kochen" onPress={() => router.push(`/plan/${entry.id}/cook`)} />
         ) : null}
-        {/* „Gekocht“ bucht die Zutaten aus dem Vorrat ab; zurück nimmt die Abbuchung zurück. */}
-        <Segmented
-          options={STATUSES}
-          value={entry.status}
-          onChange={(status) => write(planSetStatus(tables, entry.id, status, Date.now()))}
-          small
-        />
-        {entry.recipe && entry.date < today ? (
-          <Hint>Eingekauftes gilt nach seinem Tag als gekocht und geht vom Vorrat ab. Nicht gekocht? Dann „geplant“ wählen.</Hint>
-        ) : null}
-      </Card>
 
-      {entry.recipe ? (
-        <>
-          <SectionTitle>Wer isst mit?</SectionTitle>
-          {members.length === 0 ? (
-            <Notice>Unter Haushalt → Personen eintragen, dann bekommt jede Person automatisch die passende Option.</Notice>
-          ) : null}
-          {members.map((member) => {
-            const eater = entry.eaters.find((candidate) => candidate.memberId === member.id);
-            return (
-              <Card key={member.id} style={styles.eater}>
-                <View style={styles.eaterRow}>
-                  <Chip
-                    label={member.name || 'Ohne Namen'}
-                    accessibilityLabel={`${member.name} isst mit`}
-                    selected={!!eater}
-                    onPress={() => setServings(member.id, eater ? 0 : 1, Date.now())}
-                  />
-                  {eater ? (
-                    <View style={styles.stepper}>
-                      <Stepper
-                        label="Portionen"
-                        value={eater.servings}
-                        canDecrease={eater.servings > 1}
-                        onDecrease={() => setServings(member.id, eater.servings - 1, Date.now())}
-                        onIncrease={() => setServings(member.id, eater.servings + 1, Date.now())}
-                      />
-                    </View>
-                  ) : null}
-                </View>
-                {eater ? <ChoiceChips recipe={entry.recipe!} eater={eater} onChoose={choose(eater)} /> : null}
-              </Card>
-            );
-          })}
-          <Card style={styles.eater}>
-            <Stepper
-              icon="group_add"
-              label={members.length > 0 ? 'Gäste (Portionen)' : 'Portionen'}
-              value={guests?.servings ?? 0}
-              canDecrease={(guests?.servings ?? 0) > 0}
-              onDecrease={() => setServings('', (guests?.servings ?? 0) - 1, Date.now())}
-              onIncrease={() => setServings('', (guests?.servings ?? 0) + 1, Date.now())}
+        <Card>
+          <View style={styles.dateRow}>
+            <IconButton
+              icon="chevron_left"
+              variant="secondary"
+              size={38}
+              accessibilityLabel="Einen Tag früher"
+              onPress={() => update({ date: addDays(entry.date, -1) })}
             />
-            {guests ? <ChoiceChips recipe={entry.recipe} eater={guests} onChoose={choose(guests)} /> : null}
-          </Card>
-
-          {entry.servings > 0 ? (
+            <Text style={styles.date}>{formatDate(entry.date)}</Text>
+            <IconButton
+              icon="chevron_right"
+              variant="secondary"
+              size={38}
+              accessibilityLabel="Einen Tag später"
+              onPress={() => update({ date: addDays(entry.date, 1) })}
+            />
+          </View>
+          {meals.length > 1 ? (
+            <View style={styles.chips}>
+              {meals.map((meal) => (
+                <Chip
+                  key={meal.id}
+                  icon={MEAL_ICONS[meal.id]}
+                  label={meal.label}
+                  selected={entry.meal === meal.id}
+                  onPress={() => update({ meal: meal.id })}
+                />
+              ))}
+            </View>
+          ) : null}
+          {/* „Gekocht“ bucht die Zutaten aus dem Vorrat ab; zurück nimmt die Abbuchung zurück. */}
+          <Segmented
+            options={STATUSES}
+            value={entry.status}
+            onChange={(status) => write(planSetStatus(tables, entry.id, status, Date.now()))}
+            small
+          />
+          {postponedFrom ? (
             <>
-              <PlanEntryNutrition entryId={entry.id} />
-              <RecipeBody view={entry.recipe} servings={entry.servings} distribution={entry.distribution} />
+              <Hint>
+                {`Am ${formatDate(postponedFrom)} nicht als gekocht eingetragen, deshalb von selbst weitergerückt; die Gerichte danach sind mitgerückt.`}
+              </Hint>
+              <View style={styles.actions}>
+                <Button small variant="secondary" icon="task_alt" title="Doch gekocht" onPress={cookedAfterAll} />
+              </View>
             </>
-          ) : (
-            <Hint>Niemand isst mit, deshalb gibt es nichts einzukaufen.</Hint>
-          )}
-        </>
-      ) : (
-        <FreeTextEntry entry={entry} onChange={(text) => update({ text })} />
-      )}
+          ) : entry.recipe && entry.status !== 'cooked' && entry.date <= today ? (
+            <Hint>
+              Gekocht? Dann „gekocht“ wählen, die Zutaten gehen vom Vorrat ab. Sonst rückt das Gericht nach seinem Tag von selbst
+              weiter, und die Gerichte danach rücken mit.
+            </Hint>
+          ) : null}
+        </Card>
 
-      <View style={styles.footer}>
-        <Button variant="danger" icon="delete" title="Aus dem Plan entfernen" onPress={() => void remove()} />
-      </View>
-    </ScrollView>
+        {entry.recipe ? (
+          <>
+            <SectionTitle>Wer isst mit?</SectionTitle>
+            {members.length === 0 ? (
+              <Notice>Unter Haushalt → Personen eintragen, dann bekommt jede Person automatisch die passende Option.</Notice>
+            ) : null}
+            {members.map((member) => {
+              const eater = entry.eaters.find((candidate) => candidate.memberId === member.id);
+              return (
+                <Card key={member.id} style={styles.eater}>
+                  <View style={styles.eaterRow}>
+                    <Chip
+                      label={member.name || 'Ohne Namen'}
+                      accessibilityLabel={`${member.name} isst mit`}
+                      selected={!!eater}
+                      onPress={() => setServings(member.id, eater ? 0 : 1, Date.now())}
+                    />
+                    {eater ? (
+                      <View style={styles.stepper}>
+                        <Stepper
+                          label="Portionen"
+                          value={eater.servings}
+                          canDecrease={eater.servings > 1}
+                          onDecrease={() => setServings(member.id, eater.servings - 1, Date.now())}
+                          onIncrease={() => setServings(member.id, eater.servings + 1, Date.now())}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
+                  {eater ? <ChoiceChips recipe={entry.recipe!} eater={eater} onChoose={choose(eater)} /> : null}
+                </Card>
+              );
+            })}
+            <Card style={styles.eater}>
+              <Stepper
+                icon="group_add"
+                label={members.length > 0 ? 'Gäste (Portionen)' : 'Portionen'}
+                value={guests?.servings ?? 0}
+                canDecrease={(guests?.servings ?? 0) > 0}
+                onDecrease={() => setServings('', (guests?.servings ?? 0) - 1, Date.now())}
+                onIncrease={() => setServings('', (guests?.servings ?? 0) + 1, Date.now())}
+              />
+              {guests ? <ChoiceChips recipe={entry.recipe} eater={guests} onChoose={choose(guests)} /> : null}
+            </Card>
+
+            {entry.servings > 0 ? (
+              <>
+                <PlanEntryNutrition entryId={entry.id} />
+                <RecipeBody view={entry.recipe} servings={entry.servings} distribution={entry.distribution} />
+              </>
+            ) : (
+              <Hint>Niemand isst mit, deshalb gibt es nichts einzukaufen.</Hint>
+            )}
+          </>
+        ) : (
+          <FreeTextEntry entry={entry} onChange={(text) => update({ text })} />
+        )}
+
+        <View style={styles.footer}>
+          <Button variant="danger" icon="delete" title="Aus dem Plan entfernen" onPress={() => void remove()} />
+        </View>
+      </ScrollView>
+      <Snackbar message={message} onHide={hideMessage} />
+    </View>
   );
 }
 
@@ -230,7 +266,9 @@ function FreeTextEntry({ entry, onChange }: { entry: PlanEntryView; onChange: (t
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
+  actions: { flexDirection: 'row' },
   photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.lg },
   title: { fontFamily: fonts.display, fontSize: 27, lineHeight: 34, color: colors.text },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

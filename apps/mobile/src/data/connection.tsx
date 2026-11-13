@@ -16,6 +16,8 @@ type Connection = {
   access: DeviceAccess | null;
   route: ConnectionRoute | null;
   status: SyncStatus;
+  /** Wann der Sync zuletzt verbunden hat, seit die App im Vordergrund ist; `null` = seitdem noch nicht. */
+  syncedAt: number | null;
   /** Speichert die Zugangsdaten und startet den Sync. */
   connect: (access: DeviceAccess) => Promise<void>;
   /** Neue Adressen; `homeUrl` leer = keine. Danach wird neu verbunden. */
@@ -40,7 +42,7 @@ export function ConnectionProvider({ store, children }: { store: AppStore; child
       .catch(() => setAccess(null));
   }, []);
 
-  const status = useSync(store, access ?? null, setChosenUrl);
+  const { status, syncedAt } = useSync(store, access ?? null, setChosenUrl);
   // Bis der Sync gewählt hat, gilt die Adresse für unterwegs; eine gewählte, die nicht mehr dazugehört, auch.
   const serverUrl = access ? (chosenUrl && chosenUrl === access.homeUrl ? chosenUrl : access.serverUrl) : null;
   const credentials = useMemo(
@@ -55,6 +57,7 @@ export function ConnectionProvider({ store, children }: { store: AppStore; child
       access: access ?? null,
       route: access ? (serverUrl === access.homeUrl ? 'home' : 'away') : null,
       status,
+      syncedAt,
       connect: async (next) => {
         await saveCredentials(next);
         setAccess(next);
@@ -72,7 +75,7 @@ export function ConnectionProvider({ store, children }: { store: AppStore; child
       },
       uploadPhotos,
     }),
-    [credentials, access, serverUrl, status, uploadPhotos],
+    [credentials, access, serverUrl, status, syncedAt, uploadPhotos],
   );
 
   if (access === undefined) return null;
